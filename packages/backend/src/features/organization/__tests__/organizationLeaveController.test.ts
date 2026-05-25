@@ -6,7 +6,6 @@ import { organizationLeaveController } from '../controllers/organizationLeaveCon
 import { Error400 } from '../../../shared/errors/Error400';
 import { APIError } from 'better-auth';
 
-// Mock Better Auth
 vi.mock('../../auth/authBackend', () => ({
   authBackend: {
     api: {

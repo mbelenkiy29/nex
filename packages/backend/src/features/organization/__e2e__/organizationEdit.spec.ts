@@ -22,7 +22,6 @@ test.describe('Organization Edit Page', () => {
     // Sign up to create an organization in the database
     await signUpAndSignIn(page);
 
-    // Fetch the created organization from the database
     const prisma = testPrismaClient();
     const organization = await prisma.organization.findFirst();
 
@@ -36,7 +35,6 @@ test.describe('Organization Edit Page', () => {
     // Verify we're on the edit page (not redirected)
     await expect(page).toHaveURL(`/organization/${organization.id}/edit`);
 
-    // Verify the organization name appears on the page
     await expect(page.getByText(organization.name)).toBeVisible();
   });
 });

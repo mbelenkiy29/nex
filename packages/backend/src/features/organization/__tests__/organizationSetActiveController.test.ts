@@ -7,7 +7,6 @@ import { Error400 } from '../../../shared/errors/Error400';
 import { Error403 } from '../../../shared/errors/Error403';
 import { APIError } from 'better-auth';
 
-// Mock Better Auth
 vi.mock('../../auth/authBackend', () => ({
   authBackend: {
     api: {
@@ -35,7 +34,6 @@ describe('OrganizationSetActiveController', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Create another organization
       const org2 = await prisma.organization.create({
         data: {
           name: 'Second Organization',
@@ -43,7 +41,6 @@ describe('OrganizationSetActiveController', () => {
         },
       });
 
-      // Create member in second organization
       await prisma.member.create({
         data: {
           userId: user.id,
@@ -75,7 +72,6 @@ describe('OrganizationSetActiveController', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Create another organization
       const org2 = await prisma.organization.create({
         data: {
           name: 'Invited Organization',
@@ -83,7 +79,6 @@ describe('OrganizationSetActiveController', () => {
         },
       });
 
-      // Create pending invitation for user
       const invitation = await prisma.invitation.create({
         data: {
           email: user.email,
@@ -124,7 +119,6 @@ describe('OrganizationSetActiveController', () => {
 
       expect(result).toBe(true);
 
-      // Should accept invitation
       expect(authBackend.api.acceptInvitation).toHaveBeenCalledWith({
         body: {
           invitationId: invitation.id,
@@ -132,7 +126,6 @@ describe('OrganizationSetActiveController', () => {
         headers: context.headers,
       });
 
-      // Should set active organization
       expect(authBackend.api.setActiveOrganization).toHaveBeenCalledWith({
         body: {
           organizationId: org2.id,
@@ -149,12 +142,10 @@ describe('OrganizationSetActiveController', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock env to have default role
       const originalEnv = process.env.ORGANIZATION_DEFAULT_ROLE;
       process.env.ORGANIZATION_DEFAULT_ROLE = 'member';
 
       try {
-        // Create another organization without invitation
         const org2 = await prisma.organization.create({
           data: {
             name: 'Open Organization',
@@ -174,7 +165,6 @@ describe('OrganizationSetActiveController', () => {
 
         expect(result).toBe(true);
 
-        // Should add member with default role
         expect(authBackend.api.addMember).toHaveBeenCalledWith({
           body: {
             userId: user.id,
@@ -187,7 +177,6 @@ describe('OrganizationSetActiveController', () => {
         // Should NOT accept invitation since none exists
         expect(authBackend.api.acceptInvitation).not.toHaveBeenCalled();
 
-        // Should set active organization
         expect(authBackend.api.setActiveOrganization).toHaveBeenCalledWith({
           body: {
             organizationId: org2.id,

@@ -22,7 +22,6 @@ const mockEnv = vi.hoisted(
     }) as Partial<Env>,
 );
 
-// Mock env module with mutable object
 vi.mock('../../../env', () => ({
   env: mockEnv,
 }));
@@ -56,7 +55,6 @@ describe('SubscriptionPortalController', () => {
       const { user, organization, member } =
         await createTestUserWithOrganization();
 
-      // Mock subscription
       const mockSubscription = {
         id: '550e8400-e29b-41d4-a716-446655440910',
         userId: user.id,

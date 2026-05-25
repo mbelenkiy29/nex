@@ -18,7 +18,6 @@ describe('chatbotController - Lock Protection', () => {
       await createTestUserWithOrganization();
     const context = createAuthenticatedContext(user, organization, member);
 
-    // Mock Hono context
     const mockHonoContext = {
       json: (data: any, status?: number) => ({
         data,

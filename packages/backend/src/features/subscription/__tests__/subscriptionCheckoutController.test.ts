@@ -24,7 +24,6 @@ const mockEnv = vi.hoisted(
     }) as Partial<Env>,
 );
 
-// Mock env module with mutable object
 vi.mock('../../../env', () => ({
   env: mockEnv,
 }));
@@ -44,7 +43,6 @@ vi.mock('stripe', () => {
   };
 });
 
-// Mock subscription helpers
 vi.mock('../subscriptionIsValidStripePriceId', () => ({
   subscriptionIsValidStripePriceId: vi.fn(),
 }));
@@ -155,7 +153,6 @@ describe('SubscriptionCheckoutController', () => {
       const { user, organization, member } =
         await createTestUserWithOrganization();
 
-      // Mock active subscription
       const context = createAuthenticatedContext(user, organization, member, {
         currentSubscription: {
           id: '550e8400-e29b-41d4-a716-446655440900',

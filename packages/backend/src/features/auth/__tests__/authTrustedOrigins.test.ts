@@ -4,7 +4,6 @@ import type { Env } from '../../../env';
 // Create mutable mock env object (hoisted for vi.mock)
 const mockEnv = vi.hoisted(() => ({}) as Partial<Env>);
 
-// Mock env module with mutable object
 vi.mock('../../../env', () => ({
   env: mockEnv,
 }));

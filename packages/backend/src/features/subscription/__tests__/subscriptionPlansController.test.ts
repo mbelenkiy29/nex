@@ -4,7 +4,6 @@ import { createTestUserWithOrganization } from '../../../test/testFactories';
 import { createAuthenticatedContext } from '../../../test/testUtils';
 import { subscriptionPlansController } from '../controllers/subscriptionPlansController';
 
-// Mock subscription helpers
 vi.mock('../subscriptionFetchPlans', () => ({
   fetchStripePlans: vi.fn(),
 }));

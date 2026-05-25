@@ -23,7 +23,6 @@ const mockEnv = vi.hoisted(
     }) as Partial<Env>,
 );
 
-// Mock env module with mutable object
 vi.mock('../../../env', () => ({
   env: mockEnv,
 }));
@@ -45,7 +44,6 @@ vi.mock('stripe', () => {
   };
 });
 
-// Mock subscription helpers
 vi.mock('../subscriptionFetchPlans', () => ({
   invalidateStripePlansCache: vi.fn(),
 }));
@@ -89,7 +87,6 @@ describe('SubscriptionWebhookController', () => {
         mode: 'payment', // Not subscription
       });
 
-      // Should not throw
       const rawBody = JSON.stringify({ test: 'data' });
       const signature = 'valid_signature';
 

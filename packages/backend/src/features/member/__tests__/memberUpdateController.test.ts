@@ -39,7 +39,6 @@ describe('MemberUpdateController', () => {
       const { user, organization, member } =
         await createTestUserWithOrganization({}, {}, { role: 'admin' });
 
-      // Create a regular member (not admin)
       const memberUser = await prisma.user.create({
         data: {
           email: `member-${Date.now()}@example.com`,

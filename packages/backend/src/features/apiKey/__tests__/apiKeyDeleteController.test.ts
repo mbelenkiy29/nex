@@ -5,7 +5,6 @@ import { createAuthenticatedContext } from '../../../test/testUtils';
 import { apiKeyDeleteController } from '../controllers/apiKeyDeleteController';
 import { Error404 } from '../../../shared/errors/Error404';
 
-// Mock Better Auth
 vi.mock('../../auth/authBackend', () => ({
   authBackend: {
     api: {

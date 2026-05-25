@@ -17,12 +17,10 @@ const mockEnv = vi.hoisted(
     }) as Partial<Env>,
 );
 
-// Mock env module with mutable object
 vi.mock('../../../env', () => ({
   env: mockEnv,
 }));
 
-// Mock Better Auth
 vi.mock('../../auth/authBackend', () => ({
   authBackend: {
     api: {

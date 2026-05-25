@@ -32,7 +32,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Should reject "app" as it's reserved
       await expect(
         organizationCreateController(
           {
@@ -43,7 +42,6 @@ describe('Organization Slug Validation', () => {
         ),
       ).rejects.toThrow(Error400);
 
-      // Verify the error message
       try {
         await organizationCreateController(
           {
@@ -68,7 +66,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockCreateOrg = vi.fn().mockResolvedValue({
         id: 'test-org-id',
@@ -80,7 +77,6 @@ describe('Organization Slug Validation', () => {
         'createOrganization',
       ).mockImplementation(mockCreateOrg);
 
-      // Should accept "workspace" as it's not reserved
       const result = await organizationCreateController(
         {
           name: 'Test Org',
@@ -104,7 +100,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Should reject "app.project.localhost" as it's reserved
       await expect(
         organizationCreateController(
           {
@@ -115,7 +110,6 @@ describe('Organization Slug Validation', () => {
         ),
       ).rejects.toThrow(Error400);
 
-      // Verify the error message
       try {
         await organizationCreateController(
           {
@@ -140,7 +134,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockCreateOrg = vi.fn().mockResolvedValue({
         id: 'test-org-id',
@@ -152,7 +145,6 @@ describe('Organization Slug Validation', () => {
         'createOrganization',
       ).mockImplementation(mockCreateOrg);
 
-      // Should accept "customer.example.com" as it's not reserved
       const result = await organizationCreateController(
         {
           name: 'Test Org',
@@ -176,7 +168,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Should reject "app" as it's reserved
       await expect(
         organizationUpdateController(
           { id: organization.id },
@@ -185,7 +176,6 @@ describe('Organization Slug Validation', () => {
         ),
       ).rejects.toThrow(Error400);
 
-      // Verify the error message
       try {
         await organizationUpdateController(
           { id: organization.id },
@@ -208,7 +198,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockUpdateOrg = vi.fn().mockResolvedValue({
         id: organization.id,
@@ -220,7 +209,6 @@ describe('Organization Slug Validation', () => {
         'updateOrganization',
       ).mockImplementation(mockUpdateOrg);
 
-      // Should accept "workspace" as it's not reserved
       const result = await organizationUpdateController(
         { id: organization.id },
         { slug: 'workspace' },
@@ -242,7 +230,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Should reject "app.project.localhost" as it's reserved
       await expect(
         organizationUpdateController(
           { id: organization.id },
@@ -251,7 +238,6 @@ describe('Organization Slug Validation', () => {
         ),
       ).rejects.toThrow(Error400);
 
-      // Verify the error message
       try {
         await organizationUpdateController(
           { id: organization.id },
@@ -274,7 +260,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockUpdateOrg = vi.fn().mockResolvedValue({
         id: organization.id,
@@ -286,7 +271,6 @@ describe('Organization Slug Validation', () => {
         'updateOrganization',
       ).mockImplementation(mockUpdateOrg);
 
-      // Should accept "customer.example.com" as it's not reserved
       const result = await organizationUpdateController(
         { id: organization.id },
         { slug: 'customer.example.com' },
@@ -308,7 +292,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockCreateOrg = vi.fn().mockResolvedValue({
         id: 'test-org-id',
@@ -320,7 +303,6 @@ describe('Organization Slug Validation', () => {
         'createOrganization',
       ).mockImplementation(mockCreateOrg);
 
-      // Should not throw when FRONTEND_URL is missing
       const result = await organizationCreateController(
         {
           name: 'Test Org',
@@ -342,7 +324,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockCreateOrg = vi.fn().mockResolvedValue({
         id: 'test-org-id',
@@ -354,7 +335,6 @@ describe('Organization Slug Validation', () => {
         'createOrganization',
       ).mockImplementation(mockCreateOrg);
 
-      // Should not throw when FRONTEND_URL is invalid (falls back to no validation)
       const result = await organizationCreateController(
         {
           name: 'Test Org',
@@ -376,7 +356,6 @@ describe('Organization Slug Validation', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      // Mock the Better Auth API call
       const originalAuth = await import('../../auth/authBackend');
       const mockCreateOrg = vi.fn().mockResolvedValue({
         id: 'test-org-id',
