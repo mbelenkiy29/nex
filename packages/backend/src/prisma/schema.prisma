@@ -54,7 +54,6 @@ model User {
   // { essential: true, analytics: bool, marketing: bool, acceptedAt: ISO }
   cookieConsent Json?
 
-  // Relations
   members           Member[]
   subscriptions     Subscription[]
   sessions          Session[]
@@ -155,34 +154,27 @@ model ApiKey {
   referenceId String  @db.Uuid
   user        User    @relation(fields: [referenceId], references: [id], onDelete: Cascade)
 
-  // Organization
   organizationId String?       @db.Uuid
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
-  // Refill system
   refillInterval Int?
   refillAmount   Int?
   lastRefillAt   DateTime? @db.Timestamptz(3)
 
-  // Status
   enabled Boolean? @default(true)
 
-  // Rate limiting
   rateLimitEnabled    Boolean? @default(true)
   rateLimitTimeWindow Int?     @default(86400000)
   rateLimitMax        Int?     @default(1000)
   requestCount        Int?     @default(0)
 
-  // Usage tracking
   remaining   Int?
   lastRequest DateTime? @db.Timestamptz(3)
   expiresAt   DateTime? @db.Timestamptz(3)
 
-  // Timestamps
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  // Permissions and metadata
   permissions String? // JSON string of permissions
   metadata    Json? // Additional metadata
 
@@ -274,7 +266,6 @@ model Member {
   createdAt      DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
 
-  // Additional fields
   firstName              String?
   lastName               String?
   fullName               String?
@@ -292,7 +283,6 @@ model Member {
   updatedByUserId        String?   @db.Uuid
   updatedByMemberId      String?   @db.Uuid
 
-  // Relations
   createdByMember Member?  @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
   memberCreatedBy Member[] @relation("createdByMember")
   updatedByMember Member?  @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
