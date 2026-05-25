@@ -325,7 +325,6 @@ export function OrganizationSwitcher() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      {/* Invitation Dialog */}
       <Dialog
         open={selectedInvitation !== null}
         onOpenChange={(open) => !open && handleCancelInvitation()}

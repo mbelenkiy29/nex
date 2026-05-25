@@ -133,7 +133,6 @@ export function SubscriptionCard({
       </CardHeader>
 
       <CardContent className="flex-1 space-y-6 p-0">
-        {/* Price */}
         <div className="px-6 text-center">
           <div className="flex items-baseline justify-center gap-1">
             <span className="text-5xl font-bold tracking-tight">
@@ -158,7 +157,6 @@ export function SubscriptionCard({
           </div>
         )}
 
-        {/* Features */}
         {subscriptionPlan.marketingFeatures.length > 0 && (
           <ul className="space-y-3 px-6">
             {subscriptionPlan.marketingFeatures.map((feature, index) => (

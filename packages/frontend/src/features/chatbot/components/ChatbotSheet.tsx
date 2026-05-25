@@ -56,7 +56,6 @@ export function ChatbotSheet({ open, onOpenChange }: ChatbotSheetProps) {
         showCloseButton={false}
         className="border-l-border flex h-full w-full flex-col p-0 sm:max-w-[500px] [&>.sheet-close]:hidden"
       >
-        {/* Header */}
         <SheetHeader className="shrink-0 border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -98,7 +97,6 @@ export function ChatbotSheet({ open, onOpenChange }: ChatbotSheetProps) {
           </div>
         </SheetHeader>
 
-        {/* Messages - takes remaining space */}
         <div className="flex-1 overflow-hidden">
           <ChatbotMessages
             messages={messages}
@@ -108,7 +106,6 @@ export function ChatbotSheet({ open, onOpenChange }: ChatbotSheetProps) {
           />
         </div>
 
-        {/* Input */}
         <div className="shrink-0">
           <ChatbotInput
             onSendMessage={sendMessage}

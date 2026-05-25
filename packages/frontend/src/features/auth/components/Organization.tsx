@@ -22,7 +22,6 @@ export function Organization() {
     redirect?: string;
   };
 
-  // Fetch pending invitations with organization names from backend
   const invitationsQuery = useQuery({
     queryKey: ['invitations', 'my'],
     queryFn: async ({ signal }) => {

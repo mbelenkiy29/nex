@@ -34,19 +34,14 @@ export function AuthCallbackPage() {
         const session = await authClient.getSession();
 
         if (!session.data?.session) {
-          // No session found, redirect to sign in
           toast.error(dictionary.auth.signIn.oauthError);
           navigate({ to: '/auth/sign-in', replace: true });
           return;
         }
 
-        // Fetch the current user with members and subscriptions
         await fetchCurrentUser();
-
-        // Invalidate queries to refresh data
         queryClient.invalidateQueries();
 
-        // Redirect to the intended destination or home
         if (search.redirect) {
           navigate({ to: search.redirect, replace: true });
         } else {

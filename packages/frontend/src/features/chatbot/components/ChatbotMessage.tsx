@@ -53,7 +53,6 @@ export function ChatbotMessage({ message }: ChatbotMessageProps) {
         isUser ? 'flex-row-reverse' : 'flex-row',
       )}
     >
-      {/* Avatar */}
       <Avatar
         className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center',
@@ -69,7 +68,6 @@ export function ChatbotMessage({ message }: ChatbotMessageProps) {
         )}
       </Avatar>
 
-      {/* Message Content */}
       <div
         className={cn(
           'w-full max-w-[420px] min-w-0 flex-1',

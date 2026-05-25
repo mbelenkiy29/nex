@@ -122,7 +122,6 @@ export function SubscriptionPage() {
               </div>
             )}
 
-            {/* Interval Tabs */}
             {availableIntervals.length > 1 && (
               <Tabs
                 value={selectedInterval}
@@ -166,7 +165,6 @@ export function SubscriptionPage() {
               </div>
             )}
 
-            {/* Empty State */}
             {filteredPlans.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16">
                 <p className="text-muted-foreground text-center">

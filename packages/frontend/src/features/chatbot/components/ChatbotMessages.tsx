@@ -46,10 +46,8 @@ export function ChatbotMessages({
           <ChatbotMessage key={index} message={message} />
         ))}
 
-        {/* Show tool usage indicator */}
         {currentToolUse && <ChatbotToolCall toolName={currentToolUse} />}
 
-        {/* Show loading indicator */}
         {isLoading && !currentToolUse && (
           <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
             <Spinner className="h-4 w-4" />
@@ -57,7 +55,6 @@ export function ChatbotMessages({
           </div>
         )}
 
-        {/* Show error */}
         {error && (
           <div className="bg-destructive/10 text-destructive mb-4 rounded-lg p-3 text-sm">
             {error}

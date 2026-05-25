@@ -23,7 +23,6 @@ export function ApiKeyPermissions({ permissions }: ApiKeyPermissionsProps) {
   }
 
   try {
-    // Handle both JSON string and already-parsed object
     let parsedPermissions: Record<string, string[]>;
 
     if (typeof permissions === 'string') {
