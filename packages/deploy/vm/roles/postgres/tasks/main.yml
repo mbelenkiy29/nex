@@ -1,0 +1,83 @@
+---
+# Install and configure PostgreSQL
+# Modern method for Debian 12+ (apt-key is deprecated)
+
+- name: Create directory for PostgreSQL GPG key
+  file:
+    path: /usr/share/postgresql-common/pgdg
+    state: directory
+    mode: '0755'
+
+- name: Download PostgreSQL GPG key
+  get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    mode: '0644'
+
+- name: Add PostgreSQL repository
+  apt_repository:
+    repo: 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main'
+    state: present
+    filename: pgdg
+
+- name: Install PostgreSQL
+  apt:
+    name:
+      - 'postgresql-{{ postgres_version }}'
+      - 'postgresql-contrib-{{ postgres_version }}'
+      - python3-psycopg2
+    state: present
+
+# Ensure PostgreSQL is running
+- name: Ensure PostgreSQL is running
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create PostgreSQL user
+  postgresql_user:
+    name: '{{ postgres_user }}'
+    password: '{{ postgres_password }}'
+    role_attr_flags: CREATEDB,NOSUPERUSER
+    state: present
+  become: yes
+  become_user: postgres
+
+- name: Create PostgreSQL database
+  postgresql_db:
+    name: '{{ postgres_db }}'
+    owner: '{{ postgres_user }}'
+    encoding: UTF8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    template: template0
+    state: present
+  become: yes
+  become_user: postgres
+
+- name: Configure PostgreSQL authentication
+  template:
+    src: pg_hba.conf.j2
+    dest: '/etc/postgresql/{{ postgres_version }}/main/pg_hba.conf'
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  notify: restart postgresql
+
+- name: Configure PostgreSQL settings
+  template:
+    src: postgresql.conf.j2
+    dest: '/etc/postgresql/{{ postgres_version }}/main/conf.d/custom.conf'
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: restart postgresql
+
+- name: Create PostgreSQL conf.d directory if it doesn't exist
+  file:
+    path: '/etc/postgresql/{{ postgres_version }}/main/conf.d'
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0755'

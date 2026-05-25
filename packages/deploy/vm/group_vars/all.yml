@@ -1,0 +1,66 @@
+---
+# Service flags
+minio_enabled: true
+postgres_enabled: true
+subdomain_enabled: false # Set to true for wildcard SSL via Cloudflare DNS-01 challenge
+
+# Application settings
+app_name: project
+app_dir: /opt/project
+app_user: project
+app_group: project
+node_version: '24'
+
+# Git repository
+git_repo: https://github.com/username/project.git
+git_branch: main
+git_use_token: true # Set to true if repo is private
+
+# Database settings
+postgres_version: '18'
+postgres_db: project
+postgres_user: project
+postgres_host: localhost
+postgres_port: 5432
+
+# Redis settings
+redis_host: localhost
+redis_port: 6379
+
+# Ports
+worker_enabled: true
+
+# Blue/Green Deployment
+active_color: blue # Will be toggled between 'blue' and 'green'
+blue_backend_port: 3011
+green_backend_port: 4011
+blue_frontend_port: 3010
+green_frontend_port: 4010
+health_check_retries: 12
+health_check_delay: 5
+connection_drain_time: 60
+
+# Log settings
+log_dir: /var/log/project
+
+# Backup settings
+backup_dir: /var/backups/project
+backup_retention_days: 30
+
+# Caddy settings
+caddy_email: '{{ ssl_email }}'
+caddy_staging: false # Set to true for Let's Encrypt staging
+
+# System limits
+max_open_files: 65535
+max_user_processes: 32768
+
+# MinIO settings
+minio_version: 'latest'
+minio_port: 9000
+minio_console_port: 9001
+minio_data_dir: /var/lib/minio
+minio_config_dir: /etc/minio
+minio_bucket_public: '{{ app_name }}-public'
+minio_bucket_private: '{{ app_name }}-private'
+minio_region: us-east-1

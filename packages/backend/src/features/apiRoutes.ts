@@ -1,0 +1,87 @@
+import { Hono } from 'hono';
+import { authRoutes } from './auth/authApiRoutes';
+import { userRoutes } from './user/userApiRoutes';
+import { fileRoutes } from './file/fileApiRoutes';
+import { auditLogRoutes } from './auditLog/auditLogApiRoutes';
+import { examRoutes } from './exam/examApiRoutes';
+import { chapterRoutes } from './chapter/chapterApiRoutes';
+import { lessonRoutes } from './lesson/lessonApiRoutes';
+import { practiceQuestionRoutes } from './practiceQuestion/practiceQuestionApiRoutes';
+import { conceptRoutes } from './concept/conceptApiRoutes';
+import { examTypeRoutes } from './examType/examTypeApiRoutes';
+import { examInstanceRoutes } from './examInstance/examInstanceApiRoutes';
+import { dailyGoalRoutes } from './dailyGoal/dailyGoalApiRoutes';
+import { studyNoteRoutes } from './studyNote/studyNoteApiRoutes';
+import { documentUploadRoutes } from './documentUpload/documentUploadApiRoutes';
+import { subscriptionRoutes } from './subscription/subscriptionApiRoutes';
+import { apiDocsRoutes } from './apiDocs/apiDocsApiRoutes';
+import { configRoutes } from './config/configRoutes';
+import { memberRoutes } from './member/memberApiRoutes';
+import { invitationRoutes } from './invitation/invitationRoutes';
+import { apiKeyRoutes } from './apiKey/apiKeyApiRoutes';
+import { organizationRoutes } from './organization/organizationApiRoutes';
+import { chatbotRoutes } from './chatbot/chatbotApiRoutes';
+import { courseRoutes } from './course/courseApiRoutes';
+import { courseBuilderRoutes } from './course/courseBuilderApiRoutes';
+import { courseCategoryRoutes } from './courseCategory/courseCategoryApiRoutes';
+import { courseAiRoutes } from './courseAi/courseAiApiRoutes';
+import { courseStudyAiRoutes } from './courseStudyAi/courseStudyAiApiRoutes';
+import { oneOnOneRoutes } from './oneOnOneCall/oneOnOneApiRoutes';
+import { creatorEarningsRoutes } from './creatorEarnings/creatorEarningsApiRoutes';
+import { creatorApplicationRoutes } from './creatorApplication/creatorApplicationApiRoutes';
+import { trustSafetyRoutes } from './trustSafety/trustSafetyApiRoutes';
+import { studentExperienceRoutes } from './studentExperience/studentExperienceApiRoutes';
+import { pushTokenRoutes } from './pushToken/pushTokenApiRoutes';
+import { notificationRoutes } from './notification/notificationApiRoutes';
+import { backgroundJobsRoutes } from './backgroundJobs/backgroundJobsApiRoutes';
+import {
+  platformAdminRoutes,
+  platformPromotionRoutes,
+} from './platformAdmin/platformAdminApiRoutes';
+import { userAccountRoutes } from './userAccount/userAccountApiRoutes';
+import mcpRoutes from './mcp/mcp';
+
+export const apiRoutes = new Hono();
+
+apiRoutes.get('/health', (c) => c.json({ status: 'ok' }));
+apiRoutes.route('/api-docs', apiDocsRoutes);
+apiRoutes.route('/config', configRoutes);
+apiRoutes.route('/auth', authRoutes);
+apiRoutes.route('/user', userRoutes);
+apiRoutes.route('/organization', organizationRoutes);
+apiRoutes.route('/member/invitation', invitationRoutes);
+apiRoutes.route('/member', memberRoutes);
+apiRoutes.route('/file', fileRoutes);
+apiRoutes.route('/audit-log', auditLogRoutes);
+apiRoutes.route('/exam', examRoutes);
+apiRoutes.route('/chapter', chapterRoutes);
+apiRoutes.route('/lesson', lessonRoutes);
+apiRoutes.route('/practice-question', practiceQuestionRoutes);
+apiRoutes.route('/concept', conceptRoutes);
+apiRoutes.route('/exam-type', examTypeRoutes);
+apiRoutes.route('/exam-instance', examInstanceRoutes);
+apiRoutes.route('/daily-goal', dailyGoalRoutes);
+apiRoutes.route('/study-note', studyNoteRoutes);
+apiRoutes.route('/document-upload', documentUploadRoutes);
+apiRoutes.route('/subscription', subscriptionRoutes);
+apiRoutes.route('/api-key', apiKeyRoutes);
+apiRoutes.route('/chatbot', chatbotRoutes);
+apiRoutes.route('/course', courseRoutes);
+apiRoutes.route('/course-builder', courseBuilderRoutes);
+apiRoutes.route('/course-categories', courseCategoryRoutes);
+apiRoutes.route('/course-ai', courseAiRoutes);
+apiRoutes.route('/course-study-ai', courseStudyAiRoutes);
+apiRoutes.route('/one-on-one', oneOnOneRoutes);
+apiRoutes.route('/creator/earnings', creatorEarningsRoutes);
+apiRoutes.route('/creator-application', creatorApplicationRoutes);
+apiRoutes.route('/trust-safety', trustSafetyRoutes);
+apiRoutes.route('/student', studentExperienceRoutes);
+apiRoutes.route('/push-token', pushTokenRoutes);
+apiRoutes.route('/notification', notificationRoutes);
+apiRoutes.route('/platform-admin', platformAdminRoutes);
+apiRoutes.route('/platform-promotion', platformPromotionRoutes);
+apiRoutes.route('/background-jobs', backgroundJobsRoutes);
+apiRoutes.route('/user-account', userAccountRoutes);
+
+// MCP server endpoint
+apiRoutes.route('/mcp', mcpRoutes);

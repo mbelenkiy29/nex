@@ -1,0 +1,181 @@
+- generic [ref=e2]:
+    - generic [ref=e5]:
+        - generic [ref=e8]:
+            - generic [ref=e11]:
+                - img [ref=e13]
+                - generic [ref=e15]: NexExam
+            - list [ref=e18]:
+                - listitem [ref=e19]:
+                    - link "Student Dashboard" [ref=e20] [cursor=pointer]:
+                        - /url: /student
+                        - img [ref=e21]
+                        - generic [ref=e24]: Student Dashboard
+                - listitem [ref=e25]:
+                    - link "Courses" [ref=e26] [cursor=pointer]:
+                        - /url: /course
+                        - img [ref=e27]
+                        - generic [ref=e30]: Courses
+                - listitem [ref=e31]:
+                    - link "Creator Dashboard" [ref=e32] [cursor=pointer]:
+                        - /url: /creator
+                        - img [ref=e33]
+                        - generic [ref=e36]: Creator Dashboard
+                - listitem [ref=e37]:
+                    - link "Creator Application" [ref=e38] [cursor=pointer]:
+                        - /url: /creator-application
+                        - img [ref=e39]
+                        - generic [ref=e42]: Creator Application
+            - generic [ref=e44]:
+                - list [ref=e45]:
+                    - listitem [ref=e46]:
+                        - link "Notifications" [ref=e47] [cursor=pointer]:
+                            - /url: /notification
+                            - img [ref=e49]
+                            - generic [ref=e52]: Notifications
+                - list [ref=e53]:
+                    - listitem [ref=e54]:
+                        - button "Language" [ref=e55] [cursor=pointer]:
+                            - img [ref=e56]
+                            - generic [ref=e60]: Language
+                - list [ref=e61]:
+                    - listitem [ref=e62]:
+                        - button "Theme" [ref=e63] [cursor=pointer]:
+                            - img [ref=e64]
+                            - generic [ref=e70]: Theme
+                - list [ref=e71]:
+                    - listitem [ref=e72]:
+                        - button "MB Michael Belenkiy mbelenkiy29@gmail.com" [ref=e73] [cursor=pointer]:
+                            - generic [ref=e75]: MB
+                            - generic [ref=e76]:
+                                - generic [ref=e77]: Michael Belenkiy
+                                - generic [ref=e78]: mbelenkiy29@gmail.com
+                            - img [ref=e79]
+            - button "Toggle Sidebar" [ref=e82]
+        - main [ref=e83]:
+            - generic [ref=e85]:
+                - generic [ref=e86]:
+                    - generic [ref=e87]: Search learning content
+                    - img
+                    - searchbox "Search learning content" [ref=e88]
+                - button "Notifications" [ref=e89] [cursor=pointer]:
+                    - img [ref=e90]
+                - generic [ref=e94]:
+                    - generic [ref=e96]: MB
+                    - generic [ref=e97]:
+                        - generic [ref=e98]: Michael Belenkiy
+                        - generic [ref=e99]: Student
+                    - img [ref=e100]
+            - main [ref=e102]:
+                - generic [ref=e103]:
+                    - generic [ref=e104]:
+                        - generic [ref=e105]:
+                            - generic [ref=e107]:
+                                - paragraph [ref=e108]: Welcome back, Michael
+                                - heading "Continue your learning journey with AI" [level=1] [ref=e109]
+                                - paragraph [ref=e110]: Personalized learning. Smarter every day.
+                                - generic [ref=e111]:
+                                    - button "Continue Learning" [ref=e112] [cursor=pointer]:
+                                        - img
+                                        - text: Continue Learning
+                                    - button "Ask AI Tutor" [ref=e113] [cursor=pointer]:
+                                        - img
+                                        - text: Ask AI Tutor
+                            - generic:
+                                - generic:
+                                    - img
+                        - generic [ref=e115]:
+                            - generic [ref=e116]:
+                                - generic [ref=e117]:
+                                    - img [ref=e119]
+                                    - heading "AI Tutor" [level=2] [ref=e122]
+                                - generic [ref=e123]: Online
+                            - img [ref=e127]
+                            - generic [ref=e129]:
+                                - heading "Hi! I'm your AI tutor." [level=3] [ref=e130]
+                                - paragraph [ref=e131]: How can I help you today?
+                            - generic [ref=e132]:
+                                - button "Explain a concept" [ref=e133] [cursor=pointer]:
+                                    - img [ref=e134]
+                                    - text: Explain a concept
+                                - button "Quiz me on this topic" [ref=e136] [cursor=pointer]:
+                                    - img [ref=e137]
+                                    - text: Quiz me on this topic
+                                - button "Recommend resources" [ref=e139] [cursor=pointer]:
+                                    - img [ref=e140]
+                                    - text: Recommend resources
+                    - generic [ref=e142]:
+                        - generic [ref=e143]:
+                            - generic [ref=e144]:
+                                - heading "Continue Learning" [level=2] [ref=e145]
+                                - link "View all courses" [ref=e146] [cursor=pointer]:
+                                    - /url: /course
+                                    - text: View all courses
+                                    - img [ref=e147]
+                            - generic [ref=e149]:
+                                - generic [ref=e150]:
+                                    - generic [ref=e153]: 65%
+                                    - generic [ref=e154]:
+                                        - heading "Introduction to Artificial Intelligence" [level=3] [ref=e155]
+                                        - paragraph [ref=e156]: Module 4 • Machine Learning Basics
+                                        - generic [ref=e160]: 65%
+                                - generic [ref=e161]:
+                                    - generic [ref=e164]: 40%
+                                    - generic [ref=e165]:
+                                        - heading "Data Structures and Algorithms" [level=3] [ref=e166]
+                                        - paragraph [ref=e167]: Module 3 • Trees and Graphs
+                                        - generic [ref=e171]: 40%
+                                - generic [ref=e172]:
+                                    - generic [ref=e175]: 20%
+                                    - generic [ref=e176]:
+                                        - heading "UI/UX Design Fundamentals" [level=3] [ref=e177]
+                                        - paragraph [ref=e178]: Module 2 • Design Principles
+                                        - generic [ref=e182]: 20%
+                            - generic [ref=e183]:
+                                - heading "Recommended for You" [level=2] [ref=e184]
+                                - link "View all" [ref=e185] [cursor=pointer]:
+                                    - /url: /course
+                                    - text: View all
+                                    - img [ref=e186]
+                            - generic [ref=e188]:
+                                - generic [ref=e190]:
+                                    - img [ref=e192]
+                                    - generic [ref=e202]:
+                                        - heading "Deep Learning Fundamentals" [level=3] [ref=e203]
+                                        - paragraph [ref=e204]: Course • Intermediate
+                                        - paragraph [ref=e205]:
+                                            - img [ref=e206]
+                                            - text: 4.8 (320)
+                                - generic [ref=e209]:
+                                    - img [ref=e211]
+                                    - generic [ref=e215]:
+                                        - heading "SQL for Data Analysis" [level=3] [ref=e216]
+                                        - paragraph [ref=e217]: Course • Beginner
+                                        - paragraph [ref=e218]:
+                                            - img [ref=e219]
+                                            - text: 4.7 (210)
+                                - generic [ref=e222]:
+                                    - img [ref=e224]
+                                    - generic [ref=e227]:
+                                        - heading "Python Programming Masterclass" [level=3] [ref=e228]
+                                        - paragraph [ref=e229]: Course • Beginner
+                                        - paragraph [ref=e230]:
+                                            - img [ref=e231]
+                                            - text: 4.9 (421)
+                        - generic [ref=e234]:
+                            - generic [ref=e235]:
+                                - heading "Learning Progress" [level=2] [ref=e236]
+                                - generic [ref=e237]: This Week
+                            - generic [ref=e238]:
+                                - generic [ref=e239]:
+                                    - generic [ref=e240]: 12h 45m
+                                    - paragraph [ref=e241]: Total Study Time
+                                - generic [ref=e242]: +24%
+                            - generic [ref=e243]:
+                                - generic [ref=e247]: Mon
+                                - generic [ref=e251]: Tue
+                                - generic [ref=e255]: Wed
+                                - generic [ref=e259]: Thu
+                                - generic [ref=e263]: Fri
+                                - generic [ref=e267]: Sat
+                                - generic [ref=e271]: Sun
+    - region "Notifications alt+T"

@@ -1,0 +1,38 @@
+[Unit]
+Description=Frontend (Blue)
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_dir }}/blue/packages/frontend
+ExecStart=/usr/bin/serve -s dist -l {{ blue_frontend_port }}
+ExecStop=/bin/kill -SIGTERM $MAINPID
+TimeoutStopSec=30
+Restart=always
+RestartSec=10
+
+# Environment
+Environment="NODE_ENV=production"
+Environment="DEPLOYMENT_COLOR=blue"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=frontend-blue
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE={{ max_open_files }}
+LimitNPROC={{ max_user_processes }}
+
+# Memory limits
+MemoryMax=1G
+MemoryHigh=750M
+
+[Install]
+WantedBy=multi-user.target

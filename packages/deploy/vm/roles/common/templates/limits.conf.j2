@@ -1,0 +1,10 @@
+# System Limits
+* soft nofile {{ max_open_files }}
+* hard nofile {{ max_open_files }}
+* soft nproc {{ max_user_processes }}
+* hard nproc {{ max_user_processes }}
+
+{{ app_user }} soft nofile {{ max_open_files }}
+{{ app_user }} hard nofile {{ max_open_files }}
+{{ app_user }} soft nproc {{ max_user_processes }}
+{{ app_user }} hard nproc {{ max_user_processes }}

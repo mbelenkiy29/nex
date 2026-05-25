@@ -1,0 +1,72 @@
+{
+  "name": "project",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "dev": "concurrently \"pnpm run dev:server\" \"pnpm run worker:dev\"",
+    "dev:server": "pnpm --parallel --filter frontend --filter backend dev",
+    "build": "pnpm --parallel --filter frontend --filter backend build",
+    "build:backend": "pnpm --filter backend build",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:mobile": "pnpm --filter mobile build",
+    "typecheck": "pnpm --parallel --filter frontend --filter backend typecheck",
+    "translation:audit": "pnpm --filter backend translation:audit",
+    "launch:policy:audit": "pnpm --filter backend launch:policy:audit",
+    "lint": "eslint .",
+    "mobile": "pnpm --filter mobile start",
+    "mobile:ios": "pnpm --filter mobile ios",
+    "mobile:android": "pnpm --filter mobile android",
+    "worker": "pnpm --filter backend worker",
+    "worker:dev": "pnpm --filter backend worker:dev",
+    "test": "pnpm --filter backend test",
+    "test:backend": "pnpm --filter backend test",
+    "test:watch": "pnpm --filter backend test:watch",
+    "test:ui": "pnpm --filter backend test:ui",
+    "test:coverage": "pnpm --filter backend test:coverage",
+    "test:e2e": "pnpm --filter backend test:e2e",
+    "test:e2e:ui": "pnpm --filter backend test:e2e:ui",
+    "test:e2e:headed": "pnpm --filter backend test:e2e:headed",
+    "stripe:login": "stripe login",
+    "stripe:listen": "stripe listen --forward-to http://localhost:3011/api/subscription/webhook",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:migrate:create": "pnpm --filter backend db:migrate:create",
+    "vm:deploy": "node ./packages/deploy/vm/deploy.cjs",
+    "vm:rollback": "node ./packages/deploy/vm/rollback.cjs",
+    "vm:logs": "node ./packages/deploy/vm/logs.cjs",
+    "format": "pnpm exec prettier --cache --ignore-path .gitignore --ignore-unknown --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,mjs,cjs,json,css,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1009.0",
+    "@better-auth/api-key": "1.5.5",
+    "@better-upload/client": "3.0.14",
+    "@better-upload/server": "3.0.14",
+    "@stripe/stripe-js": "8.9.0",
+    "better-auth": "1.5.5",
+    "lodash": "4.17.23"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/lodash": "4.17.24",
+    "concurrently": "9.2.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "prettier": "3.8.1",
+    "prettier-plugin-tailwindcss": "0.7.2",
+    "typescript-eslint": "^8.59.4"
+  }
+}

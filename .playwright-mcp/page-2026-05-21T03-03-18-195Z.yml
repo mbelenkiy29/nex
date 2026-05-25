@@ -1,0 +1,10 @@
+- generic [ref=e2]:
+    - generic [ref=e6]:
+        - link "NexExam" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - img [ref=e10]
+            - text: NexExam
+        - generic [ref=e12]:
+            - generic [ref=e14]: Sign Out
+            - paragraph [ref=e17]: You're being signed out...
+    - region "Notifications alt+T"

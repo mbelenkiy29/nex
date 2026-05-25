@@ -1,0 +1,20 @@
+---
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: restart backend
+  systemd:
+    name: backend
+    state: restarted
+
+- name: restart worker
+  systemd:
+    name: worker
+    state: restarted
+  when: worker_enabled
+
+- name: restart frontend
+  systemd:
+    name: frontend
+    state: restarted

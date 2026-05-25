@@ -1,0 +1,42 @@
+---
+- name: Install required packages for NodeSource repository
+  apt:
+    name:
+      - curl
+      - gnupg
+      - ca-certificates
+      - build-essential
+      - python3
+    state: present
+
+- name: Download and run NodeSource setup script
+  shell: |
+    curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+  args:
+    creates: /etc/apt/sources.list.d/nodesource.list
+
+- name: Install Node.js
+  apt:
+    name: nodejs
+    state: present
+
+- name: Install global npm packages
+  npm:
+    name: '{{ item }}'
+    global: yes
+    state: present
+  loop:
+    - pnpm
+
+- name: Set npm registry (optional)
+  command: npm config set registry https://registry.npmjs.org/
+  changed_when: false
+
+- name: Verify Node.js installation
+  command: node --version
+  register: node_version_output
+  changed_when: false
+
+- name: Display Node.js version
+  debug:
+    msg: 'Node.js version: {{ node_version_output.stdout }}'

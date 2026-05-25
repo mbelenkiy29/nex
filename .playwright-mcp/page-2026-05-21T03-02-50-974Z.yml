@@ -1,0 +1,102 @@
+- generic [ref=e2]:
+    - generic [ref=e5]:
+        - generic [ref=e8]:
+            - generic [ref=e11]:
+                - img [ref=e13]
+                - generic [ref=e15]: NexExam
+            - list [ref=e18]:
+                - listitem [ref=e19]:
+                    - link "Student Dashboard" [ref=e20] [cursor=pointer]:
+                        - /url: /student
+                        - img [ref=e21]
+                        - generic [ref=e24]: Student Dashboard
+                - listitem [ref=e25]:
+                    - link "Courses" [ref=e26] [cursor=pointer]:
+                        - /url: /course
+                        - img [ref=e27]
+                        - generic [ref=e30]: Courses
+                - listitem [ref=e31]:
+                    - link "Creator Dashboard" [ref=e32] [cursor=pointer]:
+                        - /url: /creator
+                        - img [ref=e33]
+                        - generic [ref=e36]: Creator Dashboard
+                - listitem [ref=e37]:
+                    - link "Creator Application" [ref=e38] [cursor=pointer]:
+                        - /url: /creator-application
+                        - img [ref=e39]
+                        - generic [ref=e42]: Creator Application
+            - generic [ref=e44]:
+                - list [ref=e45]:
+                    - listitem [ref=e46]:
+                        - link "Notifications" [ref=e47] [cursor=pointer]:
+                            - /url: /notification
+                            - img [ref=e49]
+                            - generic [ref=e52]: Notifications
+                - list [ref=e53]:
+                    - listitem [ref=e54]:
+                        - button "Language" [ref=e55] [cursor=pointer]:
+                            - img [ref=e56]
+                            - generic [ref=e60]: Language
+                - list [ref=e61]:
+                    - listitem [ref=e62]:
+                        - button "Theme" [ref=e63] [cursor=pointer]:
+                            - img [ref=e64]
+                            - generic [ref=e70]: Theme
+                - list [ref=e71]:
+                    - listitem [ref=e72]:
+                        - button "MB Michael Belenkiy mbelenkiy29@gmail.com" [ref=e73] [cursor=pointer]:
+                            - generic [ref=e75]: MB
+                            - generic [ref=e76]:
+                                - generic [ref=e77]: Michael Belenkiy
+                                - generic [ref=e78]: mbelenkiy29@gmail.com
+                            - img [ref=e79]
+            - button "Toggle Sidebar" [ref=e82]
+        - main [ref=e83]:
+            - generic [ref=e85]:
+                - generic [ref=e86]:
+                    - generic [ref=e87]: Search learning content
+                    - img
+                    - searchbox "Search learning content" [ref=e88]
+                - button "Notifications" [ref=e89] [cursor=pointer]:
+                    - img [ref=e90]
+                - generic [ref=e94]:
+                    - generic [ref=e96]: MB
+                    - generic [ref=e97]:
+                        - generic [ref=e98]: Michael Belenkiy
+                        - generic [ref=e99]: Creator Teacher
+                    - img [ref=e100]
+            - main [ref=e102]:
+                - generic [ref=e103]:
+                    - generic [ref=e105]:
+                        - generic [ref=e106]:
+                            - paragraph [ref=e107]: Welcome back, Michael
+                            - heading "Build your creator teaching path" [level=1] [ref=e108]
+                            - paragraph [ref=e109]: Apply for verification, track review status, and prepare courses for the NexExam learning catalog.
+                            - generic [ref=e110]:
+                                - button "Start application" [ref=e111] [cursor=pointer]:
+                                    - img
+                                    - text: Start application
+                                - button "Student Dashboard" [ref=e112] [cursor=pointer]:
+                                    - img
+                                    - text: Student Dashboard
+                        - generic [ref=e114]:
+                            - generic [ref=e115]:
+                                - img [ref=e117]
+                                - heading "Verification status" [level=2] [ref=e121]
+                            - generic [ref=e123]:
+                                - status "Loading" [ref=e124]
+                                - text: Loading
+                    - generic [ref=e126]:
+                        - generic [ref=e128]:
+                            - img [ref=e130]
+                            - heading "Course workspace" [level=2] [ref=e133]
+                            - paragraph [ref=e134]: Creator course building is separated from student learning. Self-serve publishing opens after verification workflows are stable.
+                        - generic [ref=e136]:
+                            - img [ref=e138]
+                            - heading "Admin review" [level=2] [ref=e141]
+                            - paragraph [ref=e142]: NexExam super admins review applications, course quality, enrollments, and payouts from the admin dashboard.
+                        - generic [ref=e144]:
+                            - img [ref=e146]
+                            - heading "Phase 1 boundary" [level=2] [ref=e148]
+                            - paragraph [ref=e149]: Drag-and-drop course creation and automated revenue splits stay deferred while the enrollment loop ships.
+    - region "Notifications alt+T"

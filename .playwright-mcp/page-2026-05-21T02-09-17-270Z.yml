@@ -1,0 +1,203 @@
+- generic [ref=e2]:
+    - generic [ref=e5]:
+        - generic [ref=e8]:
+            - generic [ref=e11]:
+                - img [ref=e13]
+                - generic [ref=e15]: NexExam
+            - list [ref=e18]:
+                - listitem [ref=e19]:
+                    - link "Dashboard" [ref=e20] [cursor=pointer]:
+                        - /url: /
+                        - img [ref=e21]
+                        - generic [ref=e24]: Dashboard
+                - listitem [ref=e25]:
+                    - link "Courses" [ref=e26] [cursor=pointer]:
+                        - /url: /course
+                        - img [ref=e27]
+                        - generic [ref=e30]: Courses
+                - listitem [ref=e31]:
+                    - link "Creator Application" [ref=e32] [cursor=pointer]:
+                        - /url: /creator-application
+                        - img [ref=e33]
+                        - generic [ref=e36]: Creator Application
+                - listitem [ref=e37]:
+                    - link "Users" [ref=e38] [cursor=pointer]:
+                        - /url: /member?invitationFilter=%7B%22statuses%22%3A%5B%22pending%22%5D%7D
+                        - img [ref=e39]
+                        - generic [ref=e44]: Users
+                    - link "New" [ref=e45] [cursor=pointer]:
+                        - /url: /member/new
+                        - img [ref=e46]
+                        - generic [ref=e47]: New
+                - listitem [ref=e48]:
+                    - link "Exams" [ref=e49] [cursor=pointer]:
+                        - /url: /exam
+                        - img [ref=e50]
+                        - generic [ref=e53]: Exams
+                    - link "New" [ref=e54] [cursor=pointer]:
+                        - /url: /exam/new
+                        - img [ref=e55]
+                        - generic [ref=e56]: New
+                - listitem [ref=e57]:
+                    - link "Chapters" [ref=e58] [cursor=pointer]:
+                        - /url: /chapter
+                        - img [ref=e59]
+                        - generic [ref=e61]: Chapters
+                    - link "New" [ref=e62] [cursor=pointer]:
+                        - /url: /chapter/new
+                        - img [ref=e63]
+                        - generic [ref=e64]: New
+                - listitem [ref=e65]:
+                    - link "Lessons" [ref=e66] [cursor=pointer]:
+                        - /url: /lesson
+                        - img [ref=e67]
+                        - generic [ref=e69]: Lessons
+                    - link "New" [ref=e70] [cursor=pointer]:
+                        - /url: /lesson/new
+                        - img [ref=e71]
+                        - generic [ref=e72]: New
+                - listitem [ref=e73]:
+                    - link "Practice Questions" [ref=e74] [cursor=pointer]:
+                        - /url: /practice-question
+                        - img [ref=e75]
+                        - generic [ref=e78]: Practice Questions
+                    - link "New" [ref=e79] [cursor=pointer]:
+                        - /url: /practice-question/new
+                        - img [ref=e80]
+                        - generic [ref=e81]: New
+                - listitem [ref=e82]:
+                    - link "Concepts" [ref=e83] [cursor=pointer]:
+                        - /url: /concept
+                        - img [ref=e84]
+                        - generic [ref=e94]: Concepts
+                    - link "New" [ref=e95] [cursor=pointer]:
+                        - /url: /concept/new
+                        - img [ref=e96]
+                        - generic [ref=e97]: New
+                - listitem [ref=e98]:
+                    - link "Exam Types" [ref=e99] [cursor=pointer]:
+                        - /url: /exam-type
+                        - img [ref=e100]
+                        - generic [ref=e103]: Exam Types
+                    - link "New" [ref=e104] [cursor=pointer]:
+                        - /url: /exam-type/new
+                        - img [ref=e105]
+                        - generic [ref=e106]: New
+                    - list [ref=e107]:
+                        - listitem [ref=e108]:
+                            - link "Exam Attempts" [ref=e109] [cursor=pointer]:
+                                - /url: /exam-instance
+                                - img [ref=e110]
+                                - generic [ref=e114]: Exam Attempts
+                            - link "New" [ref=e115] [cursor=pointer]:
+                                - /url: /exam-instance/new
+                                - img [ref=e116]
+                                - generic [ref=e117]: New
+                - listitem [ref=e118]:
+                    - link "Daily Goals" [ref=e119] [cursor=pointer]:
+                        - /url: /daily-goal
+                        - img [ref=e120]
+                        - generic [ref=e124]: Daily Goals
+                    - link "New" [ref=e125] [cursor=pointer]:
+                        - /url: /daily-goal/new
+                        - img [ref=e126]
+                        - generic [ref=e127]: New
+                - listitem [ref=e128]:
+                    - link "Study Notes" [ref=e129] [cursor=pointer]:
+                        - /url: /study-note
+                        - img [ref=e130]
+                        - generic [ref=e133]: Study Notes
+                    - link "New" [ref=e134] [cursor=pointer]:
+                        - /url: /study-note/new
+                        - img [ref=e135]
+                        - generic [ref=e136]: New
+                - listitem [ref=e137]:
+                    - link "Document Uploads" [ref=e138] [cursor=pointer]:
+                        - /url: /document-upload
+                        - img [ref=e139]
+                        - generic [ref=e142]: Document Uploads
+                    - link "New" [ref=e143] [cursor=pointer]:
+                        - /url: /document-upload/new
+                        - img [ref=e144]
+                        - generic [ref=e145]: New
+            - generic [ref=e147]:
+                - list [ref=e148]:
+                    - listitem [ref=e149]:
+                        - link "Notifications" [ref=e150] [cursor=pointer]:
+                            - /url: /notification
+                            - img [ref=e152]
+                            - generic [ref=e155]: Notifications
+                - list [ref=e156]:
+                    - listitem [ref=e157]:
+                        - link "Audit Logs" [ref=e158] [cursor=pointer]:
+                            - /url: /audit-log
+                            - img [ref=e159]
+                            - generic [ref=e163]: Audit Logs
+                - list [ref=e164]:
+                    - listitem [ref=e165]:
+                        - button "Language" [ref=e166] [cursor=pointer]:
+                            - img [ref=e167]
+                            - generic [ref=e171]: Language
+                - list [ref=e172]:
+                    - listitem [ref=e173]:
+                        - button "Theme" [ref=e174] [cursor=pointer]:
+                            - img [ref=e175]
+                            - generic [ref=e181]: Theme
+                - list [ref=e182]:
+                    - listitem [ref=e183]:
+                        - button "MB Michael Belenkiy mbelenkiy29@gmail.com" [ref=e184] [cursor=pointer]:
+                            - generic [ref=e186]: MB
+                            - generic [ref=e187]:
+                                - generic [ref=e188]: Michael Belenkiy
+                                - generic [ref=e189]: mbelenkiy29@gmail.com
+                            - img [ref=e190]
+            - button "Toggle Sidebar" [ref=e193]
+        - main [ref=e194]:
+            - generic [ref=e196]:
+                - generic [ref=e197]:
+                    - generic [ref=e198]: Search learning content
+                    - img
+                    - searchbox "Search learning content" [ref=e199]
+                - button "Notifications" [ref=e200] [cursor=pointer]:
+                    - img [ref=e201]
+                - generic [ref=e205]:
+                    - generic [ref=e207]: MB
+                    - generic [ref=e208]:
+                        - generic [ref=e209]: Michael Belenkiy
+                        - generic [ref=e210]: Learner
+                    - img [ref=e211]
+            - main [ref=e213]:
+                - generic [ref=e214]:
+                    - generic [ref=e215]:
+                        - button "Toggle Sidebar" [ref=e216] [cursor=pointer]:
+                            - img
+                            - generic [ref=e217]: Toggle Sidebar
+                        - separator [ref=e218]
+                        - navigation "breadcrumb" [ref=e219]:
+                            - list [ref=e220]:
+                                - listitem [ref=e222]:
+                                    - link "Course Catalog" [disabled] [ref=e223]
+                    - generic [ref=e225]:
+                        - generic [ref=e226]:
+                            - generic [ref=e227]:
+                                - img
+                                - text: Courses
+                            - heading "Course Catalog" [level=1] [ref=e228]
+                            - paragraph [ref=e229]: Published courses will appear here when they are ready.
+                            - generic [ref=e230]:
+                                - generic [ref=e231]:
+                                    - generic [ref=e232]: Search
+                                    - img
+                                    - textbox "Search" [ref=e233]:
+                                        - /placeholder: Search...
+                                - generic [ref=e234]:
+                                    - generic [ref=e235]: Category
+                                    - img
+                                    - combobox "Category" [ref=e236] [cursor=pointer]:
+                                        - option "All" [selected]
+                        - generic [ref=e238]:
+                            - img [ref=e240]
+                            - generic [ref=e243]:
+                                - generic [ref=e244]: Enrolled
+                                - generic [ref=e245]: '0'
+    - region "Notifications alt+T"

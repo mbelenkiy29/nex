@@ -1,0 +1,35 @@
+# Custom PostgreSQL Configuration
+# This file is placed in conf.d/ and overrides main postgresql.conf settings
+
+# Connection Settings
+max_connections = 200
+shared_buffers = 256MB
+
+# Performance
+effective_cache_size = 1GB
+maintenance_work_mem = 64MB
+work_mem = 4MB
+
+# Write Ahead Log
+wal_buffers = 16MB
+min_wal_size = 1GB
+max_wal_size = 4GB
+
+# Query Planner
+random_page_cost = 1.1
+effective_io_concurrency = 200
+
+# Logging
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_timezone = 'UTC'
+log_statement = 'none'
+log_min_duration_statement = 1000
+
+# Locale
+datestyle = 'iso, mdy'
+timezone = 'UTC'
+lc_messages = 'en_US.UTF-8'
+lc_monetary = 'en_US.UTF-8'
+lc_numeric = 'en_US.UTF-8'
+lc_time = 'en_US.UTF-8'
+default_text_search_config = 'pg_catalog.english'

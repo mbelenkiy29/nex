@@ -1,0 +1,177 @@
+---
+# =============================================================================
+# Rollback Playbook - Switch to previous deployment
+# =============================================================================
+
+- name: Rollback Deployment
+  hosts: project
+  become: no
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/secrets.yml
+
+  tasks:
+    # Phase 1: Determine current and target colors
+    # ===========================================================================
+
+    - name: Read current active color from file
+      slurp:
+        src: '{{ app_dir }}/active_color'
+      register: current_color_file
+      ignore_errors: yes
+
+    - name: Set current active color (from file)
+      set_fact:
+        current_active_color: '{{ (current_color_file.content | b64decode).strip() }}'
+      when: current_color_file is succeeded
+
+    - name: Fail if no active color found
+      fail:
+        msg: 'Cannot rollback: No active color found. Please run initial deployment first.'
+      when: current_color_file is failed
+
+    - name: Determine rollback target color
+      set_fact:
+        target_color: "{{ 'green' if current_active_color == 'blue' else 'blue' }}"
+
+    - name: Display rollback information
+      debug:
+        msg:
+          - '=========================================='
+          - 'ROLLBACK DEPLOYMENT'
+          - '=========================================='
+          - 'Current active color: {{ current_active_color }}'
+          - 'Rolling back to: {{ target_color }}'
+          - '=========================================='
+
+    - name: Prompt for confirmation
+      pause:
+        prompt: 'Are you sure you want to rollback from {{ current_active_color }} to {{ target_color }}? Press Enter to continue or Ctrl+C to abort'
+
+    # Phase 2: Verify target deployment exists
+    # ===========================================================================
+
+    - name: Check if target deployment directory exists
+      stat:
+        path: '{{ app_dir }}/{{ target_color }}'
+      register: target_dir
+
+    - name: Fail if target deployment doesn't exist
+      fail:
+        msg: 'Cannot rollback: {{ target_color }} deployment directory not found at {{ app_dir }}/{{ target_color }}'
+      when: not target_dir.stat.exists
+
+    # Phase 3: Ensure target services are configured
+    # ===========================================================================
+
+    - name: Check if target backend service exists
+      stat:
+        path: /etc/systemd/system/backend-{{ target_color }}.service
+      register: target_backend_service
+
+    - name: Fail if target backend service not configured
+      fail:
+        msg: 'Cannot rollback: Backend service for {{ target_color }} is not configured'
+      when: not target_backend_service.stat.exists
+
+    # Phase 4: Start target color services
+    # ===========================================================================
+
+    - name: Start backend service ({{ target_color }})
+      systemd:
+        name: backend-{{ target_color }}
+        state: started
+        enabled: yes
+
+    - name: Start worker service ({{ target_color }})
+      systemd:
+        name: worker-{{ target_color }}
+        state: started
+        enabled: yes
+      when: worker_enabled
+
+    # Phase 5: Health checks
+    # ===========================================================================
+
+    - name: Wait for backend to be ready
+      uri:
+        url: 'http://localhost:{{ blue_backend_port if target_color == "blue" else green_backend_port }}/api/health'
+        method: GET
+        status_code: 200
+      register: health_check
+      retries: '{{ health_check_retries }}'
+      delay: '{{ health_check_delay }}'
+      until: health_check.status == 200
+
+    - name: Verify frontend static files exist
+      stat:
+        path: '{{ app_dir }}/{{ target_color }}/frontend/index.html'
+      register: frontend_check
+      failed_when: not frontend_check.stat.exists
+
+    # Phase 6: Switch traffic
+    # ===========================================================================
+
+    - name: Save new active color to file
+      copy:
+        content: '{{ target_color }}'
+        dest: '{{ app_dir }}/active_color'
+        mode: '0644'
+
+    - name: Update Caddy configuration with rollback color
+      template:
+        src: roles/caddy/templates/Caddyfile.j2
+        dest: /etc/caddy/Caddyfile
+        mode: '0644'
+      vars:
+        active_color: '{{ target_color }}'
+
+    - name: Reload Caddy (zero downtime)
+      systemd:
+        name: caddy
+        state: reloaded
+
+    - name: Display traffic switch message
+      debug:
+        msg: 'Traffic switched to {{ target_color }} deployment (ROLLBACK)'
+
+    # Phase 7: Connection draining
+    # ===========================================================================
+
+    - name: Wait for connection draining
+      pause:
+        seconds: '{{ connection_drain_time }}'
+        prompt: 'Waiting {{ connection_drain_time }} seconds for connection draining...'
+
+    # Phase 8: Stop old services
+    # ===========================================================================
+
+    - name: Stop old backend service ({{ current_active_color }})
+      systemd:
+        name: backend-{{ current_active_color }}
+        state: stopped
+
+    - name: Stop old worker service ({{ current_active_color }})
+      systemd:
+        name: worker-{{ current_active_color }}
+        state: stopped
+      when: worker_enabled
+
+    # Phase 9: Display success message
+    # ===========================================================================
+
+    - name: Display rollback success message
+      debug:
+        msg:
+          - '==================================================='
+          - 'ROLLBACK COMPLETED SUCCESSFULLY!'
+          - '==================================================='
+          - 'Active deployment: {{ target_color }}'
+          - 'Previous deployment: {{ current_active_color }} (stopped)'
+          - '==================================================='
+          - ''
+          - 'The application has been rolled back to the previous version.'
+          - 'Monitor logs to ensure everything is working correctly:'
+          - '  - Backend: journalctl -u backend-{{ target_color }} -f'
+          - '  - Worker: journalctl -u worker-{{ target_color }} -f'
+          - '  - Caddy: journalctl -u caddy -f'

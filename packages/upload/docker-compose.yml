@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: project-minio
+    ports:
+      - '9000:9000' # API port
+      - '9001:9001' # Console port
+    environment:
+      MINIO_ROOT_USER: app_user
+      MINIO_ROOT_PASSWORD: app_password123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Client - Creates buckets on startup
+  minio-setup:
+    image: minio/mc:latest
+    container_name: project-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 app_user app_password123;
+      /usr/bin/mc mb myminio/project-public --ignore-existing;
+      /usr/bin/mc mb myminio/project-private --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/project-public;
+      /usr/bin/mc admin user add myminio app_user app_password123;
+      /usr/bin/mc admin policy attach myminio readwrite --user app_user;
+      echo 'MinIO setup completed successfully';
+      exit 0;
+      "
+
+volumes:
+  minio_data:
+    driver: local

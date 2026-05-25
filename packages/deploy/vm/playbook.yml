@@ -1,0 +1,84 @@
+---
+- name: Deploy Application
+  hosts: project
+  become: no # Already root user
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/secrets.yml
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+
+    - name: Install essential packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+          - ufw
+        state: present
+      when: ansible_os_family == "Debian"
+
+  roles:
+    - common
+    - role: postgres
+      when: postgres_enabled | default(true)
+    - redis
+    - role: minio
+      when: minio_enabled | default(true)
+    - nodejs
+    - caddy
+    - app
+
+  post_tasks:
+    - name: Ensure PostgreSQL is running
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+      when: postgres_enabled | default(true)
+
+    - name: Ensure Redis is running
+      systemd:
+        name: redis-server
+        state: started
+        enabled: yes
+
+    - name: Ensure MinIO is running
+      systemd:
+        name: minio
+        state: started
+        enabled: yes
+      when: minio_enabled | default(true)
+
+    - name: Ensure Caddy is running
+      systemd:
+        name: caddy
+        state: started
+        enabled: yes
+
+    - name: Ensure active deployment services are running
+      systemd:
+        name: '{{ item }}'
+        state: started
+        enabled: yes
+      loop:
+        - backend-{{ target_color }}
+        - worker-{{ target_color }}
+
+    - name: Check application health
+      uri:
+        url: 'http://localhost:{{ blue_backend_port if target_color == "blue" else green_backend_port }}/api/health'
+        method: GET
+        status_code: 200
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200

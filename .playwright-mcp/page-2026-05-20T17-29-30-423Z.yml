@@ -1,0 +1,269 @@
+- generic [ref=e2]:
+    - generic [ref=e5]:
+        - generic [ref=e8]:
+            - generic [ref=e11]:
+                - img [ref=e13]
+                - generic [ref=e15]: NexExam
+            - list [ref=e18]:
+                - listitem [ref=e19]:
+                    - link "Dashboard" [ref=e20] [cursor=pointer]:
+                        - /url: /
+                        - img [ref=e21]
+                        - generic [ref=e24]: Dashboard
+                - listitem [ref=e25]:
+                    - link "Users" [ref=e26] [cursor=pointer]:
+                        - /url: /member?invitationFilter=%7B%22statuses%22%3A%5B%22pending%22%5D%7D
+                        - img [ref=e27]
+                        - generic [ref=e32]: Users
+                    - link "New" [ref=e33] [cursor=pointer]:
+                        - /url: /member/new
+                        - img [ref=e34]
+                        - generic [ref=e35]: New
+                - listitem [ref=e36]:
+                    - link "Exams" [ref=e37] [cursor=pointer]:
+                        - /url: /exam
+                        - img [ref=e38]
+                        - generic [ref=e41]: Exams
+                    - link "New" [ref=e42] [cursor=pointer]:
+                        - /url: /exam/new
+                        - img [ref=e43]
+                        - generic [ref=e44]: New
+                - listitem [ref=e45]:
+                    - link "Chapters" [ref=e46] [cursor=pointer]:
+                        - /url: /chapter
+                        - img [ref=e47]
+                        - generic [ref=e49]: Chapters
+                    - link "New" [ref=e50] [cursor=pointer]:
+                        - /url: /chapter/new
+                        - img [ref=e51]
+                        - generic [ref=e52]: New
+                - listitem [ref=e53]:
+                    - link "Lessons" [ref=e54] [cursor=pointer]:
+                        - /url: /lesson
+                        - img [ref=e55]
+                        - generic [ref=e57]: Lessons
+                    - link "New" [ref=e58] [cursor=pointer]:
+                        - /url: /lesson/new
+                        - img [ref=e59]
+                        - generic [ref=e60]: New
+                - listitem [ref=e61]:
+                    - link "Practice Questions" [ref=e62] [cursor=pointer]:
+                        - /url: /practice-question
+                        - img [ref=e63]
+                        - generic [ref=e66]: Practice Questions
+                    - link "New" [ref=e67] [cursor=pointer]:
+                        - /url: /practice-question/new
+                        - img [ref=e68]
+                        - generic [ref=e69]: New
+                - listitem [ref=e70]:
+                    - link "Concepts" [ref=e71] [cursor=pointer]:
+                        - /url: /concept
+                        - img [ref=e72]
+                        - generic [ref=e82]: Concepts
+                    - link "New" [ref=e83] [cursor=pointer]:
+                        - /url: /concept/new
+                        - img [ref=e84]
+                        - generic [ref=e85]: New
+                - listitem [ref=e86]:
+                    - link "Exam Types" [ref=e87] [cursor=pointer]:
+                        - /url: /exam-type
+                        - img [ref=e88]
+                        - generic [ref=e91]: Exam Types
+                    - link "New" [ref=e92] [cursor=pointer]:
+                        - /url: /exam-type/new
+                        - img [ref=e93]
+                        - generic [ref=e94]: New
+                - listitem [ref=e95]:
+                    - link "Exam Attempts" [ref=e96] [cursor=pointer]:
+                        - /url: /exam-instance
+                        - img [ref=e97]
+                        - generic [ref=e101]: Exam Attempts
+                    - link "New" [ref=e102] [cursor=pointer]:
+                        - /url: /exam-instance/new
+                        - img [ref=e103]
+                        - generic [ref=e104]: New
+                - listitem [ref=e105]:
+                    - link "Daily Goals" [ref=e106] [cursor=pointer]:
+                        - /url: /daily-goal
+                        - img [ref=e107]
+                        - generic [ref=e111]: Daily Goals
+                    - link "New" [ref=e112] [cursor=pointer]:
+                        - /url: /daily-goal/new
+                        - img [ref=e113]
+                        - generic [ref=e114]: New
+                - listitem [ref=e115]:
+                    - link "Study Notes" [ref=e116] [cursor=pointer]:
+                        - /url: /study-note
+                        - img [ref=e117]
+                        - generic [ref=e120]: Study Notes
+                    - link "New" [ref=e121] [cursor=pointer]:
+                        - /url: /study-note/new
+                        - img [ref=e122]
+                        - generic [ref=e123]: New
+                - listitem [ref=e124]:
+                    - link "Document Uploads" [ref=e125] [cursor=pointer]:
+                        - /url: /document-upload
+                        - img [ref=e126]
+                        - generic [ref=e129]: Document Uploads
+                    - link "New" [ref=e130] [cursor=pointer]:
+                        - /url: /document-upload/new
+                        - img [ref=e131]
+                        - generic [ref=e132]: New
+            - generic [ref=e134]:
+                - list [ref=e135]:
+                    - listitem [ref=e136]:
+                        - link "Notifications" [ref=e137] [cursor=pointer]:
+                            - /url: /notification
+                            - img [ref=e139]
+                            - generic [ref=e142]: Notifications
+                - list [ref=e143]:
+                    - listitem [ref=e144]:
+                        - link "Audit Logs" [ref=e145] [cursor=pointer]:
+                            - /url: /audit-log
+                            - img [ref=e146]
+                            - generic [ref=e150]: Audit Logs
+                - list [ref=e151]:
+                    - listitem [ref=e152]:
+                        - button "Language" [ref=e153] [cursor=pointer]:
+                            - img [ref=e154]
+                            - generic [ref=e158]: Language
+                - list [ref=e159]:
+                    - listitem [ref=e160]:
+                        - button "Theme" [ref=e161] [cursor=pointer]:
+                            - img [ref=e162]
+                            - generic [ref=e168]: Theme
+                - list [ref=e169]:
+                    - listitem [ref=e170]:
+                        - button "MB Michael Belenkiy mbelenkiy29@gmail.com" [ref=e171] [cursor=pointer]:
+                            - generic [ref=e173]: MB
+                            - generic [ref=e174]:
+                                - generic [ref=e175]: Michael Belenkiy
+                                - generic [ref=e176]: mbelenkiy29@gmail.com
+                            - img [ref=e177]
+            - button "Toggle Sidebar" [ref=e180]
+        - main [ref=e181]:
+            - generic [ref=e183]:
+                - generic [ref=e184]:
+                    - generic [ref=e185]: Search learning content
+                    - img
+                    - searchbox "Search learning content" [ref=e186]
+                - button "Notifications" [ref=e187] [cursor=pointer]:
+                    - img [ref=e188]
+                - generic [ref=e192]:
+                    - generic [ref=e194]: MB
+                    - generic [ref=e195]:
+                        - generic [ref=e196]: Michael Belenkiy
+                        - generic [ref=e197]: Learner
+                    - img [ref=e198]
+            - main [ref=e200]:
+                - generic [ref=e201]:
+                    - generic [ref=e202]:
+                        - generic [ref=e204]:
+                            - generic [ref=e205]:
+                                - paragraph [ref=e206]: Welcome back, Michael
+                                - heading "Continue your learning journey with AI" [level=1] [ref=e207]
+                                - paragraph [ref=e208]: Personalized learning. Smarter every day.
+                                - generic [ref=e209]:
+                                    - button "Continue Learning" [ref=e210] [cursor=pointer]:
+                                        - img
+                                        - text: Continue Learning
+                                    - button "Ask AI Tutor" [ref=e211] [cursor=pointer]:
+                                        - img
+                                        - text: Ask AI Tutor
+                            - img [ref=e219]
+                        - generic [ref=e224]:
+                            - generic [ref=e225]:
+                                - generic [ref=e226]:
+                                    - img [ref=e228]
+                                    - heading "AI Tutor" [level=2] [ref=e231]
+                                - generic [ref=e232]: Online
+                            - img [ref=e236]
+                            - generic [ref=e238]:
+                                - heading "Hi! I'm your AI tutor." [level=3] [ref=e239]
+                                - paragraph [ref=e240]: How can I help you today?
+                            - generic [ref=e241]:
+                                - button "Explain a concept" [ref=e242] [cursor=pointer]:
+                                    - img [ref=e243]
+                                    - text: Explain a concept
+                                - button "Quiz me on this topic" [ref=e245] [cursor=pointer]:
+                                    - img [ref=e246]
+                                    - text: Quiz me on this topic
+                                - button "Recommend resources" [ref=e248] [cursor=pointer]:
+                                    - img [ref=e249]
+                                    - text: Recommend resources
+                    - generic [ref=e251]:
+                        - generic [ref=e252]:
+                            - generic [ref=e253]:
+                                - heading "Continue Learning" [level=2] [ref=e254]
+                                - link "View all courses" [ref=e255] [cursor=pointer]:
+                                    - /url: /lesson
+                                    - text: View all courses
+                                    - img [ref=e256]
+                            - generic [ref=e258]:
+                                - generic [ref=e259]:
+                                    - generic [ref=e262]: 65%
+                                    - generic [ref=e263]:
+                                        - heading "Introduction to Artificial Intelligence" [level=3] [ref=e264]
+                                        - paragraph [ref=e265]: Module 4 • Machine Learning Basics
+                                        - generic [ref=e269]: 65%
+                                - generic [ref=e270]:
+                                    - generic [ref=e273]: 40%
+                                    - generic [ref=e274]:
+                                        - heading "Data Structures and Algorithms" [level=3] [ref=e275]
+                                        - paragraph [ref=e276]: Module 3 • Trees and Graphs
+                                        - generic [ref=e280]: 40%
+                                - generic [ref=e281]:
+                                    - generic [ref=e284]: 20%
+                                    - generic [ref=e285]:
+                                        - heading "UI/UX Design Fundamentals" [level=3] [ref=e286]
+                                        - paragraph [ref=e287]: Module 2 • Design Principles
+                                        - generic [ref=e291]: 20%
+                            - generic [ref=e292]:
+                                - heading "Recommended for You" [level=2] [ref=e293]
+                                - link "View all" [ref=e294] [cursor=pointer]:
+                                    - /url: /concept
+                                    - text: View all
+                                    - img [ref=e295]
+                            - generic [ref=e297]:
+                                - generic [ref=e299]:
+                                    - img [ref=e301]
+                                    - generic [ref=e311]:
+                                        - heading "Deep Learning Fundamentals" [level=3] [ref=e312]
+                                        - paragraph [ref=e313]: Course • Intermediate
+                                        - paragraph [ref=e314]:
+                                            - img [ref=e315]
+                                            - text: 4.8 (320)
+                                - generic [ref=e318]:
+                                    - img [ref=e320]
+                                    - generic [ref=e324]:
+                                        - heading "SQL for Data Analysis" [level=3] [ref=e325]
+                                        - paragraph [ref=e326]: Course • Beginner
+                                        - paragraph [ref=e327]:
+                                            - img [ref=e328]
+                                            - text: 4.7 (210)
+                                - generic [ref=e331]:
+                                    - img [ref=e333]
+                                    - generic [ref=e336]:
+                                        - heading "Python Programming Masterclass" [level=3] [ref=e337]
+                                        - paragraph [ref=e338]: Course • Beginner
+                                        - paragraph [ref=e339]:
+                                            - img [ref=e340]
+                                            - text: 4.9 (421)
+                        - generic [ref=e343]:
+                            - generic [ref=e344]:
+                                - heading "Learning Progress" [level=2] [ref=e345]
+                                - generic [ref=e346]: This Week
+                            - generic [ref=e347]:
+                                - generic [ref=e348]:
+                                    - generic [ref=e349]: 12h 45m
+                                    - paragraph [ref=e350]: Total Study Time
+                                - generic [ref=e351]: +24%
+                            - generic [ref=e352]:
+                                - generic [ref=e356]: Mon
+                                - generic [ref=e360]: Tue
+                                - generic [ref=e364]: Wed
+                                - generic [ref=e368]: Thu
+                                - generic [ref=e372]: Fri
+                                - generic [ref=e376]: Sat
+                                - generic [ref=e380]: Sun
+    - region "Notifications alt+T"

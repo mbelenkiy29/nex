@@ -1,0 +1,62 @@
+- generic [ref=e2]:
+    - generic [ref=e5]:
+        - generic [ref=e6]:
+            - button [ref=e7] [cursor=pointer]:
+                - img
+            - button "Theme" [ref=e8] [cursor=pointer]:
+                - img
+                - generic [ref=e9]: Theme
+        - generic [ref=e11]:
+            - generic [ref=e12]:
+                - link "NexExam" [ref=e13] [cursor=pointer]:
+                    - /url: /
+                    - generic [ref=e14]:
+                        - img [ref=e16]
+                        - generic [ref=e18]: NexExam
+                - generic [ref=e19]:
+                    - heading "Continue your learning journey with AI" [level=1] [ref=e20]
+                    - paragraph [ref=e21]: Personalized learning. Smarter every day.
+                - img [ref=e29]
+                - generic [ref=e33]:
+                    - generic [ref=e34]:
+                        - img [ref=e36]
+                        - strong [ref=e38]: AI Tutor
+                        - generic [ref=e39]: Explain a concept
+                    - generic [ref=e40]:
+                        - img [ref=e42]
+                        - strong [ref=e44]: Continue Learning
+                        - generic [ref=e45]: Recommend resources
+                    - generic [ref=e46]:
+                        - img [ref=e48]
+                        - strong [ref=e49]: Learning Progress
+                        - generic [ref=e50]: Total Study Time
+            - generic [ref=e52]:
+                - generic [ref=e54]:
+                    - generic [ref=e55]: Sign In
+                    - link "Student Sign Up" [ref=e56] [cursor=pointer]:
+                        - /url: /auth/student-sign-up
+                    - link "Creator Sign Up" [ref=e57] [cursor=pointer]:
+                        - /url: /auth/creator-sign-up
+                - heading "Sign In" [level=2] [ref=e58]
+                - generic [ref=e60]:
+                    - generic [ref=e62]:
+                        - group [ref=e63]:
+                            - generic [ref=e64]: Email
+                            - textbox "Email" [active] [ref=e65]
+                        - group [ref=e66]:
+                            - generic [ref=e67]:
+                                - generic [ref=e68]: Password
+                                - link "Forgot Password?" [ref=e69] [cursor=pointer]:
+                                    - /url: /auth/password-reset/request
+                            - textbox "Password" [ref=e70]
+                        - button "Sign In with Email" [ref=e71] [cursor=pointer]
+                    - generic [ref=e76]: Or continue with
+                    - button "Google" [ref=e78] [cursor=pointer]:
+                        - img
+                        - text: Google
+                - generic [ref=e79]:
+                    - link "Need a student account? Sign up as a student" [ref=e80] [cursor=pointer]:
+                        - /url: /auth/student-sign-up
+                    - link "Want to teach? Sign up as a creator" [ref=e81] [cursor=pointer]:
+                        - /url: /auth/creator-sign-up
+    - region "Notifications alt+T"

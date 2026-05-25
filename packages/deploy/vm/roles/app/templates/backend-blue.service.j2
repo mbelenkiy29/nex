@@ -1,0 +1,41 @@
+[Unit]
+Description=Backend API (Blue)
+After=network.target redis-server.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_dir }}/blue/packages/backend
+ExecStart=/usr/bin/node dist/server.js
+ExecStop=/bin/kill -SIGTERM $MAINPID
+TimeoutStopSec=30
+Restart=always
+RestartSec=10
+
+# Environment
+EnvironmentFile={{ app_dir }}/blue/.env
+Environment="NODE_ENV=production"
+Environment="PORT={{ blue_backend_port }}"
+Environment="DEPLOYMENT_COLOR=blue"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=backend-blue
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE={{ max_open_files }}
+LimitNPROC={{ max_user_processes }}
+
+# Memory limits (adjust as needed)
+MemoryMax=2G
+MemoryHigh=1500M
+
+[Install]
+WantedBy=multi-user.target

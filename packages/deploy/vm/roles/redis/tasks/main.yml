@@ -1,0 +1,50 @@
+---
+- name: Install Redis
+  apt:
+    name: redis-server
+    state: present
+
+- name: Configure Redis
+  template:
+    src: redis.conf.j2
+    dest: /etc/redis/redis.conf
+    owner: redis
+    group: redis
+    mode: '0640'
+  notify: restart redis
+
+- name: Configure Redis systemd service
+  template:
+    src: redis.service.j2
+    dest: /etc/systemd/system/redis.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart redis
+
+- name: Create Redis data directory
+  file:
+    path: /var/lib/redis
+    state: directory
+    owner: redis
+    group: redis
+    mode: '0750'
+
+- name: Set Redis system limits
+  template:
+    src: redis-limits.conf.j2
+    dest: /etc/security/limits.d/redis.conf
+    mode: '0644'
+
+- name: Start and enable Redis
+  systemd:
+    name: redis-server
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for Redis to be ready
+  wait_for:
+    port: '{{ redis_port }}'
+    delay: 2
+    timeout: 30

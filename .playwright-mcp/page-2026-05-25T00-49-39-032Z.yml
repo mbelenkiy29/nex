@@ -1,0 +1,7 @@
+- generic [ref=e2]:
+    - status [ref=e3]:
+        - generic [ref=e4]: Loading
+        - generic [ref=e5]:
+            - complementary [ref=e6]
+            - main [ref=e49]
+    - region "Notifications alt+T"

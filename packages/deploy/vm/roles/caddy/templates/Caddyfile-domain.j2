@@ -1,0 +1,157 @@
+{% if minio_enabled | default(true) %}
+# MinIO S3 API
+{{ minio_domain }} {
+    reverse_proxy localhost:{{ minio_port }} {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+    }
+
+    {% if caddy_staging %}
+    tls {{ caddy_email }} {
+        ca https://acme-staging-v02.api.letsencrypt.org/directory
+    }
+    {% else %}
+    tls {{ caddy_email }}
+    {% endif %}
+}
+
+# MinIO Console
+{{ minio_console_domain }} {
+    reverse_proxy localhost:{{ minio_console_port }} {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+
+        # WebSocket support for MinIO Console
+        header_up Connection {header.Connection}
+        header_up Upgrade {header.Upgrade}
+
+        # Increase timeouts for long-running operations
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+
+    {% if caddy_staging %}
+    tls {{ caddy_email }} {
+        ca https://acme-staging-v02.api.letsencrypt.org/directory
+    }
+    {% else %}
+    tls {{ caddy_email }}
+    {% endif %}
+}
+{% endif %}
+
+# Main application
+{{ domain_name }}, *.{{ domain_name }} {
+    # Better Auth OAuth Discovery (root paths) - Rewrite to /api/auth/.well-known/*
+    # These handle requests from clients that don't parse WWW-Authenticate headers
+    handle /.well-known/oauth-* {
+        rewrite * /api/auth{uri}
+        {% if active_color == 'blue' %}
+        reverse_proxy localhost:{{ blue_backend_port }} localhost:{{ green_backend_port }} {
+        {% else %}
+        reverse_proxy localhost:{{ green_backend_port }} localhost:{{ blue_backend_port }} {
+        {% endif %}
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+
+            # Load balancing
+            lb_policy first
+            lb_try_duration 5s
+        }
+    }
+
+    # Backend API - Handles all /api/* requests including Better Auth endpoints
+    # Dynamic routing based on active color
+    # Includes:
+    # - /api/auth/.well-known/* (Better Auth OAuth discovery)
+    # - /api/subscription/webhook (Stripe webhooks)
+    # - All other API endpoints
+    handle /api/* {
+        {% if active_color == 'blue' %}
+        reverse_proxy localhost:{{ blue_backend_port }} localhost:{{ green_backend_port }} {
+        {% else %}
+        reverse_proxy localhost:{{ green_backend_port }} localhost:{{ blue_backend_port }} {
+        {% endif %}
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Stripe-Signature {header.Stripe-Signature}
+
+            # Health checks
+            health_uri /api/health
+            health_interval 10s
+            health_timeout 5s
+            health_status 2xx
+
+            # Load balancing
+            lb_policy first
+            lb_try_duration 5s
+        }
+    }
+
+    # Frontend static files - Serve from disk
+    handle /* {
+        # Set root directory based on active deployment
+        {% if active_color == 'blue' %}
+        root * {{ app_dir }}/blue/frontend
+        {% else %}
+        root * {{ app_dir }}/green/frontend
+        {% endif %}
+
+        # Try to serve the file, fallback to index.html for SPA routing
+        try_files {path} /index.html
+
+        # Cache static assets aggressively
+        @static_assets {
+            path *.js *.css *.woff *.woff2 *.ttf *.eot *.svg *.png *.jpg *.jpeg *.gif *.ico *.webp *.avif
+        }
+        header @static_assets Cache-Control "public, max-age=31536000, immutable"
+
+        # No caching for HTML
+        @html {
+            path *.html /
+        }
+        header @html Cache-Control "no-cache, must-revalidate"
+
+        # Serve files
+        file_server
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Compression
+    encode gzip
+
+    # Logging
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+
+    # TLS configuration
+    {% if caddy_staging %}
+    tls {{ caddy_email }} {
+        ca https://acme-staging-v02.api.letsencrypt.org/directory
+    }
+    {% else %}
+    tls {{ caddy_email }}
+    {% endif %}
+}
+
+# Health check endpoint (no SSL)
+:8080 {
+    handle /health {
+        respond "OK" 200
+    }
+}

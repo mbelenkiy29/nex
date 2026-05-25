@@ -1,0 +1,94 @@
+---
+- name: Set system timezone
+  timezone:
+    name: UTC
+
+- name: Update system packages
+  apt:
+    upgrade: dist
+
+- name: Install common system packages
+  apt:
+    name:
+      - htop
+      - vim
+      - curl
+      - wget
+      - git
+      - unzip
+      - net-tools
+      - ncdu
+      - iotop
+      - rsync
+      - logrotate
+      - fail2ban
+      - ufw
+    state: present
+
+- name: Configure system limits
+  template:
+    src: limits.conf.j2
+    dest: /etc/security/limits.d/90-project.conf
+    mode: '0644'
+
+- name: Configure sysctl for production
+  sysctl:
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+    state: present
+    sysctl_set: yes
+    reload: yes
+  loop:
+    - { key: 'net.core.somaxconn', value: '65535' }
+    - { key: 'net.ipv4.tcp_max_syn_backlog', value: '8192' }
+    - { key: 'net.ipv4.tcp_syncookies', value: '1' }
+    - { key: 'net.ipv4.tcp_tw_reuse', value: '1' }
+    - { key: 'net.ipv4.ip_local_port_range', value: '1024 65535' }
+    - { key: 'fs.file-max', value: '2097152' }
+    - { key: 'vm.swappiness', value: '10' }
+
+- name: Configure UFW firewall defaults
+  ufw:
+    direction: '{{ item.direction }}'
+    policy: '{{ item.policy }}'
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: Allow SSH through firewall
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow HTTP and HTTPS
+  ufw:
+    rule: allow
+    port: '{{ item }}'
+    proto: tcp
+  loop:
+    - '80'
+    - '443'
+
+- name: Enable UFW firewall
+  ufw:
+    state: enabled
+
+- name: Configure log rotation
+  template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/project
+    mode: '0644'
+
+- name: Setup fail2ban for SSH
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: Start and enable fail2ban
+  systemd:
+    name: fail2ban
+    state: started
+    enabled: yes

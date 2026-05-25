@@ -1,0 +1,148 @@
+---
+# =============================================================================
+# Domain mode: Install Caddy from apt (HTTP-01 challenge)
+# =============================================================================
+- name: Create directory for Caddy GPG key
+  file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+  when: not subdomain_enabled
+
+- name: Download Caddy GPG key
+  get_url:
+    url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+    dest: /usr/share/keyrings/caddy-stable-archive-keyring.asc
+    mode: '0644'
+  when: not subdomain_enabled
+
+- name: Add Caddy repository
+  apt_repository:
+    repo: 'deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.asc] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main'
+    state: present
+    filename: caddy
+  when: not subdomain_enabled
+
+- name: Install Caddy from apt
+  apt:
+    name: caddy
+    state: present
+  when: not subdomain_enabled
+
+# =============================================================================
+# Subdomain mode: Build Caddy with Cloudflare DNS plugin (DNS-01 challenge)
+# =============================================================================
+- name: Download Go
+  get_url:
+    url: https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
+    dest: /tmp/go1.23.4.linux-amd64.tar.gz
+    mode: '0644'
+  when: subdomain_enabled
+
+- name: Remove existing Go installation
+  file:
+    path: /usr/local/go
+    state: absent
+  when: subdomain_enabled
+
+- name: Extract Go
+  unarchive:
+    src: /tmp/go1.23.4.linux-amd64.tar.gz
+    dest: /usr/local
+    remote_src: yes
+  when: subdomain_enabled
+
+- name: Install xcaddy
+  shell: /usr/local/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+  environment:
+    GOPATH: /root/go
+    PATH: '/usr/local/go/bin:{{ ansible_env.PATH }}'
+  when: subdomain_enabled
+
+- name: Check if custom Caddy exists
+  stat:
+    path: /usr/bin/caddy
+  register: caddy_binary
+  when: subdomain_enabled
+
+- name: Build Caddy with Cloudflare DNS plugin
+  shell: /root/go/bin/xcaddy build --with github.com/caddy-dns/cloudflare --output /usr/bin/caddy
+  environment:
+    GOPATH: /root/go
+    PATH: '/usr/local/go/bin:{{ ansible_env.PATH }}'
+  when: subdomain_enabled and (not caddy_binary.stat.exists or caddy_rebuild | default(false))
+
+- name: Set Caddy binary permissions
+  file:
+    path: /usr/bin/caddy
+    mode: '0755'
+    owner: root
+    group: root
+  when: subdomain_enabled
+
+- name: Create caddy user
+  user:
+    name: caddy
+    system: yes
+    home: /var/lib/caddy
+    shell: /usr/sbin/nologin
+  when: subdomain_enabled
+
+- name: Create Caddy systemd service
+  copy:
+    dest: /lib/systemd/system/caddy.service
+    content: |
+      [Unit]
+      Description=Caddy
+      Documentation=https://caddyserver.com/docs/
+      After=network.target network-online.target
+      Requires=network-online.target
+
+      [Service]
+      Type=notify
+      User=caddy
+      Group=caddy
+      ExecStart=/usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+      ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force
+      TimeoutStopSec=5s
+      LimitNOFILE=1048576
+      LimitNPROC=512
+      PrivateTmp=true
+      ProtectSystem=full
+      AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: reload caddy
+  when: subdomain_enabled
+
+# =============================================================================
+# Common tasks for both modes
+# =============================================================================
+- name: Create Caddy config directory
+  file:
+    path: /etc/caddy
+    state: directory
+    mode: '0755'
+
+- name: Deploy Caddyfile
+  template:
+    src: 'Caddyfile-{% if subdomain_enabled %}subdomain{% else %}domain{% endif %}.j2'
+    dest: /etc/caddy/Caddyfile
+    mode: '0644'
+  notify: reload caddy
+
+- name: Create Caddy log directory
+  file:
+    path: /var/log/caddy
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: '0755'
+
+- name: Start and enable Caddy
+  systemd:
+    name: caddy
+    state: started
+    enabled: yes
+    daemon_reload: yes

@@ -1,0 +1,2452 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  // Better Auth fields
+  email         String  @unique
+  emailVerified Boolean @default(false)
+  name          String  @default("")
+  image         String?
+
+  // Freeform note a creator gives admins about how to wire their payout —
+  // bank ACH details, Wise email, PayPal, etc. Plain text; not machine-
+  // processed. Surfaced on the admin payout queue so admins know where to
+  // send funds (manual mark-paid flow, not Stripe Connect).
+  payoutMethodNote String?
+
+  // Compliance / legal columns. All nullable + defaulted so backfill is not
+  // required; pre-existing accounts are grandfathered (no consent on file).
+  // The signup flow stamps termsAcceptedAt/privacyAcceptedAt + dateOfBirth
+  // for every new account; COPPA gate blocks under-13 in v1.
+  dateOfBirth            DateTime? @db.Date
+  termsAcceptedAt        DateTime? @db.Timestamptz(3)
+  termsAcceptedVersion   String?
+  privacyAcceptedAt      DateTime? @db.Timestamptz(3)
+  privacyAcceptedVersion String?
+
+  // Account-deletion state machine. Request → confirm (via email token) →
+  // a daily cron picks confirmed rows whose scheduledFor has elapsed and
+  // anonymizes the row. CoursePurchase / AuditLog / OneOnOneSession are
+  // kept around (tax-retention) joined to an anonymized User row.
+  deletionRequestedAt  DateTime? @db.Timestamptz(3)
+  deletionScheduledFor DateTime? @db.Timestamptz(3) // requestedAt + 14 days
+  deletionConfirmedAt  DateTime? @db.Timestamptz(3)
+  deletedAt            DateTime? @db.Timestamptz(3) // PII-anonymized at this time
+
+  // Channels the user has opted out of. 'auth' and 'transactional' are
+  // never honored (legal/security notices always send). Allowed values
+  // currently: 'marketing' | 'digest' | 'productUpdates'.
+  emailUnsubscribedChannels String[] @default([])
+
+  // { essential: true, analytics: bool, marketing: bool, acceptedAt: ISO }
+  cookieConsent Json?
+
+  // Relations
+  members           Member[]
+  subscriptions     Subscription[]
+  sessions          Session[]
+  accounts          Account[]
+  apiKeys           ApiKey[]
+  pushTokens        PushToken[]
+  notifications     Notification[]
+  invitations       Invitation[]
+  oauthApplications OauthApplication[]
+  oauthAccessTokens OauthAccessToken[]
+  oauthConsents     OauthConsent[]
+
+  platformPromotionsCreated         PlatformPromotion[]           @relation("platformPromotionCreatedBy")
+  platformPromotionsUpdated         PlatformPromotion[]           @relation("platformPromotionUpdatedBy")
+  creatorPayoutsCreator             CreatorPayout[]               @relation("creatorPayoutCreator")
+  creatorPayoutsCreated             CreatorPayout[]               @relation("creatorPayoutCreatedBy")
+  creatorPayoutsUpdated             CreatorPayout[]               @relation("creatorPayoutUpdatedBy")
+  coursesCreated                    Course[]                      @relation("courseCreatedBy")
+  coursesUpdated                    Course[]                      @relation("courseUpdatedBy")
+  coursesCreator                    Course[]                      @relation("courseCreator")
+  coursePracticeAttempts            CoursePracticeAttempt[]
+  courseStudentNotes                CourseStudentNote[]
+  courseStudyPlanItems              CourseStudyPlanItem[]
+  courseDiagnosticAttempts          CourseDiagnosticAttempt[]
+  courseDomainMastery               CourseDomainMastery[]
+  courseFlashcardReviews            CourseFlashcardReview[]
+  courseStudyStreaks                CourseStudyStreak[]
+  courseRemediationPlans            CourseRemediationPlan[]
+  courseLearningSessions            CourseLearningSession[]
+  studentReminderPreferences        StudentReminderPreference[]
+  studentReminderDeliveries         StudentReminderDelivery[]
+  coursesReviewed                   Course[]                      @relation("courseReviewedBy")
+  courseReviewDecisions             CourseReviewDecision[]        @relation("courseReviewDecisionReviewer")
+  courseSafetyHolds                 Course[]                      @relation("courseSafetyHoldBy")
+  courseRatings                     CourseRating[]
+  courseWishlists                   CourseWishlist[]
+  courseWishlistItems               CourseWishlistItem[]
+  courseCouponRedemptions           CourseCouponRedemption[]
+  courseCouponsCreated              CourseCoupon[]
+  courseBundlesCreated              CourseBundle[]                @relation("courseBundleCreator")
+  courseCertificates                CourseCertificate[]
+  trustSafetyReportsFiled           TrustSafetyReport[]           @relation("trustSafetyReportReporter")
+  trustSafetyReportsTeacher         TrustSafetyReport[]           @relation("trustSafetyReportTeacher")
+  trustSafetyReportsResolved        TrustSafetyReport[]           @relation("trustSafetyReportResolvedBy")
+  trustSafetyReportsAssigned        TrustSafetyReport[]           @relation("trustSafetyReportAssignedTo")
+  trustSafetyPolicyVersionsCreated  TrustSafetyPolicyVersion[]    @relation("trustSafetyPolicyVersionCreatedBy")
+  trustSafetyPolicyAcceptances      TrustSafetyPolicyAcceptance[]
+  trustSafetyRiskFlagsCreator       TrustSafetyRiskFlag[]         @relation("trustSafetyRiskFlagCreator")
+  trustSafetyRiskFlagsCreated       TrustSafetyRiskFlag[]         @relation("trustSafetyRiskFlagCreatedBy")
+  trustSafetyRiskFlagsResolved      TrustSafetyRiskFlag[]         @relation("trustSafetyRiskFlagResolvedBy")
+  creatorApplicationsSafetyDisabled CreatorApplication[]          @relation("creatorSafetyDisabledBy")
+
+  instructorAvailability       InstructorAvailability[]
+  oneOnOneSessionTypes         OneOnOneSessionType[]
+  oneOnOneSessionsAsInstructor OneOnOneSession[]        @relation("oneOnOneInstructor")
+  oneOnOneSessionsAsStudent    OneOnOneSession[]        @relation("oneOnOneStudent")
+  oneOnOneSessionNotes         OneOnOneSessionNote[]
+  oneOnOneDisputesOpened       OneOnOneDispute[]
+
+  coursePurchases           CoursePurchase[] @relation("coursePurchaseUser")
+  coursePurchasesRefundedBy CoursePurchase[] @relation("coursePurchaseRefundedBy")
+
+  chatbotConversations ChatbotConversation[]
+
+  // Compliance feature relations (see UserDataExport, EmailUnsubscribeToken,
+  // AccountDeletionConfirmationToken at the bottom of this file).
+  dataExports                  UserDataExport[]
+  emailUnsubscribeTokens       EmailUnsubscribeToken[]
+  accountDeletionConfirmTokens AccountDeletionConfirmationToken[]
+
+  @@index([deletionScheduledFor])
+}
+
+model AuditLog {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  timestamp           DateTime @default(now()) @db.Timestamptz(3)
+  entityName          String
+  entityId            String   @db.Uuid // No FK to keep deleted entities logs
+  organizationId      String?  @db.Uuid // No FK to keep deleted entities logs
+  userId              String?  @db.Uuid // No FK to keep deleted entities logs
+  memberId            String?  @db.Uuid // No FK to keep deleted entities logs
+  apiKeyId            String?  @db.Uuid // No FK to keep deleted entities logs
+  apiEndpoint         String?
+  apiHttpResponseCode String?
+  operation           String
+  oldData             Json?
+  newData             Json?
+}
+
+// Better Auth API Key model
+model ApiKey {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configId    String  @default("default")
+  name        String?
+  start       String? // Starting characters for display
+  prefix      String? // API key prefix
+  key         String  @unique // Hashed API key
+  referenceId String  @db.Uuid
+  user        User    @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+
+  // Organization
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // Refill system
+  refillInterval Int?
+  refillAmount   Int?
+  lastRefillAt   DateTime? @db.Timestamptz(3)
+
+  // Status
+  enabled Boolean? @default(true)
+
+  // Rate limiting
+  rateLimitEnabled    Boolean? @default(true)
+  rateLimitTimeWindow Int?     @default(86400000)
+  rateLimitMax        Int?     @default(1000)
+  requestCount        Int?     @default(0)
+
+  // Usage tracking
+  remaining   Int?
+  lastRequest DateTime? @db.Timestamptz(3)
+  expiresAt   DateTime? @db.Timestamptz(3)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  // Permissions and metadata
+  permissions String? // JSON string of permissions
+  metadata    Json? // Additional metadata
+
+  @@index([organizationId])
+}
+
+model PushToken {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String // 'web' or 'mobile' (expo, fcm, apns)
+  token          String // For mobile: Expo push token. For web: subscription endpoint
+  platform       String? // For mobile: 'ios' or 'android'. Null for web
+  p256dh         String? // For web push: encryption key
+  auth           String? // For web push: authentication secret
+  expirationTime DateTime? @db.Timestamptz(3) // For web push: subscription expiration
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([type])
+}
+
+model Notification {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String    @db.Uuid
+  type           String // 'memberAdded', 'memberRemoved', etc.
+  roles          String[] // Roles that should receive this notification (e.g., ['admin'])
+  payload        Json // Notification-specific data (member details, etc.)
+  readAt         DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([userId, readAt])
+}
+
+model Organization {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  slug                 String   @unique
+  logosDark            Json?
+  logosLight           Json?
+  backgroundImageDark  Json?
+  backgroundImageLight Json?
+  metadata             Json?
+  createdAt            DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @db.Timestamptz(3)
+  logo                 String?
+  createdByUserId      String?  @db.Uuid
+  updatedByUserId      String?  @db.Uuid
+
+  members                      Member[]
+  invitations                  Invitation[]
+  subscriptions                Subscription[]
+  apiKeys                      ApiKey[]
+  examOrganization             Exam[]
+  chapterOrganization          Chapter[]
+  lessonOrganization           Lesson[]
+  practiceQuestionOrganization PracticeQuestion[]
+  conceptOrganization          Concept[]
+  examTypeOrganization         ExamType[]
+  examInstanceOrganization     ExamInstance[]
+  dailyGoalOrganization        DailyGoal[]
+  studyNoteOrganization        StudyNote[]
+  documentUploadOrganization   DocumentUpload[]
+  platformPromotions           PlatformPromotion[]
+  creatorPayouts               CreatorPayout[]
+  coursesCreator               Course[]            @relation("courseCreatorOrganization")
+  coursePurchases              CoursePurchase[]    @relation("coursePurchaseOrganization")
+
+  chatbotConversations ChatbotConversation[]
+  chatbotMessages      ChatbotMessage[]
+
+  dataExports UserDataExport[]
+}
+
+model Member {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String       @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+
+  // Additional fields
+  firstName              String?
+  lastName               String?
+  fullName               String?
+  avatars                Json?
+  disabled               Boolean   @default(false)
+  isNotificationsEnabled Boolean   @default(true)
+  // Set once the student finishes the post-signup "pick your first courses"
+  // step (Skip also sets it). Null = the auth guard redirects them to
+  // /welcome/courses on next sign-in. Backfilled to now() for everyone with a
+  // firstName at migration time to grandfather existing users.
+  onboardingCompletedAt  DateTime? @db.Timestamptz(3)
+  importHash             String?   @unique
+  createdByUserId        String?   @db.Uuid
+  createdByMemberId      String?   @db.Uuid
+  updatedByUserId        String?   @db.Uuid
+  updatedByMemberId      String?   @db.Uuid
+
+  // Relations
+  createdByMember Member?  @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  memberCreatedBy Member[] @relation("createdByMember")
+  updatedByMember Member?  @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  memberUpdatedBy Member[] @relation("updatedByMember")
+
+  subscriptions              Subscription[]
+  coursesCreator             Course[]                @relation("courseCreatorMember")
+  examCreatedBy              Exam[]                  @relation("createdByMember")
+  examUpdatedBy              Exam[]                  @relation("updatedByMember")
+  examArchivedBy             Exam[]                  @relation("archivedByMember")
+  chapterCreatedBy           Chapter[]               @relation("createdByMember")
+  chapterUpdatedBy           Chapter[]               @relation("updatedByMember")
+  chapterArchivedBy          Chapter[]               @relation("archivedByMember")
+  lessonCreatedBy            Lesson[]                @relation("createdByMember")
+  lessonUpdatedBy            Lesson[]                @relation("updatedByMember")
+  lessonArchivedBy           Lesson[]                @relation("archivedByMember")
+  practiceQuestionCreatedBy  PracticeQuestion[]      @relation("createdByMember")
+  practiceQuestionUpdatedBy  PracticeQuestion[]      @relation("updatedByMember")
+  practiceQuestionArchivedBy PracticeQuestion[]      @relation("archivedByMember")
+  conceptCreatedBy           Concept[]               @relation("createdByMember")
+  conceptUpdatedBy           Concept[]               @relation("updatedByMember")
+  conceptArchivedBy          Concept[]               @relation("archivedByMember")
+  examTypeCreatedBy          ExamType[]              @relation("createdByMember")
+  examTypeUpdatedBy          ExamType[]              @relation("updatedByMember")
+  examTypeArchivedBy         ExamType[]              @relation("archivedByMember")
+  examInstanceCreatedBy      ExamInstance[]          @relation("createdByMember")
+  examInstanceUpdatedBy      ExamInstance[]          @relation("updatedByMember")
+  examInstanceArchivedBy     ExamInstance[]          @relation("archivedByMember")
+  examInstanceStudent        ExamInstance[]          @relation("examInstanceStudent_student")
+  dailyGoalCreatedBy         DailyGoal[]             @relation("createdByMember")
+  dailyGoalUpdatedBy         DailyGoal[]             @relation("updatedByMember")
+  dailyGoalArchivedBy        DailyGoal[]             @relation("archivedByMember")
+  dailyGoalOwner             DailyGoal[]             @relation("dailyGoalOwner_owner")
+  studyNoteCreatedBy         StudyNote[]             @relation("createdByMember")
+  studyNoteUpdatedBy         StudyNote[]             @relation("updatedByMember")
+  studyNoteArchivedBy        StudyNote[]             @relation("archivedByMember")
+  studyNoteAuthor            StudyNote[]             @relation("studyNoteAuthor_author")
+  documentUploadCreatedBy    DocumentUpload[]        @relation("createdByMember")
+  documentUploadUpdatedBy    DocumentUpload[]        @relation("updatedByMember")
+  documentUploadArchivedBy   DocumentUpload[]        @relation("archivedByMember")
+  coursePracticeAttempts     CoursePracticeAttempt[]
+  courseStudentNotes         CourseStudentNote[]
+  courseStudyPlanItems       CourseStudyPlanItem[]
+  documentUploadUploadedBy   DocumentUpload[]        @relation("documentUploadUploadedBy_uploadedBy")
+  creatorPayoutsCreator      CreatorPayout[]         @relation("creatorPayoutCreatorMember")
+  coursePurchases            CoursePurchase[]        @relation("coursePurchaseMember")
+
+  @@unique([id, organizationId])
+  @@unique([userId, organizationId])
+  @@index([onboardingCompletedAt])
+}
+
+model PlatformPromotion {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  kind     String
+  title    String
+  message  String
+  ctaLabel String?
+  ctaHref  String?
+  audience String    @default("students")
+  isActive Boolean   @default(true)
+  startsAt DateTime? @db.Timestamptz(3)
+  endsAt   DateTime? @db.Timestamptz(3)
+
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdByUserId String? @db.Uuid
+  createdByUser   User?   @relation("platformPromotionCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId String? @db.Uuid
+  updatedByUser   User?   @relation("platformPromotionUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
+}
+
+model CreatorPayout {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("USD")
+  status      String    @default("pending")
+  description String?
+  paidAt      DateTime? @db.Timestamptz(3)
+  cancelledAt DateTime? @db.Timestamptz(3)
+
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  creatorUserId   String? @db.Uuid
+  creatorUser     User?   @relation("creatorPayoutCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  creatorMemberId String? @db.Uuid
+  creatorMember   Member? @relation("creatorPayoutCreatorMember", fields: [creatorMemberId], references: [id], onDelete: SetNull)
+  courseId        String? @db.Uuid
+  course          Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  createdByUserId String? @db.Uuid
+  createdByUser   User?   @relation("creatorPayoutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId String? @db.Uuid
+  updatedByUser   User?   @relation("creatorPayoutUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  oneOnOneSessions     OneOnOneSession[]
+  trustSafetyRiskFlags TrustSafetyRiskFlag[]
+  coursePurchases      CoursePurchase[]      @relation("coursePurchasePayout")
+
+  @@index([organizationId])
+  @@index([creatorUserId])
+  @@index([creatorMemberId])
+  @@index([courseId])
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  incomplete
+  incomplete_expired
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  paused
+}
+
+enum SubscriptionMode {
+  organization
+  member
+  disabled
+}
+
+model Subscription {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+
+  memberId             String?            @db.Uuid
+  member               Member?            @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  userId               String             @db.Uuid
+  user                 User               @relation(fields: [userId], references: [id])
+  mode                 SubscriptionMode
+  cancelAt             DateTime?          @db.Timestamptz(3)
+  stripeCustomerId     String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  status               SubscriptionStatus
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([memberId])
+}
+
+model Exam {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String           @db.Uuid
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "examOrganization")
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?          @db.Uuid
+  createdByMemberId  String?          @db.Uuid
+  createdByMember    Member?          @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?          @db.Uuid
+  updatedByMemberId  String?          @db.Uuid
+  updatedByMember    Member?          @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?        @db.Timestamptz(3)
+  archivedByMemberId String?          @db.Uuid
+  archivedByMember   Member?          @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?          @unique
+  name               String
+  code               String?
+  description        String?
+  iconUrl            String?
+  isActive           Boolean          @default(false)
+  courseId           String?          @db.Uuid
+  course             Course?          @relation("exams_course", fields: [courseId], references: [id], onDelete: SetNull)
+  chapters           Chapter[]        @relation("chapters_exam")
+  concepts           Concept[]        @relation("concepts_exam")
+  examTypes          ExamType[]       @relation("examTypes_exam")
+  documentUploads    DocumentUpload[] @relation("documentUploads_exam")
+
+  @@unique([code, organizationId])
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model Chapter {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String             @db.Uuid
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "chapterOrganization")
+  createdAt          DateTime           @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?            @db.Uuid
+  createdByMemberId  String?            @db.Uuid
+  createdByMember    Member?            @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime           @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?            @db.Uuid
+  updatedByMemberId  String?            @db.Uuid
+  updatedByMember    Member?            @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?          @db.Timestamptz(3)
+  archivedByMemberId String?            @db.Uuid
+  archivedByMember   Member?            @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?            @unique
+  title              String
+  chapterNumber      Int
+  description        String?
+  aiTutorPrompt      String?
+  xpReward           Int?
+  orderIndex         Int
+  workflowStatus     String
+  isPublished        Boolean            @default(false)
+  version            Int?
+  objectives         String[]           @default([])
+  courseId           String?            @db.Uuid
+  course             Course?            @relation("chapters_course", fields: [courseId], references: [id], onDelete: SetNull)
+  examId             String             @db.Uuid
+  exam               Exam               @relation("chapters_exam", fields: [examId], references: [id])
+  lessons            Lesson[]           @relation("lessons_chapter")
+  practiceQuestions  PracticeQuestion[] @relation("practiceQuestions_chapter")
+  studyNotes         StudyNote[]        @relation("studyNotes_chapter")
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model Lesson {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "lessonOrganization")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?      @db.Uuid
+  createdByMemberId  String?      @db.Uuid
+  createdByMember    Member?      @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?      @db.Uuid
+  updatedByMemberId  String?      @db.Uuid
+  updatedByMember    Member?      @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?    @db.Timestamptz(3)
+  archivedByMemberId String?      @db.Uuid
+  archivedByMember   Member?      @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?      @unique
+  title              String
+  lessonNumber       Int
+  content            String?
+  estimatedMinutes   Int?
+  xpReward           Int?
+  workflowStatus     String
+  isPublished        Boolean      @default(false)
+  courseId           String?      @db.Uuid
+  course             Course?      @relation("lessons_course", fields: [courseId], references: [id], onDelete: SetNull)
+  chapterId          String       @db.Uuid
+  chapter            Chapter      @relation("lessons_chapter", fields: [chapterId], references: [id])
+  studyNotes         StudyNote[]  @relation("studyNotes_lesson")
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model PracticeQuestion {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId        String                 @db.Uuid
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "practiceQuestionOrganization")
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  createdByUserId       String?                @db.Uuid
+  createdByMemberId     String?                @db.Uuid
+  createdByMember       Member?                @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  updatedByUserId       String?                @db.Uuid
+  updatedByMemberId     String?                @db.Uuid
+  updatedByMember       Member?                @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt            DateTime?              @db.Timestamptz(3)
+  archivedByMemberId    String?                @db.Uuid
+  archivedByMember      Member?                @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash            String?                @unique
+  questionText          String
+  correctAnswerIndex    Int
+  answerOptions         String[]               @default([])
+  explanation           String?
+  difficulty            String
+  category              String?
+  isActive              Boolean                @default(false)
+  tags                  String[]               @default([])
+  courseId              String?                @db.Uuid
+  course                Course?                @relation("practiceQuestions_course", fields: [courseId], references: [id], onDelete: SetNull)
+  chapterId             String                 @db.Uuid
+  chapter               Chapter                @relation("practiceQuestions_chapter", fields: [chapterId], references: [id])
+  concepts              Concept[]              @relation("concepts_practiceQuestions")
+  coursePracticeAnswers CoursePracticeAnswer[]
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model Concept {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String             @db.Uuid
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "conceptOrganization")
+  createdAt          DateTime           @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?            @db.Uuid
+  createdByMemberId  String?            @db.Uuid
+  createdByMember    Member?            @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime           @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?            @db.Uuid
+  updatedByMemberId  String?            @db.Uuid
+  updatedByMember    Member?            @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?          @db.Timestamptz(3)
+  archivedByMemberId String?            @db.Uuid
+  archivedByMember   Member?            @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?            @unique
+  conceptName        String
+  conceptCode        String
+  conceptDescription String
+  explanation        String
+  examDomain         String?
+  difficulty         String?
+  examWeight         String?
+  typicalMistakes    String[]           @default([])
+  examTips           String[]           @default([])
+  isActive           Boolean            @default(false)
+  courseId           String?            @db.Uuid
+  course             Course?            @relation("concepts_course", fields: [courseId], references: [id], onDelete: SetNull)
+  examId             String             @db.Uuid
+  exam               Exam               @relation("concepts_exam", fields: [examId], references: [id])
+  practiceQuestions  PracticeQuestion[] @relation("concepts_practiceQuestions")
+
+  @@unique([conceptCode, organizationId])
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model ExamType {
+  id                     String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId         String         @db.Uuid
+  organization           Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "examTypeOrganization")
+  createdAt              DateTime       @default(now()) @db.Timestamptz(3)
+  createdByUserId        String?        @db.Uuid
+  createdByMemberId      String?        @db.Uuid
+  createdByMember        Member?        @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt              DateTime       @updatedAt @db.Timestamptz(3)
+  updatedByUserId        String?        @db.Uuid
+  updatedByMemberId      String?        @db.Uuid
+  updatedByMember        Member?        @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt             DateTime?      @db.Timestamptz(3)
+  archivedByMemberId     String?        @db.Uuid
+  archivedByMember       Member?        @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash             String?        @unique
+  name                   String
+  description            String?
+  type                   String
+  questionCount          Int
+  timeLimitMinutes       Int?
+  passingScore           Int?
+  maxAttempts            Int?
+  shuffleQuestions       Boolean        @default(false)
+  showAnswersImmediately Boolean        @default(false)
+  isActive               Boolean        @default(false)
+  courseId               String?        @db.Uuid
+  course                 Course?        @relation("examTypes_course", fields: [courseId], references: [id], onDelete: SetNull)
+  examId                 String         @db.Uuid
+  exam                   Exam           @relation("examTypes_exam", fields: [examId], references: [id])
+  examInstances          ExamInstance[] @relation("examInstances_examType")
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model ExamInstance {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "examInstanceOrganization")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?      @db.Uuid
+  createdByMemberId  String?      @db.Uuid
+  createdByMember    Member?      @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?      @db.Uuid
+  updatedByMemberId  String?      @db.Uuid
+  updatedByMember    Member?      @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?    @db.Timestamptz(3)
+  archivedByMemberId String?      @db.Uuid
+  archivedByMember   Member?      @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?      @unique
+  status             String
+  score              Decimal?
+  passed             Boolean      @default(false)
+  startedAt          DateTime?    @db.Timestamptz(3)
+  completedAt        DateTime?    @db.Timestamptz(3)
+  timeSpentSeconds   Int?
+  courseId           String?      @db.Uuid
+  course             Course?      @relation("examInstances_course", fields: [courseId], references: [id], onDelete: SetNull)
+  examTypeId         String       @db.Uuid
+  examType           ExamType     @relation("examInstances_examType", fields: [examTypeId], references: [id])
+  studentId          String       @db.Uuid
+  student            Member       @relation("examInstanceStudent_student", fields: [studentId], references: [id])
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model DailyGoal {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "dailyGoalOrganization")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?      @db.Uuid
+  createdByMemberId  String?      @db.Uuid
+  createdByMember    Member?      @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?      @db.Uuid
+  updatedByMemberId  String?      @db.Uuid
+  updatedByMember    Member?      @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?    @db.Timestamptz(3)
+  archivedByMemberId String?      @db.Uuid
+  archivedByMember   Member?      @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?      @unique
+  title              String
+  goalType           String
+  targetValue        Int
+  currentValue       Int?
+  xpReward           Int?
+  goalDate           String
+  completedAt        DateTime?    @db.Timestamptz(3)
+  ownerId            String       @db.Uuid
+  owner              Member       @relation("dailyGoalOwner_owner", fields: [ownerId], references: [id])
+
+  @@unique([id, organizationId])
+}
+
+model StudyNote {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "studyNoteOrganization")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?      @db.Uuid
+  createdByMemberId  String?      @db.Uuid
+  createdByMember    Member?      @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?      @db.Uuid
+  updatedByMemberId  String?      @db.Uuid
+  updatedByMember    Member?      @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?    @db.Timestamptz(3)
+  archivedByMemberId String?      @db.Uuid
+  archivedByMember   Member?      @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?      @unique
+  title              String
+  content            String
+  isFavorite         Boolean      @default(false)
+  tags               String[]     @default([])
+  courseId           String?      @db.Uuid
+  course             Course?      @relation("studyNotes_course", fields: [courseId], references: [id], onDelete: SetNull)
+  chapterId          String?      @db.Uuid
+  chapter            Chapter?     @relation("studyNotes_chapter", fields: [chapterId], references: [id])
+  lessonId           String?      @db.Uuid
+  lesson             Lesson?      @relation("studyNotes_lesson", fields: [lessonId], references: [id])
+  authorId           String       @db.Uuid
+  author             Member       @relation("studyNoteAuthor_author", fields: [authorId], references: [id])
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model DocumentUpload {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String       @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "documentUploadOrganization")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  createdByUserId    String?      @db.Uuid
+  createdByMemberId  String?      @db.Uuid
+  createdByMember    Member?      @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  updatedByUserId    String?      @db.Uuid
+  updatedByMemberId  String?      @db.Uuid
+  updatedByMember    Member?      @relation("updatedByMember", fields: [updatedByMemberId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?    @db.Timestamptz(3)
+  archivedByMemberId String?      @db.Uuid
+  archivedByMember   Member?      @relation("archivedByMember", fields: [archivedByMemberId], references: [id], onDelete: SetNull)
+  importHash         String?      @unique
+  originalFilename   String
+  status             String
+  pageCount          Int?
+  wordCount          Int?
+  processingError    String?
+  sourceFiles        Json?
+  courseId           String?      @db.Uuid
+  course             Course?      @relation("documentUploads_course", fields: [courseId], references: [id], onDelete: SetNull)
+  examId             String       @db.Uuid
+  exam               Exam         @relation("documentUploads_exam", fields: [examId], references: [id])
+  uploadedById       String?      @db.Uuid
+  uploadedBy         Member?      @relation("documentUploadUploadedBy_uploadedBy", fields: [uploadedById], references: [id])
+
+  @@unique([id, organizationId])
+  @@index([courseId])
+}
+
+model Invitation {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviterId      String       @db.Uuid
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime     @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+}
+
+model ChatbotUsage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  organizationId String   @db.Uuid
+  date           DateTime @db.Date
+  inputTokens    Int      @default(0)
+  outputTokens   Int      @default(0)
+  totalTokens    Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  @@unique([userId, date])
+  @@index([organizationId, date])
+  @@index([date])
+}
+
+// Persistent per-user chat thread powering /student/ai-tutor (full-page) and the
+// legacy ChatbotSheet quick-ask modal. Course/lesson scoping is optional and
+// drops to NULL if the course or lesson is later deleted, preserving the
+// student's chat history. `archivedAt` is a soft-delete marker — rows survive
+// for audit and recovery; admins use the run_sql_transaction path to hard-purge.
+model ChatbotConversation {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  userId         String        @db.Uuid
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String        @db.Uuid
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  courseId       String?       @db.Uuid
+  course         Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lessonId       String?       @db.Uuid
+  lesson         CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title          String
+  archivedAt     DateTime?     @db.Timestamptz(3)
+
+  messages ChatbotMessage[]
+
+  @@index([userId, archivedAt, updatedAt])
+  @@index([organizationId])
+  @@index([courseId])
+}
+
+// One row per turn in a ChatbotConversation. Assistant rows may carry a
+// `widgets` JSON payload — an array of { kind, payload } objects that the
+// frontend renders inline (quiz carousel, study plan list, lesson explain
+// card, etc.). Token counts on the assistant row mirror what was charged
+// in ChatbotUsage and let us surface per-conversation cost in admin tools.
+model ChatbotMessage {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime            @default(now()) @db.Timestamptz(3)
+  conversationId String              @db.Uuid
+  conversation   ChatbotConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  // Denormalized from `conversation.organizationId`. RLS doesn't cascade
+  // through FKs, so a direct `chatbotMessage.findMany(...)` without this
+  // column would bypass tenant isolation (security audit finding #5).
+  // Stays consistent because Conversation's org never changes; cascade-
+  // delete on the parent FK handles user/conversation removal.
+  organizationId String              @db.Uuid
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String // 'user' | 'assistant'
+  content        String
+  widgets        Json?
+  inputTokens    Int?
+  outputTokens   Int?
+
+  @@index([conversationId, createdAt])
+  @@index([organizationId])
+}
+
+// Curated marketplace taxonomy. Admin-managed via /api/platform-admin/course-categories.
+// `Course.category` (String) is kept as a read-only mirror of `categoryRef.name` in v1
+// for backwards-compat with cached client payloads — it is dropped in v2.
+model CourseCategory {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  slug         String   @unique
+  name         String
+  description  String?
+  iconName     String?
+  displayOrder Int      @default(1000)
+  isActive     Boolean  @default(true)
+
+  courses Course[] @relation("courseCategory")
+
+  @@index([isActive, displayOrder])
+}
+
+model Course {
+  id                     String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
+  title                  String
+  slug                   String          @unique
+  subtitle               String?
+  description            String?
+  category               String?
+  categoryId             String?         @db.Uuid
+  categoryRef            CourseCategory? @relation("courseCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  examType               String?
+  thumbnail              Json?
+  introVideoFiles        Json?
+  promoVideoFiles        Json?
+  difficulty             String?
+  language               String?
+  visibility             String          @default("private")
+  audience               String[]        @default([])
+  status                 String          @default("draft")
+  accessType             String          @default("free")
+  priceCents             Int?
+  currency               String          @default("USD")
+  stripePriceId          String?
+  subscriptionPlanKey    String?
+  creatorRevenueShareBps Int             @default(7000)
+  nexVerified            Boolean         @default(false)
+  creatorUserId          String?         @db.Uuid
+  creatorUser            User?           @relation("courseCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  creatorMemberId        String?         @db.Uuid
+  creatorMember          Member?         @relation("courseCreatorMember", fields: [creatorMemberId], references: [id], onDelete: SetNull)
+  creatorOrganizationId  String?         @db.Uuid
+  creatorOrganization    Organization?   @relation("courseCreatorOrganization", fields: [creatorOrganizationId], references: [id], onDelete: SetNull)
+  createdByUserId        String?         @db.Uuid
+  createdByUser          User?           @relation("courseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId        String?         @db.Uuid
+  updatedByUser          User?           @relation("courseUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  publishedAt            DateTime?       @db.Timestamptz(3)
+  submittedForReviewAt   DateTime?       @db.Timestamptz(3)
+  reviewedByUserId       String?         @db.Uuid
+  reviewedByUser         User?           @relation("courseReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt             DateTime?       @db.Timestamptz(3)
+  reviewNotes            String?
+  safetyHold             Boolean         @default(false)
+  safetyHoldReason       String?
+  safetyHoldByUserId     String?         @db.Uuid
+  safetyHoldByUser       User?           @relation("courseSafetyHoldBy", fields: [safetyHoldByUserId], references: [id], onDelete: SetNull)
+  safetyHoldAt           DateTime?       @db.Timestamptz(3)
+
+  modules              CourseModule[]
+  lessons              CourseLesson[]
+  assignments          CourseAssignment[]
+  enrollments          CourseEnrollment[]
+  payouts              CreatorPayout[]
+  exams                Exam[]                      @relation("exams_course")
+  chapters             Chapter[]                   @relation("chapters_course")
+  legacyLessons        Lesson[]                    @relation("lessons_course")
+  practiceQuestions    PracticeQuestion[]          @relation("practiceQuestions_course")
+  concepts             Concept[]                   @relation("concepts_course")
+  examTypes            ExamType[]                  @relation("examTypes_course")
+  examInstances        ExamInstance[]              @relation("examInstances_course")
+  studyNotes           StudyNote[]                 @relation("studyNotes_course")
+  documentUploads      DocumentUpload[]            @relation("documentUploads_course")
+  practiceAttempts     CoursePracticeAttempt[]
+  studentNotes         CourseStudentNote[]
+  studyPlanItems       CourseStudyPlanItem[]
+  diagnosticAttempts   CourseDiagnosticAttempt[]
+  domainMastery        CourseDomainMastery[]
+  flashcardReviews     CourseFlashcardReview[]
+  studyStreaks         CourseStudyStreak[]
+  remediationPlans     CourseRemediationPlan[]
+  learningSessions     CourseLearningSession[]
+  reminderPreferences  StudentReminderPreference[]
+  reminderDeliveries   StudentReminderDelivery[]
+  quizzes              CourseQuiz[]
+  quizAttempts         CourseQuizAttempt[]
+  aiQuizAttempts       CourseAiQuizAttempt[]
+  questions            CourseQuestion[]
+  practiceExams        CoursePracticeExam[]
+  practiceExamAttempts CoursePracticeExamAttempt[]
+  outcomes             CourseOutcome[]
+  requirements         CourseRequirement[]
+  flashcardSets        CourseFlashcardSet[]
+  oneOnOneSessionTypes OneOnOneSessionType[]
+  oneOnOneSessions     OneOnOneSession[]
+  ratings              CourseRating[]
+  trustSafetyReports   TrustSafetyReport[]
+  trustSafetyRiskFlags TrustSafetyRiskFlag[]
+  reviewDecisions      CourseReviewDecision[]
+  purchases            CoursePurchase[]
+  stripePrices         CourseStripePrice[]
+  wishlistItems        CourseWishlistItem[]
+  coupons              CourseCoupon[]
+  bundleItems          CourseBundleCourse[]
+  certificates         CourseCertificate[]
+  couponRedemptions    CourseCouponRedemption[]
+  certificateEnabled   Boolean                     @default(true)
+
+  chatbotConversations ChatbotConversation[]
+
+  @@index([status])
+  @@index([accessType])
+  @@index([category])
+  @@index([categoryId])
+  @@index([examType])
+  @@index([creatorUserId])
+  @@index([creatorMemberId])
+  @@index([creatorOrganizationId])
+  @@index([safetyHold])
+}
+
+model CourseModule {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  title       String
+  description String?
+  orderIndex  Int      @default(0)
+  courseId    String   @db.Uuid
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons       CourseLesson[]
+  assignments   CourseAssignment[]
+  quizzes       CourseQuiz[]
+  flashcardSets CourseFlashcardSet[]
+
+  @@index([courseId])
+  @@index([courseId, orderIndex])
+}
+
+model CourseLesson {
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt            DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime      @updatedAt @db.Timestamptz(3)
+  title                String
+  description          String?
+  content              String?
+  videoFiles           Json?
+  videoDurationSeconds Int?
+  orderIndex           Int           @default(0)
+  isPreview            Boolean       @default(false)
+  isHidden             Boolean       @default(false)
+  videoUrl             String?
+  resourceFiles        Json?
+  courseId             String        @db.Uuid
+  course               Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId             String?       @db.Uuid
+  module               CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  progress      CourseLessonProgress[]
+  assignments   CourseAssignment[]
+  studentNotes  CourseStudentNote[]
+  quizzes       CourseQuiz[]
+  flashcardSets CourseFlashcardSet[]
+  blocks        CourseLessonBlock[]
+
+  chatbotConversations   ChatbotConversation[]
+  courseLearningSessions CourseLearningSession[]
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([courseId, orderIndex])
+}
+
+model CourseEnrollment {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
+  courseId       String             @db.Uuid
+  course         Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String             @db.Uuid
+  memberId       String?            @db.Uuid
+  status         String             @default("active")
+  enrolledAt     DateTime           @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime?          @db.Timestamptz(3)
+  // Student's self-set target exam date (ISO date string) for the AI study
+  // plan, mirroring CourseStudyPlanItem.plannedForDate.
+  targetExamDate String?
+  examName       String?
+  certificate    CourseCertificate?
+
+  @@unique([courseId, userId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model CourseWishlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  name      String
+  isDefault Boolean  @default(false)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items CourseWishlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([userId, isDefault])
+}
+
+model CourseWishlistItem {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
+  userId     String         @db.Uuid
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlistId String         @db.Uuid
+  wishlist   CourseWishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  courseId   String         @db.Uuid
+  course     Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model CourseRating {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  courseId  String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId  String?  @db.Uuid
+  rating    Int
+  comment   String?
+  isPublic  Boolean  @default(true)
+
+  trustSafetyReports TrustSafetyReport[]
+
+  @@unique([courseId, userId])
+  @@index([courseId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// One row per successful Stripe Checkout (`mode:'payment'`) for a course.
+// Idempotency key: `stripeCheckoutSessionId` is unique. On refund, admin marks
+// the row (sets refundedAt + refundReason + refundedByUserId); the matching
+// CourseEnrollment flips to status='refunded' and the linked CreatorPayout is
+// cancelled. Re-purchases insert a new row and the webhook upsert flips the
+// enrollment back to 'active'.
+model CoursePurchase {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  courseId       String        @db.Uuid
+  course         Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  userId         String        @db.Uuid
+  user           User          @relation("coursePurchaseUser", fields: [userId], references: [id], onDelete: Restrict)
+  memberId       String?       @db.Uuid
+  member         Member?       @relation("coursePurchaseMember", fields: [memberId], references: [id], onDelete: SetNull)
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation("coursePurchaseOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?
+  priceCents              Int
+  currency                String   @default("USD")
+  paidAt                  DateTime @default(now()) @db.Timestamptz(3)
+
+  refundedAt       DateTime? @db.Timestamptz(3)
+  refundedByUserId String?   @db.Uuid
+  refundedByUser   User?     @relation("coursePurchaseRefundedBy", fields: [refundedByUserId], references: [id], onDelete: SetNull)
+  refundReason     String?
+
+  payoutId String?        @db.Uuid
+  payout   CreatorPayout? @relation("coursePurchasePayout", fields: [payoutId], references: [id], onDelete: SetNull)
+
+  couponRedemptions CourseCouponRedemption[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([refundedAt])
+}
+
+model CourseCoupon {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime      @updatedAt @db.Timestamptz(3)
+  code                  String        @unique
+  description           String?
+  status                String        @default("active")
+  discountType          String
+  percentOff            Int?
+  amountOffCents        Int?
+  currency              String        @default("USD")
+  startsAt              DateTime?     @db.Timestamptz(3)
+  endsAt                DateTime?     @db.Timestamptz(3)
+  maxRedemptions        Int?
+  maxRedemptionsPerUser Int           @default(1)
+  redeemedCount         Int           @default(0)
+  courseId              String?       @db.Uuid
+  course                Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  bundleId              String?       @db.Uuid
+  bundle                CourseBundle? @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  creatorUserId         String?       @db.Uuid
+  creatorUser           User?         @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)
+
+  redemptions CourseCouponRedemption[]
+
+  @@index([courseId])
+  @@index([bundleId])
+  @@index([creatorUserId])
+  @@index([status])
+}
+
+model CourseCouponRedemption {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  couponId      String          @db.Uuid
+  coupon        CourseCoupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId        String          @db.Uuid
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String?         @db.Uuid
+  course        Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  bundleId      String?         @db.Uuid
+  bundle        CourseBundle?   @relation(fields: [bundleId], references: [id], onDelete: SetNull)
+  purchaseId    String?         @db.Uuid
+  purchase      CoursePurchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  discountCents Int
+  currency      String          @default("USD")
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([bundleId])
+}
+
+model CourseBundle {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  title           String
+  slug            String    @unique
+  description     String?
+  thumbnail       Json?
+  status          String    @default("draft")
+  priceCents      Int?
+  currency        String    @default("USD")
+  stripePriceId   String?
+  creatorUserId   String?   @db.Uuid
+  creatorUser     User?     @relation("courseBundleCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  creatorMemberId String?   @db.Uuid
+  publishedAt     DateTime? @db.Timestamptz(3)
+
+  courses     CourseBundleCourse[]
+  coupons     CourseCoupon[]
+  redemptions CourseCouponRedemption[]
+
+  @@index([status])
+  @@index([creatorUserId])
+  @@index([publishedAt])
+}
+
+model CourseBundleCourse {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  bundleId   String       @db.Uuid
+  bundle     CourseBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  courseId   String       @db.Uuid
+  course     Course       @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  orderIndex Int          @default(0)
+
+  @@unique([bundleId, courseId])
+  @@index([courseId])
+}
+
+model CourseCertificate {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
+  courseId          String           @db.Uuid
+  course            Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollmentId      String           @unique @db.Uuid
+  enrollment        CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  userId            String           @db.Uuid
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificateNumber String           @unique
+  verificationCode  String           @unique
+  issuedAt          DateTime         @default(now()) @db.Timestamptz(3)
+  revokedAt         DateTime?        @db.Timestamptz(3)
+  artifactUrl       String?
+  metadata          Json?
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([issuedAt])
+}
+
+// Audit trail of every Stripe Price ever attached to a course. Rotation flow
+// (price/currency change on an approved paid course) flips `isActive=false`
+// and `archivedAt=now()` on the old row, inserts a new active row, and
+// reassigns `Course.stripePriceId`. Serialized by
+// pg_advisory_xact_lock(hashtext(courseId)) inside coursePaymentService.
+model CourseStripePrice {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  courseId        String    @db.Uuid
+  course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  stripeProductId String
+  stripePriceId   String    @unique
+  priceCents      Int
+  currency        String
+  isActive        Boolean   @default(true)
+  archivedAt      DateTime? @db.Timestamptz(3)
+
+  @@index([courseId, isActive])
+}
+
+model TrustSafetyPolicyVersion {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  type            String
+  version         String
+  contentKey      String
+  isActive        Boolean  @default(true)
+  publishedAt     DateTime @default(now()) @db.Timestamptz(3)
+  createdByUserId String?  @db.Uuid
+  createdByUser   User?    @relation("trustSafetyPolicyVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  acceptances TrustSafetyPolicyAcceptance[]
+
+  @@unique([type, version])
+  @@index([type, isActive])
+}
+
+model TrustSafetyPolicyAcceptance {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+  userId          String                   @db.Uuid
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId        String?                  @db.Uuid
+  policyVersionId String                   @db.Uuid
+  policyVersion   TrustSafetyPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  policyType      String
+  version         String
+  acceptedAt      DateTime                 @default(now()) @db.Timestamptz(3)
+
+  @@unique([userId, policyVersionId])
+  @@index([userId, policyType])
+  @@index([policyType, version])
+}
+
+model TrustSafetyReport {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
+  targetType        String
+  courseId          String?       @db.Uuid
+  course            Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherUserId     String?       @db.Uuid
+  teacherUser       User?         @relation("trustSafetyReportTeacher", fields: [teacherUserId], references: [id], onDelete: SetNull)
+  ratingId          String?       @db.Uuid
+  rating            CourseRating? @relation(fields: [ratingId], references: [id], onDelete: SetNull)
+  reporterUserId    String        @db.Uuid
+  reporterUser      User          @relation("trustSafetyReportReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reporterMemberId  String?       @db.Uuid
+  reason            String
+  details           String?
+  status            String        @default("open")
+  priority          String        @default("normal")
+  assignedToUserId  String?       @db.Uuid
+  assignedToUser    User?         @relation("trustSafetyReportAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  reviewDueAt       DateTime?     @db.Timestamptz(3)
+  outcomeCategory   String?
+  resolutionSummary String?
+  adminNotes        String?
+  resolvedByUserId  String?       @db.Uuid
+  resolvedByUser    User?         @relation("trustSafetyReportResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  resolvedAt        DateTime?     @db.Timestamptz(3)
+
+  riskFlags TrustSafetyRiskFlag[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([targetType])
+  @@index([courseId])
+  @@index([teacherUserId])
+  @@index([reporterUserId])
+  @@index([assignedToUserId])
+  @@index([reviewDueAt])
+  @@index([createdAt])
+}
+
+model CourseReviewDecision {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  courseId         String   @db.Uuid
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  decision         String
+  reviewNotes      String?
+  reviewedByUserId String?  @db.Uuid
+  reviewedByUser   User?    @relation("courseReviewDecisionReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime @default(now()) @db.Timestamptz(3)
+  previousStatus   String
+  nextStatus       String
+
+  @@index([courseId, reviewedAt])
+  @@index([decision])
+  @@index([reviewedByUserId])
+}
+
+model TrustSafetyRiskFlag {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
+  targetType           String
+  severity             String              @default("medium")
+  source               String              @default("manual")
+  reason               String
+  status               String              @default("open")
+  adminNotes           String?
+  courseId             String?             @db.Uuid
+  course               Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  creatorUserId        String?             @db.Uuid
+  creatorUser          User?               @relation("trustSafetyRiskFlagCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  creatorApplicationId String?             @db.Uuid
+  creatorApplication   CreatorApplication? @relation(fields: [creatorApplicationId], references: [id], onDelete: SetNull)
+  reportId             String?             @db.Uuid
+  report               TrustSafetyReport?  @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  payoutId             String?             @db.Uuid
+  payout               CreatorPayout?      @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  oneOnOneSessionId    String?             @db.Uuid
+  oneOnOneSession      OneOnOneSession?    @relation(fields: [oneOnOneSessionId], references: [id], onDelete: SetNull)
+  createdByUserId      String?             @db.Uuid
+  createdByUser        User?               @relation("trustSafetyRiskFlagCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  resolvedByUserId     String?             @db.Uuid
+  resolvedByUser       User?               @relation("trustSafetyRiskFlagResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  resolvedAt           DateTime?           @db.Timestamptz(3)
+
+  @@index([status])
+  @@index([severity])
+  @@index([source])
+  @@index([targetType])
+  @@index([courseId])
+  @@index([creatorUserId])
+  @@index([creatorApplicationId])
+  @@index([reportId])
+  @@index([payoutId])
+  @@index([oneOnOneSessionId])
+  @@index([createdAt])
+}
+
+model CourseLessonProgress {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+  courseId    String       @db.Uuid
+  lessonId    String       @db.Uuid
+  lesson      CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId      String       @db.Uuid
+  completedAt DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@unique([lessonId, userId])
+  @@index([courseId, userId])
+}
+
+model CourseAssignment {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+  title              String
+  prompt             String
+  orderIndex         Int           @default(0)
+  dueDaysAfterEnroll Int?
+  rubric             Json?
+  allowResubmissions Boolean       @default(true)
+  maxAttempts        Int?
+  courseId           String        @db.Uuid
+  course             Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId           String?       @db.Uuid
+  module             CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId           String?       @db.Uuid
+  lesson             CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  submissions CourseAssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([lessonId])
+  @@index([courseId, orderIndex])
+}
+
+model CourseAssignmentSubmission {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+  assignmentId   String           @db.Uuid
+  assignment     CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  courseId       String           @db.Uuid
+  userId         String           @db.Uuid
+  memberId       String?          @db.Uuid
+  text           String?
+  files          Json?
+  attemptNumber  Int              @default(1)
+  status         String           @default("submitted")
+  submittedAt    DateTime         @default(now()) @db.Timestamptz(3)
+  reviewedAt     DateTime?        @db.Timestamptz(3)
+  reviewerUserId String?          @db.Uuid
+  feedback       String?
+  rubricScores   Json?
+  score          Int?
+  maxScore       Int?
+
+  @@unique([assignmentId, userId, attemptNumber])
+  @@index([courseId, userId])
+  @@index([assignmentId, userId, submittedAt])
+  @@index([status])
+}
+
+model CoursePracticeAttempt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+  courseId       String    @db.Uuid
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId       String?   @db.Uuid
+  member         Member?   @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  status         String    @default("active")
+  startedAt      DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime? @db.Timestamptz(3)
+  totalQuestions Int       @default(0)
+  correctAnswers Int       @default(0)
+  scorePercent   Int?
+
+  answers                CoursePracticeAnswer[]
+  courseLearningSessions CourseLearningSession[]
+
+  @@index([courseId, userId])
+  @@index([userId, status])
+}
+
+model CoursePracticeAnswer {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt           DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @db.Timestamptz(3)
+  attemptId           String                @db.Uuid
+  attempt             CoursePracticeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  practiceQuestionId  String                @db.Uuid
+  practiceQuestion    PracticeQuestion      @relation(fields: [practiceQuestionId], references: [id], onDelete: Cascade)
+  selectedAnswerIndex Int?
+  isCorrect           Boolean?
+  answeredAt          DateTime?             @db.Timestamptz(3)
+
+  @@unique([attemptId, practiceQuestionId])
+  @@index([practiceQuestionId])
+}
+
+model CourseStudentNote {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
+  courseId  String        @db.Uuid
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String        @db.Uuid
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId  String?       @db.Uuid
+  member    Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  lessonId  String?       @db.Uuid
+  lesson    CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title     String
+  content   String
+  tags      String[]      @default([])
+
+  @@index([courseId, userId])
+  @@index([lessonId])
+}
+
+model CourseStudyPlanItem {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+  courseId       String    @db.Uuid
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId       String?   @db.Uuid
+  member         Member?   @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  plannedForDate String?
+  status         String    @default("todo")
+  source         String    @default("manual")
+  completedAt    DateTime? @db.Timestamptz(3)
+
+  @@index([courseId, userId])
+  @@index([userId, status])
+  @@index([plannedForDate])
+}
+
+model CourseDiagnosticAttempt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+  courseId       String    @db.Uuid
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId       String?   @db.Uuid
+  status         String    @default("active")
+  startedAt      DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime? @db.Timestamptz(3)
+  totalQuestions Int       @default(0)
+  correctAnswers Int       @default(0)
+  scorePercent   Int?
+  domainScores   Json      @default("[]")
+
+  answers CourseDiagnosticAnswer[]
+
+  @@index([courseId, userId])
+  @@index([userId, status])
+}
+
+model CourseDiagnosticAnswer {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt           DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime                @updatedAt @db.Timestamptz(3)
+  attemptId           String                  @db.Uuid
+  attempt             CourseDiagnosticAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  userId              String                  @db.Uuid
+  source              String
+  sourceQuestionId    String                  @db.Uuid
+  questionText        String
+  answerOptions       Json                    @default("[]")
+  correctAnswerIndex  Int
+  selectedAnswerIndex Int?
+  isCorrect           Boolean?
+  explanation         String?
+  difficulty          String
+  domain              String
+  answeredAt          DateTime?               @db.Timestamptz(3)
+
+  @@unique([attemptId, source, sourceQuestionId])
+  @@index([attemptId])
+  @@index([userId])
+  @@index([domain])
+}
+
+model CourseDomainMastery {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
+  courseId          String    @db.Uuid
+  course            Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId            String    @db.Uuid
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain            String
+  scorePercent      Int       @default(0)
+  confidence        String    @default("low")
+  evidenceCount     Int       @default(0)
+  lastPracticedAt   DateTime? @db.Timestamptz(3)
+  recommendedAction String?
+
+  @@unique([courseId, userId, domain])
+  @@index([courseId, userId])
+  @@index([userId, scorePercent])
+}
+
+model CourseFlashcardReview {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  courseId       String          @db.Uuid
+  course         Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String          @db.Uuid
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcardId    String          @db.Uuid
+  flashcard      CourseFlashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  easeFactor     Int             @default(250)
+  intervalDays   Int             @default(0)
+  repetitions    Int             @default(0)
+  dueAt          DateTime        @default(now()) @db.Timestamptz(3)
+  lastReviewedAt DateTime?       @db.Timestamptz(3)
+  lastRating     String?
+
+  @@unique([userId, flashcardId])
+  @@index([courseId, userId, dueAt])
+  @@index([flashcardId])
+}
+
+model CourseStudyStreak {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+  courseId         String    @db.Uuid
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId           String    @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime? @db.Date
+
+  @@unique([courseId, userId])
+  @@index([userId])
+}
+
+model CourseRemediationPlan {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+  courseId    String    @db.Uuid
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId    String?   @db.Uuid
+  domain      String
+  status      String    @default("active")
+  title       String
+  description String?
+  items       Json      @default("[]")
+  source      String    @default("deterministic")
+  completedAt DateTime? @db.Timestamptz(3)
+
+  @@index([courseId, userId, status])
+  @@index([userId, status])
+  @@index([domain])
+}
+
+model CourseLearningSession {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt           DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime               @updatedAt @db.Timestamptz(3)
+  courseId            String                 @db.Uuid
+  course              Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId              String                 @db.Uuid
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId            String?                @db.Uuid
+  lessonId            String?                @db.Uuid
+  lesson              CourseLesson?          @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  practiceAttemptId   String?                @db.Uuid
+  practiceAttempt     CoursePracticeAttempt? @relation(fields: [practiceAttemptId], references: [id], onDelete: SetNull)
+  lastRoute           String?
+  lastPositionSeconds Int?
+  lastScrollPercent   Int?
+  lastActivityAt      DateTime               @default(now()) @db.Timestamptz(3)
+  deviceType          String?
+  metadata            Json                   @default("{}")
+
+  @@unique([courseId, userId])
+  @@index([userId, lastActivityAt])
+  @@index([lessonId])
+  @@index([practiceAttemptId])
+}
+
+model StudentReminderPreference {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+  userId                String   @db.Uuid
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId              String?  @db.Uuid
+  course                Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enabled               Boolean  @default(true)
+  quietHoursStart       String?
+  quietHoursEnd         String?
+  timezone              String   @default("UTC")
+  channels              String[] @default(["mobilePush"])
+  smartRemindersEnabled Boolean  @default(true)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([enabled])
+}
+
+model StudentReminderDelivery {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  userId       String   @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String   @db.Uuid
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reminderType String
+  deliveryKey  String   @unique
+  sentAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, createdAt])
+  @@index([courseId, reminderType])
+  @@index([reminderType])
+}
+
+// NOTE: the CourseQuiz / CourseQuestion / CoursePracticeExam family deliberately has no
+// organizationId column. Postgres RLS is auto-enabled only on tables that carry
+// organizationId (see setupRowLevelSecurity.ts). Course content is application-guarded
+// via Course ownership + enrollment, consistent with the other Course* tables.
+model CourseQuiz {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+  title              String
+  description        String?
+  orderIndex         Int           @default(0)
+  passingScore       Int?
+  timeLimitMinutes   Int?
+  randomizeQuestions Boolean       @default(false)
+  randomizeAnswers   Boolean       @default(false)
+  showExplanations   Boolean       @default(true)
+  allowRetries       Boolean       @default(true)
+  maxAttempts        Int?
+  courseId           String        @db.Uuid
+  course             Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId           String?       @db.Uuid
+  module             CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId           String?       @db.Uuid
+  lesson             CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  questions CourseQuizQuestion[]
+  attempts  CourseQuizAttempt[]
+
+  @@index([courseId])
+  @@index([courseId, orderIndex])
+  @@index([moduleId])
+  @@index([lessonId])
+}
+
+// Reusable question bank, scoped to a course.
+model CourseQuestion {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  courseId        String   @db.Uuid
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdByUserId String?  @db.Uuid
+  questionText    String
+  questionType    String   @default("multipleChoice")
+  explanation     String?
+  difficulty      String   @default("medium")
+  examDomain      String?
+  tags            String[] @default([])
+  source          String?
+  aiGenerated     Boolean  @default(false)
+  status          String   @default("draft")
+  meta            Json?
+
+  answers   CourseQuestionAnswer[]
+  quizLinks CourseQuizQuestion[]
+
+  @@index([courseId])
+  @@index([courseId, status])
+  @@index([courseId, examDomain])
+  @@index([courseId, difficulty])
+}
+
+model CourseQuestionAnswer {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
+  questionId  String         @db.Uuid
+  question    CourseQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerText  String
+  isCorrect   Boolean        @default(false)
+  matchText   String?
+  explanation String?
+  orderIndex  Int            @default(0)
+
+  @@index([questionId])
+  @@index([questionId, orderIndex])
+}
+
+// Join: a bank question's placement (order + points) within a quiz.
+model CourseQuizQuestion {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
+  quizId     String         @db.Uuid
+  quiz       CourseQuiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId String         @db.Uuid
+  question   CourseQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  orderIndex Int            @default(0)
+  points     Int            @default(1)
+
+  @@unique([quizId, questionId])
+  @@index([quizId])
+  @@index([quizId, orderIndex])
+  @@index([questionId])
+}
+
+model CourseQuizAttempt {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime    @updatedAt @db.Timestamptz(3)
+  quizId       String?     @db.Uuid
+  quiz         CourseQuiz? @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  courseId     String      @db.Uuid
+  course       Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId       String      @db.Uuid
+  memberId     String?     @db.Uuid
+  answers      Json        @default("[]")
+  scorePercent Int
+  passed       Boolean
+  submittedAt  DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([courseId, userId])
+  @@index([quizId, userId])
+}
+
+// Persisted attempts at an AI-generated quiz / practice set (course study AI).
+// AI questions are study-only — not bank questions and never graded toward the
+// course — so the generated questions are stored inline on the attempt. These
+// feed weakness detection alongside CourseQuizAttempt / CoursePracticeExamAttempt.
+model CourseAiQuizAttempt {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  courseId     String   @db.Uuid
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId     String?  @db.Uuid
+  userId       String   @db.Uuid
+  memberId     String?  @db.Uuid
+  kind         String   @default("quiz")
+  questions    Json     @default("[]")
+  answers      Json     @default("[]")
+  scorePercent Int      @default(0)
+  passed       Boolean  @default(false)
+  domainScores Json     @default("[]")
+  submittedAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([courseId, userId])
+  @@index([courseId, userId, submittedAt])
+}
+
+model CoursePracticeExam {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+  courseId           String   @db.Uuid
+  course             Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  examType           String?
+  totalQuestions     Int      @default(0)
+  timeLimitMinutes   Int?
+  passingScore       Int?
+  randomizeQuestions Boolean  @default(true)
+  simulateRealExam   Boolean  @default(false)
+  orderIndex         Int      @default(0)
+
+  rules    CoursePracticeExamRule[]
+  attempts CoursePracticeExamAttempt[]
+
+  @@index([courseId])
+  @@index([courseId, orderIndex])
+}
+
+model CoursePracticeExamRule {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
+  practiceExamId String             @db.Uuid
+  practiceExam   CoursePracticeExam @relation(fields: [practiceExamId], references: [id], onDelete: Cascade)
+  examDomain     String
+  questionCount  Int                @default(0)
+  difficulty     String?
+  orderIndex     Int                @default(0)
+
+  @@index([practiceExamId])
+}
+
+model CoursePracticeExamAttempt {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @db.Timestamptz(3)
+  practiceExamId String?             @db.Uuid
+  practiceExam   CoursePracticeExam? @relation(fields: [practiceExamId], references: [id], onDelete: SetNull)
+  courseId       String              @db.Uuid
+  course         Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId         String              @db.Uuid
+  memberId       String?             @db.Uuid
+  questionIds    Json                @default("[]")
+  answers        Json                @default("[]")
+  scorePercent   Int                 @default(0)
+  passed         Boolean             @default(false)
+  domainScores   Json                @default("[]")
+  startedAt      DateTime            @default(now()) @db.Timestamptz(3)
+  submittedAt    DateTime?           @db.Timestamptz(3)
+
+  @@index([courseId, userId])
+  @@index([practiceExamId, userId])
+}
+
+// Phase 8: block-based lesson content. `content` JSON shape depends on blockType
+// (e.g. paragraph {text}, heading {level,text}, callout {variant,text}). The
+// legacy CourseLesson.content (Markdown) is kept; renderers prefer blocks.
+model CourseLessonBlock {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+  lessonId   String       @db.Uuid
+  lesson     CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  blockType  String
+  content    Json         @default("{}")
+  orderIndex Int          @default(0)
+
+  @@index([lessonId])
+  @@index([lessonId, orderIndex])
+}
+
+// Phase 9: tracks each AI content-generation request. AI output is always
+// saved as a draft for the creator to review and accept — never auto-applied.
+model CourseAiGenerationJob {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  userId          String    @db.Uuid
+  courseId        String?   @db.Uuid
+  jobType         String
+  status          String    @default("queued")
+  input           Json      @default("{}")
+  output          Json?
+  qualityReport   Json?
+  progressPercent Int       @default(0)
+  progressStage   String?
+  errorMessage    String?
+  queuedAt        DateTime  @default(now()) @db.Timestamptz(3)
+  startedAt       DateTime? @db.Timestamptz(3)
+  completedAt     DateTime? @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+model CourseBuilderCheckpoint {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  courseId  String   @db.Uuid
+  userId    String   @db.Uuid
+  source    String
+  label     String?
+  payload   Json     @default("{}")
+
+  @@index([courseId, userId, createdAt])
+  @@index([courseId, userId, source])
+  @@index([userId])
+}
+
+model CourseOutcome {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+  courseId   String   @db.Uuid
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  text       String
+  orderIndex Int      @default(0)
+
+  @@index([courseId])
+}
+
+model CourseRequirement {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+  courseId   String   @db.Uuid
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  text       String
+  orderIndex Int      @default(0)
+
+  @@index([courseId])
+}
+
+model CourseFlashcardSet {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  title       String
+  description String?
+  orderIndex  Int           @default(0)
+  courseId    String        @db.Uuid
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId    String?       @db.Uuid
+  module      CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId    String?       @db.Uuid
+  lesson      CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  cards CourseFlashcard[]
+
+  @@index([courseId])
+  @@index([courseId, orderIndex])
+  @@index([moduleId])
+  @@index([lessonId])
+}
+
+model CourseFlashcard {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
+  flashcardSetId String             @db.Uuid
+  flashcardSet   CourseFlashcardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+  front          String
+  back           String
+  hint           String?
+  orderIndex     Int                @default(0)
+
+  reviews CourseFlashcardReview[]
+
+  @@index([flashcardSetId])
+  @@index([flashcardSetId, orderIndex])
+}
+
+model CreatorApplication {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt                   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt                   DateTime  @updatedAt @db.Timestamptz(3)
+  userId                      String    @unique @db.Uuid
+  memberId                    String?   @db.Uuid
+  legalName                   String?
+  displayName                 String
+  professionalTitle           String?
+  bio                         String
+  credentials                 String
+  certifications              Json      @default("[]")
+  expertise                   String
+  teachingExperience          String?
+  audience                    String?
+  courseTopics                String[]  @default([])
+  sampleLessonPlan            String?
+  links                       String[]  @default([])
+  payoutContact               String?
+  payoutOnboardingStatus      String    @default("notStarted")
+  payoutOnboardingNotes       String?
+  payoutOnboardingUpdatedAt   DateTime? @db.Timestamptz(3)
+  identityDocumentFiles       Json?
+  identityVerificationConsent Boolean   @default(false)
+  identityStatus              String    @default("notStarted")
+  identityScanStatus          String    @default("notStarted")
+  identityScanSummary         String?
+  identityScanChecks          String[]  @default([])
+  identityScannedAt           DateTime? @db.Timestamptz(3)
+  identityReviewedByUserId    String?   @db.Uuid
+  identityReviewedAt          DateTime? @db.Timestamptz(3)
+  status                      String    @default("pending")
+  adminNotes                  String?
+  reviewedByUserId            String?   @db.Uuid
+  reviewedAt                  DateTime? @db.Timestamptz(3)
+  nexVerified                 Boolean   @default(false)
+  nexVerifiedAt               DateTime? @db.Timestamptz(3)
+  nexVerifiedByUserId         String?   @db.Uuid
+  safetyStatus                String    @default("active")
+  safetyDisabledAt            DateTime? @db.Timestamptz(3)
+  safetyDisabledByUserId      String?   @db.Uuid
+  safetyDisabledByUser        User?     @relation("creatorSafetyDisabledBy", fields: [safetyDisabledByUserId], references: [id], onDelete: SetNull)
+  safetyDisabledReason        String?
+
+  trustSafetyRiskFlags TrustSafetyRiskFlag[]
+
+  @@index([status])
+  @@index([identityStatus])
+  @@index([nexVerified])
+  @@index([safetyStatus])
+}
+
+// Better Auth tables
+model Session {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt            DateTime @db.Timestamptz(3)
+  token                String   @unique
+  createdAt            DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @db.Timestamptz(3)
+  ipAddress            String?
+  userAgent            String?
+  userId               String   @db.Uuid
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?  @db.Uuid
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+}
+
+model Verification {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+}
+
+// Better Auth MCP OAuth Models
+model OauthApplication {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String?
+  icon         String?
+  metadata     String?
+  clientId     String?  @unique
+  clientSecret String?
+  redirectUrls String?
+  type         String?
+  disabled     Boolean? @default(false)
+  userId       String?  @db.Uuid
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  oauthaccesstokens OauthAccessToken[]
+  oauthconsents     OauthConsent[]
+}
+
+model OauthAccessToken {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accessToken           String?           @unique
+  refreshToken          String?           @unique
+  accessTokenExpiresAt  DateTime?         @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime?         @db.Timestamptz(3)
+  clientId              String?
+  oauthapplication      OauthApplication? @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId                String?           @db.Uuid
+  user                  User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes                String?
+  createdAt             DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
+}
+
+model OauthConsent {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId         String?
+  oauthapplication OauthApplication? @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId           String?           @db.Uuid
+  user             User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes           String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  consentGiven     Boolean?
+}
+
+// --- One-on-One Calls ------------------------------------------------------
+// Course-scoped 1:1 video sessions between an enrolled student and the course
+// instructor (a Course creator). Like the rest of the Course* family, these
+// tables omit `organizationId` (access is enrollment/instructor-guarded, not
+// org-scoped, so RLS is not auto-enabled).
+
+enum OneOnOneSessionStatus {
+  pendingPayment
+  confirmed
+  completed
+  cancelledByStudent
+  cancelledByInstructor
+  noShow
+  expired
+  disputed
+  refunded
+}
+
+enum OneOnOneDisputeStatus {
+  open
+  underReview
+  resolvedRefund
+  resolvedNoRefund
+}
+
+// A recurring weekly availability window for an instructor. Stored as
+// minute-of-day in the instructor's IANA timezone so DST math stays explicit.
+model InstructorAvailability {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+  instructorUserId String   @db.Uuid
+  instructorUser   User     @relation(fields: [instructorUserId], references: [id], onDelete: Cascade)
+  dayOfWeek        Int // 0 = Sunday .. 6 = Saturday
+  startMinute      Int // minutes from local midnight, inclusive
+  endMinute        Int // minutes from local midnight, exclusive
+  timezone         String // IANA tz the window is expressed in
+  isActive         Boolean  @default(true)
+
+  @@index([instructorUserId])
+  @@index([instructorUserId, dayOfWeek])
+}
+
+// A bookable offering. courseId null = applies to all the instructor's courses.
+model OneOnOneSessionType {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+  instructorUserId String   @db.Uuid
+  instructorUser   User     @relation(fields: [instructorUserId], references: [id], onDelete: Cascade)
+  courseId         String?  @db.Uuid
+  course           Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  durationMinutes  Int
+  isFree           Boolean  @default(true)
+  priceCents       Int? // required when isFree = false
+  currency         String   @default("USD")
+  bufferMinutes    Int      @default(0)
+  minNoticeHours   Int      @default(12)
+  isActive         Boolean  @default(true)
+
+  sessions OneOnOneSession[]
+
+  @@index([instructorUserId])
+  @@index([courseId])
+}
+
+// A booked 1:1 session instance.
+model OneOnOneSession {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime            @updatedAt @db.Timestamptz(3)
+  sessionTypeId    String              @db.Uuid
+  sessionType      OneOnOneSessionType @relation(fields: [sessionTypeId], references: [id], onDelete: Restrict)
+  courseId         String              @db.Uuid
+  course           Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructorUserId String              @db.Uuid
+  instructorUser   User                @relation("oneOnOneInstructor", fields: [instructorUserId], references: [id], onDelete: Cascade)
+  studentUserId    String              @db.Uuid
+  studentUser      User                @relation("oneOnOneStudent", fields: [studentUserId], references: [id], onDelete: Cascade)
+
+  // Scheduled times are always stored UTC; clients render in the viewer's tz.
+  scheduledStartAt DateTime  @db.Timestamptz(3)
+  scheduledEndAt   DateTime  @db.Timestamptz(3)
+  // Slot start used by the double-booking unique constraint. Null once the
+  // session is cancelled/expired, which frees the slot (NULLs are distinct).
+  slotKey          DateTime? @db.Timestamptz(3)
+
+  status OneOnOneSessionStatus @default(confirmed)
+
+  // Meeting link (auto-generated Jitsi room).
+  jitsiRoomName String @unique
+  jitsiUrl      String
+
+  // Payment (null for free sessions).
+  priceCents              Int?
+  currency                String         @default("USD")
+  stripeCheckoutSessionId String?        @unique
+  stripePaymentIntentId   String?
+  paidAt                  DateTime?      @db.Timestamptz(3)
+  refundedAt              DateTime?      @db.Timestamptz(3)
+  refundCents             Int?
+  payoutId                String?        @db.Uuid
+  payout                  CreatorPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  paymentExpiresAt        DateTime?      @db.Timestamptz(3)
+
+  // Cancellation.
+  cancelledAt        DateTime? @db.Timestamptz(3)
+  cancelledByUserId  String?   @db.Uuid
+  cancellationReason String?
+  isLateCancel       Boolean   @default(false)
+
+  notes                OneOnOneSessionNote[]
+  dispute              OneOnOneDispute?
+  trustSafetyRiskFlags TrustSafetyRiskFlag[]
+
+  @@unique([instructorUserId, slotKey])
+  @@index([studentUserId])
+  @@index([instructorUserId, status])
+  @@index([courseId])
+  @@index([scheduledStartAt])
+  @@index([status, paymentExpiresAt])
+}
+
+// A note attached to a session. isShared = visible to both parties.
+model OneOnOneSessionNote {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @db.Timestamptz(3)
+  sessionId    String          @db.Uuid
+  session      OneOnOneSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  authorUserId String          @db.Uuid
+  authorUser   User            @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  body         String
+  isShared     Boolean         @default(false)
+
+  @@index([sessionId])
+}
+
+// A student-opened dispute over a paid session, resolved by a platform admin.
+model OneOnOneDispute {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+  sessionId        String                @unique @db.Uuid
+  session          OneOnOneSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  openedByUserId   String                @db.Uuid
+  openedByUser     User                  @relation(fields: [openedByUserId], references: [id], onDelete: Cascade)
+  reason           String
+  status           OneOnOneDisputeStatus @default(open)
+  resolutionNotes  String?
+  resolvedByUserId String?               @db.Uuid
+  resolvedAt       DateTime?             @db.Timestamptz(3)
+
+  @@index([status])
+}
+
+// GDPR data-export request. Worker collects the user's data into a private
+// S3 zip; the row holds the result + a signed download is minted on demand.
+model UserDataExport {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime?    @db.Timestamptz(3)
+  failedAt       DateTime?    @db.Timestamptz(3)
+  userId         String       @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  s3Key          String?
+  errorMessage   String?
+
+  @@index([userId, createdAt])
+}
+
+// One-shot tokens issued by the email worker so a click on the unsubscribe
+// footer can flip a user's emailUnsubscribedChannels without requiring sign-in.
+model EmailUnsubscribeToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String    @unique
+  consumedAt DateTime? @db.Timestamptz(3)
+
+  @@index([userId])
+  // Backs the daily cleanup cron's `deleteMany({ where: { consumedAt:
+  // { not: null, lt: thirtyDaysAgo } } })` query (security audit #19).
+  @@index([consumedAt])
+}
+
+// One-shot 24h-TTL token emailed after a deletion request. Confirming the
+// link transitions deletion from "requested" to "locked in" (deletionConfirmedAt).
+model AccountDeletionConfirmationToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String    @unique
+  consumedAt DateTime? @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([expiresAt])
+  // Backs the half of the cleanup cron filtering on `consumedAt < threshold`
+  // (security audit #19). The expiresAt index covers the other half.
+  @@index([consumedAt])
+}

@@ -1,0 +1,13 @@
+{{ log_dir }}/*.log {
+    daily
+    rotate {{ backup_retention_days }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 {{ app_user }} {{ app_group }}
+    sharedscripts
+    postrotate
+        systemctl reload backend frontend worker || true
+    endscript
+}
