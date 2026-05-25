@@ -8,9 +8,8 @@ export const chatbotMessageSchema = z.object({
 });
 
 // Legacy input shape (no conversationId) — still accepted by the old
-// `POST /api/chatbot/message` route during the transition. Frontend modal
-// (`ChatbotSheet`) writes to this until Subsystem 3.7 bridges it onto the new
-// per-conversation route. Will be removed in v2 with the modal.
+// `POST /api/chatbot/message` route. The frontend `ChatbotSheet` modal
+// writes to this; the full-page tutor uses the per-conversation route.
 export const chatbotSendMessageInputSchema = z.object({
   message: z.string().trim().min(1).max(10000),
   conversationHistory: z.array(chatbotMessageSchema).optional(),

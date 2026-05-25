@@ -157,10 +157,9 @@ export async function mintDataExportSignedUrl(params: {
 }
 
 /**
- * Worker body. Collects the user's data into one JSON document (v2 will
- * expand to a multi-file zip with per-table CSVs) and uploads it to the
- * private S3 bucket. On success: stamp completedAt + s3Key, email the
- * user. On failure: stamp failedAt + errorMessage; pg-boss retries with
+ * Worker body. Collects the user's data into one JSON document and uploads
+ * it to the private S3 bucket. On success: stamp completedAt + s3Key, email
+ * the user. On failure: stamp failedAt + errorMessage; pg-boss retries with
  * backoff.
  */
 export async function runDataExportJob(exportId: string, locale: Locale) {

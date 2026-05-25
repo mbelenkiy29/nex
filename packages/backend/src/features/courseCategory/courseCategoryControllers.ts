@@ -144,10 +144,10 @@ export async function platformAdminCourseCategoryCreateController(
 
 /**
  * Admin update. If `name` changes, slug is **not** recomputed (slugs are URL-
- * stable identifiers in v1; rename a category by deactivating + creating
- * fresh if a slug change is needed). Renaming a category fans the new `name`
- * out to `Course.category` for every course linked via `categoryId`, keeping
- * the legacy mirror column in sync until v2 drops it.
+ * stable identifiers; rename a category by deactivating + creating fresh if a
+ * slug change is needed). Renaming a category fans the new `name` out to
+ * `Course.category` for every course linked via `categoryId`, keeping the
+ * legacy mirror column in sync.
  */
 export async function platformAdminCourseCategoryUpdateController(
   params: { id: string },
@@ -183,7 +183,7 @@ export async function platformAdminCourseCategoryUpdateController(
     });
 
     // Mirror name into the legacy `Course.category` String column for any
-    // courses linked via the new FK. v2 drops the legacy column entirely.
+    // courses linked via the new FK.
     if (data.name !== undefined && data.name !== before.name) {
       await tx.course.updateMany({
         where: { categoryId: params.id },

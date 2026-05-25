@@ -27,8 +27,7 @@ import {
   logger,
 } from '../../shared/lib/logger';
 
-// Cap on prior turns sent to the model. Older history is silently dropped
-// (v2 ships server-side summarization for long threads).
+// Cap on prior turns sent to the model. Older history is silently dropped.
 const CONVERSATION_HISTORY_LIMIT = 50;
 
 export async function chatbotSendMessageController(

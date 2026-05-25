@@ -286,7 +286,7 @@ function courseBaseData(
 
   // When a categoryId is supplied, the resolved CourseCategory.name overrides
   // the freeform `category` string so the legacy column stays in lock-step
-  // with the FK. v2 drops the freeform column entirely.
+  // with the FK.
   const category =
     options?.categoryNameMirror !== undefined
       ? options.categoryNameMirror
