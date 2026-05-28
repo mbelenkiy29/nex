@@ -1,17 +1,15 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { env } from '../../env';
 import { Error400 } from '../../shared/errors/Error400';
+import {
+  aiTextProviderConfigured,
+  aiTextProviderModel,
+  generateAiText,
+} from '../../shared/ai/aiTextProvider';
 import type { CourseAiJobType } from './courseAiSchemas';
 
-// Reuses the same Anthropic client + model as the chatbot feature. When the key
-// is missing the assistant degrades gracefully (generation throws a clear 400).
-const anthropic = env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
-  : null;
-export const COURSE_AI_MODEL = 'claude-haiku-4-5-20251001';
+export const COURSE_AI_MODEL = aiTextProviderModel();
 
 export function courseAiConfigured() {
-  return Boolean(anthropic);
+  return aiTextProviderConfigured();
 }
 
 // Expected JSON output shape per job type — the editor maps these into the
@@ -82,30 +80,22 @@ export async function runCourseAiGeneration(
   usage: { inputTokens: number; outputTokens: number };
   model: string;
 }> {
-  if (!anthropic) {
+  if (!courseAiConfigured()) {
     throw new Error400(messages.notConfigured);
   }
 
-  const response = await anthropic.messages.create({
-    model: COURSE_AI_MODEL,
-    max_tokens: 4096,
+  const response = await generateAiText({
     system: systemPrompt(jobType),
-    messages: [{ role: 'user', content: prompt }],
+    prompt,
+    maxTokens: 4096,
+    json: true,
   });
-
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('');
 
   try {
     return {
-      json: parseJsonResponse(text),
-      usage: {
-        inputTokens: response.usage?.input_tokens ?? 0,
-        outputTokens: response.usage?.output_tokens ?? 0,
-      },
-      model: COURSE_AI_MODEL,
+      json: parseJsonResponse(response.text),
+      usage: response.usage,
+      model: response.model,
     };
   } catch {
     throw new Error400(messages.parseFailed);

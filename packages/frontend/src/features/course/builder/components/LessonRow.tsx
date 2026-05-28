@@ -1,4 +1,5 @@
 import { storage } from '@project/backend/features/permissions';
+import { useMutation } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
   LuChevronDown,
@@ -6,7 +7,10 @@ import {
   LuEye,
   LuEyeOff,
   LuFileText,
+  LuLoader,
+  LuRefreshCw,
 } from 'react-icons/lu';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/authStore';
 import {
   type BuilderLesson,
@@ -14,9 +18,10 @@ import {
   type CourseBuilderForm,
 } from '@/features/course/courseBuilderUtils';
 import { FilesUploadDropzone } from '@/features/file/components/FilesUploadDropzone';
+import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Input } from '@/shared/components/ui/input';
-import { Textarea } from '@/shared/components/ui/textarea';
+import { apiClient } from '@/shared/lib/apiClient';
 import { LessonBlocksEditor } from './LessonBlocksEditor';
 import { IconButton, LabeledInput } from './primitives';
 
@@ -30,6 +35,7 @@ export function LessonRow({
   setForm,
   expanded,
   onToggle,
+  courseId,
 }: {
   lesson: BuilderLesson;
   handle: ReactNode;
@@ -38,9 +44,11 @@ export function LessonRow({
   setForm: BuilderSetForm;
   expanded: boolean;
   onToggle: () => void;
+  courseId?: string | null;
 }) {
   const dictionary = useAuthStore((state) => state.dictionary);
   const builder = dictionary.course.builder;
+  const transcript = dictionary.course.videoTranscript;
 
   const patch = (changes: Partial<BuilderLesson>) =>
     setForm((current) => ({
@@ -49,6 +57,26 @@ export function LessonRow({
         item.id === lesson.id ? { ...item, ...changes } : item,
       ),
     }));
+  const retryTranscript = useMutation({
+    mutationFn: async () =>
+      await apiClient
+        .post(
+          `api/course-builder/${courseId}/lessons/${lesson.id}/video-transcript/retry`,
+        )
+        .json<{ lesson: Partial<BuilderLesson> }>(),
+    onSuccess: (result) => {
+      patch({
+        videoTranscriptText: result.lesson.videoTranscriptText ?? null,
+        videoTranscriptStatus: result.lesson.videoTranscriptStatus ?? 'queued',
+        videoTranscriptSourceKey:
+          result.lesson.videoTranscriptSourceKey ?? null,
+        videoTranscriptError: result.lesson.videoTranscriptError ?? null,
+        videoTranscriptGeneratedAt:
+          result.lesson.videoTranscriptGeneratedAt ?? null,
+      });
+      toast.success(transcript.retryQueued);
+    },
+  });
 
   return (
     <div className="rounded-xl border bg-white/80 dark:bg-white/10">
@@ -107,15 +135,6 @@ export function LessonRow({
 
       {expanded && (
         <div className="grid gap-3 border-t border-white/60 p-3 dark:border-white/10">
-          <Textarea
-            value={lesson.content}
-            disabled={!editable}
-            placeholder={dictionary.course.fields.lessonContent}
-            onChange={(event) => patch({ content: event.target.value })}
-            className="min-h-24 rounded-lg bg-white/80 dark:bg-white/10"
-          />
-          <p className="text-muted-foreground text-xs">{builder.contentHint}</p>
-
           <LessonBlocksEditor
             lessonId={lesson.id}
             blocks={form.blocks.filter((block) => block.lessonId === lesson.id)}
@@ -132,8 +151,48 @@ export function LessonRow({
               formats={['mp4', 'webm', 'mov']}
               readonly={!editable}
               value={lesson.videoFiles}
-              onChange={(value) => patch({ videoFiles: value || [] })}
+              onChange={(value) =>
+                patch({
+                  videoFiles: value || [],
+                  videoTranscriptText: null,
+                  videoTranscriptStatus: value?.length ? 'queued' : null,
+                  videoTranscriptSourceKey: null,
+                  videoTranscriptError: null,
+                  videoTranscriptGeneratedAt: null,
+                })
+              }
             />
+            {lesson.videoFiles.length > 0 && (
+              <div className="bg-nexexam-soft/70 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs dark:bg-white/8">
+                <span className="font-semibold">
+                  {transcript.statusLabel}:{' '}
+                  {
+                    transcript.status[
+                      lesson.videoTranscriptStatus || 'notRequested'
+                    ]
+                  }
+                </span>
+                {lesson.videoTranscriptStatus === 'failed' &&
+                  editable &&
+                  courseId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-lg bg-white/80 text-xs dark:bg-white/10"
+                      disabled={retryTranscript.isPending}
+                      onClick={() => retryTranscript.mutate()}
+                    >
+                      {retryTranscript.isPending ? (
+                        <LuLoader className="mr-1.5 size-3.5 animate-spin" />
+                      ) : (
+                        <LuRefreshCw className="mr-1.5 size-3.5" />
+                      )}
+                      {transcript.retry}
+                    </Button>
+                  )}
+              </div>
+            )}
           </div>
           <LabeledInput
             label={dictionary.course.fields.videoUrl}

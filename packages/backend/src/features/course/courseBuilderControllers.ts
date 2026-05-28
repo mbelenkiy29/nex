@@ -29,6 +29,11 @@ import {
   trustSafetyRequirePolicyAcceptance,
 } from '../trustSafety/trustSafetyService';
 import { courseReviewDecisionCreate } from './courseReviewDecisionService';
+import {
+  courseVideoTranscriptEnqueue,
+  courseVideoTranscriptEnqueueQueuedLessons,
+} from './courseVideoTranscriptQueue';
+import { courseLessonVideoSourceKey } from './courseVideoTranscriptService';
 
 // The Course Builder is creator-facing. Read access (list/get) only requires an
 // existing creator application so a creator whose Nex Verified badge lapsed can
@@ -83,20 +88,11 @@ async function findOwnedCourse(courseId: string, userId: string) {
 
 function courseBuilderMetadata(
   data: ReturnType<typeof courseBuilderManageInputSchema.parse>,
-  options?: { categoryNameMirror?: string | null },
 ) {
-  // categoryNameMirror lets the caller override the freeform `category`
-  // string with the resolved CourseCategory.name when a categoryId is set.
-  const category =
-    options?.categoryNameMirror !== undefined
-      ? options.categoryNameMirror
-      : normalizeNullableString(data.category);
-
   return {
     title: data.title,
     subtitle: normalizeNullableString(data.subtitle),
     description: normalizeNullableString(data.description),
-    category,
     categoryId: data.categoryId ?? null,
     examType: normalizeNullableString(data.examType),
     thumbnail: data.thumbnail as Prisma.InputJsonValue,
@@ -109,39 +105,6 @@ function courseBuilderMetadata(
   };
 }
 
-/**
- * Resolves a CourseCategory row to its `name` for mirroring into the legacy
- * `Course.category` String column. Returns null if no categoryId was set or
- * the category was deleted/disabled. Pure helper — caller decides when to
- * skip the mirror by passing `undefined` instead.
- */
-async function resolveCategoryNameMirror(
-  tx: PrismaTxLike,
-  categoryId: string | null | undefined,
-): Promise<string | null | undefined> {
-  if (categoryId === undefined) {
-    return undefined;
-  }
-  if (categoryId === null) {
-    return null;
-  }
-  const row = await tx.courseCategory.findUnique({
-    where: { id: categoryId },
-    select: { name: true },
-  });
-  return row?.name ?? null;
-}
-
-// Narrow type for any tx-or-prisma instance with `courseCategory.findUnique`.
-type PrismaTxLike = {
-  courseCategory: {
-    findUnique: (args: {
-      where: { id: string };
-      select: { name: true };
-    }) => Promise<{ name: string } | null>;
-  };
-};
-
 type BuilderCourse = Prisma.CourseGetPayload<{ include: typeof courseInclude }>;
 
 function courseToBuilderCheckpointPayload(course: BuilderCourse) {
@@ -150,7 +113,6 @@ function courseToBuilderCheckpointPayload(course: BuilderCourse) {
     slug: course.slug,
     subtitle: course.subtitle,
     description: course.description,
-    category: course.category,
     categoryId: course.categoryId,
     examType: course.examType,
     thumbnail: course.thumbnail,
@@ -170,10 +132,14 @@ function courseToBuilderCheckpointPayload(course: BuilderCourse) {
       id: lesson.id,
       title: lesson.title,
       description: lesson.description,
-      content: lesson.content,
       videoFiles: lesson.videoFiles,
       videoUrl: lesson.videoUrl,
       resourceFiles: lesson.resourceFiles,
+      videoTranscriptText: lesson.videoTranscriptText,
+      videoTranscriptStatus: lesson.videoTranscriptStatus,
+      videoTranscriptSourceKey: lesson.videoTranscriptSourceKey,
+      videoTranscriptError: lesson.videoTranscriptError,
+      videoTranscriptGeneratedAt: lesson.videoTranscriptGeneratedAt,
       videoDurationSeconds: lesson.videoDurationSeconds,
       orderIndex: lesson.orderIndex,
       isPreview: lesson.isPreview,
@@ -454,14 +420,10 @@ export async function courseBuilderCheckpointRestoreController(
     oldData.id,
   );
   const course = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
-    const categoryNameMirror = await resolveCategoryNameMirror(
-      tx,
-      data.categoryId,
-    );
     await tx.course.update({
       where: { id: oldData.id },
       data: {
-        ...courseBuilderMetadata(data, { categoryNameMirror }),
+        ...courseBuilderMetadata(data),
         slug,
         updatedByUserId: currentUser.id,
       },
@@ -493,6 +455,7 @@ export async function courseBuilderCheckpointRestoreController(
     payload: data,
   });
 
+  await courseVideoTranscriptEnqueueQueuedLessons(course.lessons);
   await filePopulateDownloadUrlInTree(course);
   return { checkpoint, course, restoredToCourse: true };
 }
@@ -559,13 +522,9 @@ export async function courseBuilderCreateController(
   const slug = await courseUniqueSlug(data.title, data.slug);
 
   const course = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
-    const categoryNameMirror = await resolveCategoryNameMirror(
-      tx,
-      data.categoryId,
-    );
     const created = await tx.course.create({
       data: {
-        ...courseBuilderMetadata(data, { categoryNameMirror }),
+        ...courseBuilderMetadata(data),
         slug,
         status: 'draft',
         accessType: 'free',
@@ -595,6 +554,7 @@ export async function courseBuilderCreateController(
     newData: course,
   });
 
+  await courseVideoTranscriptEnqueueQueuedLessons(course.lessons);
   await filePopulateDownloadUrlInTree(course);
   return { course };
 }
@@ -621,14 +581,10 @@ export async function courseBuilderUpdateController(
   );
 
   const course = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
-    const categoryNameMirror = await resolveCategoryNameMirror(
-      tx,
-      data.categoryId,
-    );
     await tx.course.update({
       where: { id: oldData.id },
       data: {
-        ...courseBuilderMetadata(data, { categoryNameMirror }),
+        ...courseBuilderMetadata(data),
         slug,
         updatedByUserId: currentUser.id,
       },
@@ -653,8 +609,66 @@ export async function courseBuilderUpdateController(
     newData: course,
   });
 
+  await courseVideoTranscriptEnqueueQueuedLessons(course.lessons);
   await filePopulateDownloadUrlInTree(course);
   return { course };
+}
+
+export async function courseBuilderVideoTranscriptRetryController(
+  params: { id: string; lessonId: string },
+  context: AppContext,
+) {
+  const { currentUser } = await authGuardVerifiedCreatorBackend(context);
+  const course = await findOwnedCourse(params.id, currentUser.id);
+  if (course.status !== 'draft') {
+    throw new Error400(context.dictionary.course.errors.editLockedNotDraft);
+  }
+
+  const lesson = course.lessons.find((item) => item.id === params.lessonId);
+  if (!lesson) {
+    throw new Error404();
+  }
+
+  const sourceKey = courseLessonVideoSourceKey(lesson.videoFiles);
+  if (!sourceKey) {
+    throw new Error400(context.dictionary.course.errors.videoTranscriptNoVideo);
+  }
+
+  const updated = await prisma.courseLesson.update({
+    where: { id: lesson.id },
+    data: {
+      videoTranscriptText: null,
+      videoTranscriptStatus: 'queued',
+      videoTranscriptSourceKey: sourceKey,
+      videoTranscriptError: null,
+      videoTranscriptGeneratedAt: null,
+    },
+  });
+
+  await auditLogCreate({
+    entityId: updated.id,
+    entityName: 'CourseLesson',
+    operation: auditLogOperations.update,
+    organizationId: null,
+    userId: currentUser.id,
+    memberId: context.currentMember?.id || null,
+    oldData: {
+      videoTranscriptStatus: lesson.videoTranscriptStatus,
+      videoTranscriptSourceKey: lesson.videoTranscriptSourceKey,
+    },
+    newData: {
+      videoTranscriptStatus: updated.videoTranscriptStatus,
+      videoTranscriptSourceKey: updated.videoTranscriptSourceKey,
+    },
+  });
+
+  await courseVideoTranscriptEnqueue({
+    kind: 'transcribe',
+    lessonId: updated.id,
+    sourceKey,
+  });
+
+  return { lesson: updated };
 }
 
 export async function courseBuilderSubmitForReviewController(

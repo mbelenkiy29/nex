@@ -99,7 +99,7 @@ export function MemberActions({
       queryClient.resetQueries({
         queryKey: ['member'],
       });
-      toast.success('User successfully disabled');
+      toast.success(dictionary.member.disable.success);
     },
     onError: (error: any) => {
       const errorMessage = error.message || dictionary.shared.errors.unknown;
@@ -118,7 +118,7 @@ export function MemberActions({
       queryClient.resetQueries({
         queryKey: ['member'],
       });
-      toast.success('User successfully restored');
+      toast.success(dictionary.member.restore.success);
     },
     onError: (error: any) => {
       const errorMessage = error.message || dictionary.shared.errors.unknown;
@@ -244,7 +244,7 @@ export function MemberActions({
               disabled={disableMutation.isPending}
             >
               <LuBan className="text-foreground/50 mr-2 h-4 w-4" />{' '}
-              <span>Disable</span>
+              <span>{dictionary.member.disable.label}</span>
             </DropdownMenuItem>
           )}
 
@@ -254,7 +254,7 @@ export function MemberActions({
               disabled={restoreMutation.isPending}
             >
               <LuUndo2 className="text-foreground/50 mr-2 h-4 w-4" />{' '}
-              <span>Restore</span>
+              <span>{dictionary.member.restore.label}</span>
             </DropdownMenuItem>
           )}
 
@@ -328,8 +328,8 @@ export function MemberActions({
 
       {disableDialogOpen && (
         <ConfirmDialog
-          title="Disable User?"
-          confirmText="Disable"
+          title={dictionary.member.disable.confirmTitle}
+          confirmText={dictionary.member.disable.label}
           variant="destructive"
           cancelText={dictionary.shared.cancel}
           onConfirm={() => {
@@ -342,8 +342,8 @@ export function MemberActions({
 
       {restoreDialogOpen && (
         <ConfirmDialog
-          title="Restore User?"
-          confirmText="Restore"
+          title={dictionary.member.restore.confirmTitle}
+          confirmText={dictionary.member.restore.label}
           variant="default"
           cancelText={dictionary.shared.cancel}
           onConfirm={() => {

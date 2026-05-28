@@ -19,6 +19,12 @@ import { McpTool } from '../../mcp/mcpTypes';
 import { toMcpJsonSchema } from '../../mcp/mcpSchemaConverter';
 import { Dictionary } from '../../../translation/locales';
 import { env } from '../../../env';
+import { productAnalyticsTrackSystemEvent } from '../../productAnalytics/productAnalyticsService';
+import {
+  checkoutTrustAnalyticsMetadata,
+  checkoutTrustSessionOptions,
+} from '../../checkout/checkoutTrust';
+import { pricingMetadataFromCheckout } from '../../pricing/pricingService';
 
 export const subscriptionCheckoutApiDoc: RouteConfig = {
   method: 'post',
@@ -43,7 +49,8 @@ export async function subscriptionCheckoutController(
   query: unknown,
   context: AppContext,
 ): Promise<z.output<typeof subscriptionCheckoutOutputSchema>> {
-  const { stripePriceId } = subscriptionCheckoutInputSchema.parse(query);
+  const input = subscriptionCheckoutInputSchema.parse(query);
+  const { stripePriceId } = input;
 
   if (!(await subscriptionIsValidStripePriceId(stripePriceId))) {
     throw new Error400(
@@ -82,6 +89,7 @@ export async function subscriptionCheckoutController(
   const frontendUrl = getFrontendUrl(context.currentOrganization?.slug);
 
   const session = await stripe.checkout.sessions.create({
+    ...checkoutTrustSessionOptions(context, 'subscription'),
     line_items: [
       {
         price: stripePriceId,
@@ -89,9 +97,29 @@ export async function subscriptionCheckoutController(
       },
     ],
     mode: 'subscription',
-    success_url: `${frontendUrl}/subscription`,
-    cancel_url: `${frontendUrl}/subscription`,
+    success_url: `${frontendUrl}/subscription/activation?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendUrl}/subscription?checkout=cancelled`,
     customer: customer.id,
+    customer_update: {
+      address: 'auto',
+      name: 'auto',
+    },
+    allow_promotion_codes: true,
+    payment_method_collection: 'always',
+    metadata: pricingMetadataFromCheckout({
+      pricingPackageId: input.pricingPackageId,
+      pricingExperimentId: input.pricingExperimentId,
+      pricingVariantId: input.pricingVariantId,
+      packageType: input.packageType ?? 'monthly_subscription',
+    }),
+    subscription_data: {
+      metadata: pricingMetadataFromCheckout({
+        pricingPackageId: input.pricingPackageId,
+        pricingExperimentId: input.pricingExperimentId,
+        pricingVariantId: input.pricingVariantId,
+        packageType: input.packageType ?? 'monthly_subscription',
+      }),
+    },
   });
 
   if (!session.url) {
@@ -99,6 +127,27 @@ export async function subscriptionCheckoutController(
       context.dictionary.subscription.errors.stripeNotConfigured,
     );
   }
+
+  await productAnalyticsTrackSystemEvent({
+    eventName: 'checkout_started',
+    source: 'backend',
+    dedupeKey: `checkout_started:subscription:${session.id}`,
+    userId: context.currentUser?.id ?? null,
+    memberId: context.currentMember?.id ?? null,
+    organizationId: context.currentOrganization?.id ?? null,
+    stripeCheckoutSessionId: session.id,
+    stripePriceId,
+    ctaLocation: 'subscription_plan_card',
+    funnelId: `subscription:${stripePriceId}`,
+    metadata: {
+      purchaseType: 'subscription',
+      packageType: input.packageType,
+      pricingPackageId: input.pricingPackageId,
+      pricingExperimentId: input.pricingExperimentId,
+      pricingVariantId: input.pricingVariantId,
+      ...checkoutTrustAnalyticsMetadata('subscription'),
+    },
+  });
 
   return { url: session.url };
 }

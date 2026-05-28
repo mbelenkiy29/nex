@@ -199,12 +199,14 @@ async function setupRLSForTable(
  */
 const USER_OWNED_TABLES: ReadonlyArray<{ table: string; column: string }> = [
   { table: 'CourseBuilderCheckpoint', column: 'userId' },
+  { table: 'AiTrustPreference', column: 'userId' },
   { table: 'CourseAiGenerationJob', column: 'userId' },
   { table: 'CourseCertificate', column: 'userId' },
   { table: 'CourseCouponRedemption', column: 'userId' },
   { table: 'CourseDiagnosticAnswer', column: 'userId' },
   { table: 'CourseDiagnosticAttempt', column: 'userId' },
   { table: 'CourseDomainMastery', column: 'userId' },
+  { table: 'CourseReadinessSnapshot', column: 'userId' },
   { table: 'CourseFlashcardReview', column: 'userId' },
   { table: 'CourseRemediationPlan', column: 'userId' },
   { table: 'CourseStudyStreak', column: 'userId' },

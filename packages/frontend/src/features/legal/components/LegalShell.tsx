@@ -34,7 +34,7 @@ export function LegalShell({
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              aria-label="Back home"
+              aria-label={dictionary.shared.backHome}
               className="text-nexexam-muted hover:text-nexexam-primary inline-flex h-8 w-8 items-center justify-center rounded-lg transition"
             >
               <LuArrowLeft className="size-4" />

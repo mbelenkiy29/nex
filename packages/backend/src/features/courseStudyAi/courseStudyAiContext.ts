@@ -1,6 +1,8 @@
 import { AppContext } from '../../shared/controller/appContext';
 import { Error404 } from '../../shared/errors/Error404';
 import { courseEnsureLearningAccess } from '../course/courseControllers';
+import { AI_TRUST_DEFAULT_PREFERENCES } from '../aiTrust/aiTrustService';
+import type { AiTrustPreferences } from '../aiTrust/aiTrustSchemas';
 
 // Caps so a single course never blows past a reasonable prompt size.
 const MAX_LESSON_CHARS = 9000;
@@ -9,8 +11,7 @@ const MAX_LESSON_IN_MODULE = 2200;
 
 /**
  * Flattens the modern block-editor content (CourseLessonBlock[]) into plain
- * text the model can read. The legacy `courseBuildAiContext` only reads the
- * old `CourseLesson.content` markdown — this also covers block-based lessons.
+ * text the model can read.
  */
 function flattenBlocks(blocks: Array<{ blockType: string; content: any }>) {
   const parts: Array<string> = [];
@@ -21,12 +22,14 @@ function flattenBlocks(blocks: Array<{ blockType: string; content: any }>) {
         if (content.text) parts.push(`## ${content.text}`);
         break;
       case 'paragraph':
+      case 'aiTutorPrompt':
         if (content.text) parts.push(String(content.text));
         break;
       case 'callout':
         if (content.text) parts.push(`> ${content.text}`);
         break;
-      case 'list':
+      case 'bulletList':
+      case 'numberedList':
         if (Array.isArray(content.items)) {
           parts.push(
             content.items
@@ -38,23 +41,21 @@ function flattenBlocks(blocks: Array<{ blockType: string; content: any }>) {
           );
         }
         break;
-      case 'codeBlock':
-        if (content.code) parts.push(`\`\`\`\n${content.code}\n\`\`\``);
-        break;
       default:
-        // image / video / pdf / quizEmbed / flashcardSet / table / aiTutorPrompt
-        // carry no prose worth feeding the model.
+        // Media, embeds, tables, and dividers carry no plain prose.
         break;
     }
   }
   return parts.join('\n\n').trim();
 }
 
-// Combined block text + legacy markdown for one lesson.
 function lessonText(lesson: any) {
   const blockText = flattenBlocks(lesson.blocks || []);
-  const legacy = String(lesson.content || '').trim();
-  return [blockText, legacy].filter(Boolean).join('\n\n').trim();
+  const transcript = String(lesson.videoTranscriptText || '').trim();
+  return [blockText, transcript ? `Video transcript:\n${transcript}` : null]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
 }
 
 /**
@@ -66,6 +67,7 @@ export async function buildLessonContext(
   courseId: string,
   lessonId: string,
   context: AppContext,
+  preferences: AiTrustPreferences = AI_TRUST_DEFAULT_PREFERENCES,
 ) {
   const { course } = await courseEnsureLearningAccess(courseId, context);
   const lesson = (course.lessons as Array<any>).find(
@@ -78,7 +80,9 @@ export async function buildLessonContext(
     (item) => item.id === lesson.moduleId,
   );
 
-  const body = lessonText(lesson).slice(0, MAX_LESSON_CHARS);
+  const body = preferences.useLessonContent
+    ? lessonText(lesson).slice(0, MAX_LESSON_CHARS)
+    : '';
   const text = [
     `Course: ${course.title}`,
     module ? `Module: ${module.title}` : null,
@@ -101,6 +105,7 @@ export async function buildModuleContext(
   courseId: string,
   moduleId: string,
   context: AppContext,
+  preferences: AiTrustPreferences = AI_TRUST_DEFAULT_PREFERENCES,
 ) {
   const { course } = await courseEnsureLearningAccess(courseId, context);
   const module = (course.modules as Array<any>).find(
@@ -125,7 +130,7 @@ export async function buildModuleContext(
   let hasContent = false;
   for (const lesson of lessons) {
     lines.push(`### Lesson: ${lesson.title}`);
-    const body = lessonText(lesson);
+    const body = preferences.useLessonContent ? lessonText(lesson) : '';
     if (body) {
       hasContent = true;
       lines.push(body.slice(0, MAX_LESSON_IN_MODULE));
@@ -158,6 +163,7 @@ export function buildStudyAnalyticsText(
   },
   completedLessonIds: Set<string>,
   examInfo?: { examName?: string | null; daysUntil?: number | null },
+  preferences: AiTrustPreferences = AI_TRUST_DEFAULT_PREFERENCES,
 ): string {
   const lines: Array<string> = [`Course: ${course.title}`];
 
@@ -169,7 +175,9 @@ export function buildStudyAnalyticsText(
     );
   }
 
-  if (weaknesses.domains.length) {
+  if (!preferences.usePracticeResults) {
+    lines.push('', 'Topic performance was not used by student preference.');
+  } else if (weaknesses.domains.length) {
     lines.push('', 'Topic performance (weakest first):');
     for (const domain of weaknesses.domains) {
       lines.push(
@@ -182,6 +190,10 @@ export function buildStudyAnalyticsText(
 
   const lessons = (course.lessons as Array<any>) || [];
   const modules = (course.modules as Array<any>) || [];
+  if (!preferences.useLessonProgress) {
+    lines.push('', 'Lesson progress was not used by student preference.');
+    return lines.join('\n');
+  }
   const incomplete = lessons.filter(
     (lesson) => !completedLessonIds.has(lesson.id),
   );

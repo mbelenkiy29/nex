@@ -7,6 +7,7 @@ import { Error401 } from '../../shared/errors/Error401';
 import { Error404 } from '../../shared/errors/Error404';
 import { Prisma } from '../../prisma/generated/client';
 import { prisma } from '../../prisma';
+import { AiTextProviderError } from '../../shared/ai/aiTextProvider';
 import { auditLogCreate } from '../auditLog/auditLogCreate';
 import { auditLogOperations } from '../auditLog/auditLogOperations';
 import { courseEnsureLearningAccess } from '../course/courseControllers';
@@ -21,6 +22,17 @@ import {
   buildModuleContext,
   buildStudyAnalyticsText,
 } from './courseStudyAiContext';
+import {
+  aiTrustGetPreferences,
+  aiTrustJson,
+  aiTrustLimitations,
+  aiTrustSignal,
+  aiTrustSource,
+} from '../aiTrust/aiTrustService';
+import type {
+  AiTrustPreferences,
+  AiTrustSignal,
+} from '../aiTrust/aiTrustSchemas';
 import {
   acquireStudyAiLock,
   releaseStudyAiLock,
@@ -72,10 +84,116 @@ function languageNameOf(context: AppContext) {
   return promptLanguageName(context.locale);
 }
 
+function courseStudyAiTrustConfidence(params: {
+  preferences: AiTrustPreferences;
+  answeredPracticeCount: number;
+  completedLessonCount: number;
+  hasLessonContent: boolean;
+}) {
+  const signals = [
+    params.preferences.usePracticeResults && params.answeredPracticeCount > 0,
+    params.preferences.useLessonProgress && params.completedLessonCount > 0,
+    params.preferences.useLessonContent && params.hasLessonContent,
+  ].filter(Boolean).length;
+  if (signals >= 3 || params.answeredPracticeCount >= 10) return 'high';
+  if (signals >= 1) return 'medium';
+  return 'low';
+}
+
+function courseStudyPlanTrustSignal(params: {
+  context: AppContext;
+  preferences: AiTrustPreferences;
+  course: any;
+  weaknesses: { domains: Array<any>; totalAnswered: number };
+  completedLessonIds: Set<string>;
+  examDate: string | null;
+  daysUntil: number | null;
+  model?: string | null;
+}): AiTrustSignal {
+  const { context, preferences, course, weaknesses, completedLessonIds } =
+    params;
+  const t = context.dictionary.aiTrust;
+  const lessons = ((course.lessons || []) as Array<any>).filter(
+    (lesson) => !lesson.isHidden,
+  );
+  const incompleteLessons = lessons.filter(
+    (lesson) => !completedLessonIds.has(lesson.id),
+  );
+  const lessonDetails = incompleteLessons
+    .slice(0, 5)
+    .map((lesson) => lesson.title)
+    .filter(Boolean);
+  const weaknessDetails = weaknesses.domains
+    .slice(0, 5)
+    .map((domain) => `${domain.domain}: ${domain.percent}%`);
+
+  const influencingData = [
+    aiTrustSource('courseOutline', 'used', {
+      count: lessons.length,
+      details: ((course.modules || []) as Array<any>)
+        .slice(0, 5)
+        .map((module) => module.title)
+        .filter(Boolean),
+    }),
+    preferences.useLessonProgress
+      ? aiTrustSource(
+          'lessonProgress',
+          lessons.length ? 'used' : 'unavailable',
+          {
+            count: completedLessonIds.size,
+            details: lessonDetails,
+          },
+        )
+      : aiTrustSource('lessonProgress', 'omitted'),
+    preferences.usePracticeResults
+      ? aiTrustSource(
+          'practiceResults',
+          weaknesses.totalAnswered > 0 ? 'used' : 'unavailable',
+          {
+            count: weaknesses.totalAnswered,
+            details: weaknessDetails,
+          },
+        )
+      : aiTrustSource('practiceResults', 'omitted'),
+    params.examDate
+      ? aiTrustSource('examDate', 'used', {
+          details: [
+            params.daysUntil != null
+              ? `${params.daysUntil} ${t.units.days}`
+              : params.examDate,
+          ],
+        })
+      : aiTrustSource('examDate', 'unavailable'),
+  ];
+
+  const hasLessonContent = lessons.some(
+    (lesson) =>
+      (lesson.blocks || []).length > 0 ||
+      Boolean(String(lesson.videoTranscriptText || '').trim()),
+  );
+  return aiTrustSignal({
+    context,
+    preferences,
+    whyGenerated: t.reasons.studyPlan,
+    influencingData,
+    confidenceLevel: courseStudyAiTrustConfidence({
+      preferences,
+      answeredPracticeCount: weaknesses.totalAnswered,
+      completedLessonCount: completedLessonIds.size,
+      hasLessonContent,
+    }),
+    limitations: aiTrustLimitations(context, preferences, [
+      weaknesses.totalAnswered === 0 ? t.limitations.noPracticeData : null,
+      completedLessonIds.size === 0 ? t.limitations.noLessonProgress : null,
+    ]),
+    model: params.model ?? STUDY_AI_MODEL,
+  });
+}
+
 /**
  * Runs a one-shot JSON AI study action behind the per-user lock and the shared
  * daily token limits. Returns a 409 when another study request is in flight and
- * a 429 when a token cap is hit; any other error propagates to ApiResponseError.
+ * a 429 when a token cap is hit; provider failures are localized generically.
  */
 async function runJsonStudyAi<T>(
   c: Context,
@@ -84,6 +202,7 @@ async function runJsonStudyAi<T>(
   generate: () => Promise<{
     payload: T;
     usage: { inputTokens: number; outputTokens: number };
+    model?: string;
   }>,
 ) {
   const { userId, organizationId } = requireStudyAiSession(context);
@@ -133,7 +252,7 @@ async function runJsonStudyAi<T>(
       );
     }
 
-    const { payload, usage } = await generate();
+    const { payload, usage, model } = await generate();
     if (usage.inputTokens || usage.outputTokens) {
       await trackTokenUsage(
         userId,
@@ -147,7 +266,7 @@ async function runJsonStudyAi<T>(
       organizationId,
       courseId: options.courseId,
       action: options.action,
-      model: STUDY_AI_MODEL,
+      model: model || STUDY_AI_MODEL,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       durationMs: durationMs(startedAt),
@@ -163,6 +282,9 @@ async function runJsonStudyAi<T>(
       durationMs: durationMs(startedAt),
       error: errorToLogMetadata(error),
     });
+    if (error instanceof AiTextProviderError) {
+      throw new Error400(context.dictionary.course.studyAi.errors.generic);
+    }
     throw error;
   } finally {
     await releaseStudyAiLock(userId);
@@ -228,11 +350,13 @@ async function streamLessonText(
       );
     }
 
+    const preferences = await aiTrustGetPreferences(context);
     // Building the context enforces the enrolled-student guard (401/403/404).
     const lessonContext = await buildLessonContext(
       courseId,
       data.lessonId,
       context,
+      preferences,
     );
 
     const language = languageNameOf(context);
@@ -371,6 +495,7 @@ export async function courseStudyAiQuizController(
       courseId,
       data.moduleId,
       context,
+      await aiTrustGetPreferences(context),
     );
     if (!moduleContext.hasContent) {
       throw new Error400(
@@ -378,7 +503,7 @@ export async function courseStudyAiQuizController(
       );
     }
     const errors = context.dictionary.course.studyAi.errors;
-    const { json, usage } = await runCourseStudyAiGeneration(
+    const generation = await runCourseStudyAiGeneration(
       quizSystemPrompt(5, languageNameOf(context)),
       `Generate the quiz from this module content:\n\n${moduleContext.text}`,
       4096,
@@ -391,11 +516,12 @@ export async function courseStudyAiQuizController(
       payload: {
         kind: 'quiz' as const,
         moduleId: data.moduleId,
-        questions: parseGeneratedQuestions(json, {
+        questions: parseGeneratedQuestions(generation.json, {
           unexpectedQuizFormat: errors.unexpectedQuizFormat,
         }),
       },
-      usage,
+      usage: generation.usage,
+      model: generation.model,
     };
   });
 }
@@ -416,6 +542,7 @@ export async function courseStudyAiPracticeController(
         courseId,
         data.moduleId,
         context,
+        await aiTrustGetPreferences(context),
       );
       if (!moduleContext.hasContent) {
         throw new Error400(
@@ -423,7 +550,7 @@ export async function courseStudyAiPracticeController(
         );
       }
       const errors = context.dictionary.course.studyAi.errors;
-      const { json, usage } = await runCourseStudyAiGeneration(
+      const generation = await runCourseStudyAiGeneration(
         quizSystemPrompt(data.count, languageNameOf(context)),
         `Generate the practice questions from this module content:\n\n${moduleContext.text}`,
         8000,
@@ -436,11 +563,12 @@ export async function courseStudyAiPracticeController(
         payload: {
           kind: 'practice' as const,
           moduleId: data.moduleId,
-          questions: parseGeneratedQuestions(json, {
+          questions: parseGeneratedQuestions(generation.json, {
             unexpectedQuizFormat: errors.unexpectedQuizFormat,
           }),
         },
-        usage,
+        usage: generation.usage,
+        model: generation.model,
       };
     },
   );
@@ -562,17 +690,28 @@ export async function courseStudyAiNextController(
   return runJsonStudyAi(c, context, { action: 'next', courseId }, async () => {
     const { course } = await courseEnsureLearningAccess(courseId, context);
     const userId = context.currentUser!.id;
+    const preferences = await aiTrustGetPreferences(context);
     const [weaknesses, progress] = await Promise.all([
-      computeWeaknesses(courseId, userId),
-      prisma.courseLessonProgress.findMany({
-        where: { courseId, userId },
-        select: { lessonId: true },
-      }),
+      preferences.usePracticeResults
+        ? computeWeaknesses(courseId, userId)
+        : Promise.resolve({ domains: [], totalAnswered: 0 }),
+      preferences.useLessonProgress
+        ? prisma.courseLessonProgress.findMany({
+            where: { courseId, userId },
+            select: { lessonId: true },
+          })
+        : Promise.resolve([]),
     ]);
     const completed = new Set(progress.map((row) => row.lessonId));
-    const contextText = buildStudyAnalyticsText(course, weaknesses, completed);
+    const contextText = buildStudyAnalyticsText(
+      course,
+      weaknesses,
+      completed,
+      undefined,
+      preferences,
+    );
     const errors = context.dictionary.course.studyAi.errors;
-    const { json, usage } = await runCourseStudyAiGeneration(
+    const generation = await runCourseStudyAiGeneration(
       nextStepSystemPrompt(languageNameOf(context)),
       `Recommend what this student should study next.\n\n${contextText}`,
       1024,
@@ -583,11 +722,12 @@ export async function courseStudyAiNextController(
     );
     return {
       payload: {
-        recommendation: parseNextRecommendation(json, {
+        recommendation: parseNextRecommendation(generation.json, {
           unexpectedResponse: errors.unexpectedResponse,
         }),
       },
-      usage,
+      usage: generation.usage,
+      model: generation.model,
     };
   });
 }
@@ -605,7 +745,12 @@ export async function courseStudyAiListStudyPlanController(
     where: { courseId, userId },
     orderBy: [{ plannedForDate: 'asc' }, { createdAt: 'asc' }],
   });
-  return c.json({ items });
+  return c.json({
+    items,
+    trust:
+      items.find((item) => item.source === 'ai' && item.trustSignals)
+        ?.trustSignals ?? null,
+  });
 }
 
 export async function courseStudyAiCreateStudyPlanItemController(
@@ -722,12 +867,17 @@ export async function courseStudyAiGenerateStudyPlanController(
         context,
       );
       const userId = context.currentUser!.id;
+      const preferences = await aiTrustGetPreferences(context);
       const [weaknesses, progress] = await Promise.all([
-        computeWeaknesses(courseId, userId),
-        prisma.courseLessonProgress.findMany({
-          where: { courseId, userId },
-          select: { lessonId: true },
-        }),
+        preferences.usePracticeResults
+          ? computeWeaknesses(courseId, userId)
+          : Promise.resolve({ domains: [], totalAnswered: 0 }),
+        preferences.useLessonProgress
+          ? prisma.courseLessonProgress.findMany({
+              where: { courseId, userId },
+              select: { lessonId: true },
+            })
+          : Promise.resolve([]),
       ]);
       const completed = new Set(progress.map((row) => row.lessonId));
       const examDate = enrollment?.targetExamDate ?? null;
@@ -740,10 +890,11 @@ export async function courseStudyAiGenerateStudyPlanController(
           examName: enrollment?.examName,
           daysUntil,
         },
+        preferences,
       );
 
       const errors = context.dictionary.course.studyAi.errors;
-      const { json, usage } = await runCourseStudyAiGeneration(
+      const generation = await runCourseStudyAiGeneration(
         studyPlanSystemPrompt(languageNameOf(context)),
         `Build a study plan for this student.\n\n${contextText}`,
         3000,
@@ -753,11 +904,21 @@ export async function courseStudyAiGenerateStudyPlanController(
         },
       );
       const dated = distributeStudyPlanDates(
-        parseStudyPlanItems(json, {
+        parseStudyPlanItems(generation.json, {
           unexpectedStudyPlan: errors.unexpectedStudyPlan,
         }),
         daysUntil,
       );
+      const trust = courseStudyPlanTrustSignal({
+        context,
+        preferences,
+        course,
+        weaknesses,
+        completedLessonIds: completed,
+        examDate,
+        daysUntil,
+        model: generation.model,
+      });
 
       // Regenerating replaces prior AI items; manually added items are kept.
       await prisma.courseStudyPlanItem.deleteMany({
@@ -774,6 +935,7 @@ export async function courseStudyAiGenerateStudyPlanController(
             plannedForDate: item.plannedForDate,
             status: 'todo',
             source: 'ai',
+            trustSignals: aiTrustJson(trust),
           })),
         });
       }
@@ -782,7 +944,11 @@ export async function courseStudyAiGenerateStudyPlanController(
         where: { courseId, userId },
         orderBy: [{ plannedForDate: 'asc' }, { createdAt: 'asc' }],
       });
-      return { payload: { items }, usage };
+      return {
+        payload: { items, trust },
+        usage: generation.usage,
+        model: generation.model,
+      };
     },
   );
 }

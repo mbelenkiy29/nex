@@ -10,9 +10,15 @@ import {
   DEFAULT_REVENUE_SHARE_BPS,
   computeCreatorPayout,
 } from '../oneOnOnePayoutSplit';
+import {
+  COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+  COURSE_REVENUE_SHARE_TOTAL_BPS,
+} from '../../course/courseRevenueShare';
 
 // 2026-06-01 is a Monday (dayOfWeek 1); 2026-01-05 is also a Monday.
-const utcWindow = (over: Partial<AvailabilityWindow> = {}): AvailabilityWindow => ({
+const utcWindow = (
+  over: Partial<AvailabilityWindow> = {},
+): AvailabilityWindow => ({
   dayOfWeek: 1,
   startMinute: 9 * 60, // 09:00
   endMinute: 11 * 60, // 11:00
@@ -55,7 +61,11 @@ describe('expandAvailabilityToSlots', () => {
   it('respects the buffer between slots', () => {
     const slots = expandAvailabilityToSlots({
       availability: [utcWindow({ endMinute: 12 * 60 })], // 09:00-12:00
-      sessionType: { durationMinutes: 60, bufferMinutes: 30, minNoticeHours: 0 },
+      sessionType: {
+        durationMinutes: 60,
+        bufferMinutes: 30,
+        minNoticeHours: 0,
+      },
       rangeStartUtc: new Date('2026-06-01T00:00:00Z'),
       rangeEndUtc: new Date('2026-06-02T00:00:00Z'),
       bookedSlots: [],
@@ -158,7 +168,9 @@ describe('expandAvailabilityToSlots', () => {
 });
 
 describe('evaluateCancellation', () => {
-  const baseSession = (over: Partial<CancellationSession> = {}): CancellationSession => ({
+  const baseSession = (
+    over: Partial<CancellationSession> = {},
+  ): CancellationSession => ({
     status: 'confirmed',
     scheduledStartAt: new Date('2026-06-10T12:00:00Z'),
     instructorUserId: 'instructor-1',
@@ -260,12 +272,20 @@ describe('computeCreatorPayout', () => {
       amount: 14,
       currency: 'USD',
     });
-    expect(DEFAULT_REVENUE_SHARE_BPS).toBe(7000);
+    expect(DEFAULT_REVENUE_SHARE_BPS).toBe(
+      COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+    );
   });
 
   it('rounds to whole cents', () => {
-    // 999 * 7000 / 10000 = 699.3 cents -> 699 -> $6.99
-    expect(computeCreatorPayout(999, 'USD', 7000).amount).toBe(6.99);
+    const expectedCents = Math.round(
+      (999 * COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS) /
+        COURSE_REVENUE_SHARE_TOTAL_BPS,
+    );
+    expect(
+      computeCreatorPayout(999, 'USD', COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS)
+        .amount,
+    ).toBe(expectedCents / 100);
   });
 
   it('honours a custom revenue share', () => {

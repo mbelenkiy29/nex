@@ -31,7 +31,14 @@ async function corsOrigin(origin: string | undefined): Promise<string> {
     }
   }
 
-  const allowedOrigins = [getFrontendUrl()];
+  const allowedOrigins = [
+    getFrontendUrl(),
+    env.MARKETING_URL,
+    ...(env.NODE_ENV === 'development'
+      ? ['http://localhost:8099', 'http://127.0.0.1:8099']
+      : []),
+  ].filter((value): value is string => Boolean(value));
+
   return origin !== undefined && allowedOrigins.includes(origin)
     ? origin
     : allowedOrigins[0];

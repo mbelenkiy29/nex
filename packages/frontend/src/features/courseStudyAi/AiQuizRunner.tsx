@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { LuBrain, LuCheck, LuListChecks, LuRotateCw, LuX } from 'react-icons/lu';
+import {
+  LuBrain,
+  LuCheck,
+  LuListChecks,
+  LuRotateCw,
+  LuX,
+} from 'react-icons/lu';
 import type { CourseStudyAiQuestion } from '@project/backend/features/courseStudyAi/courseStudyAiSchemas';
 import { useAuthStore } from '@/features/auth/authStore';
 import { Badge } from '@/shared/components/ui/badge';
@@ -34,8 +40,9 @@ const PASS_THRESHOLD = 70;
 
 /**
  * Side sheet that generates an AI quiz / practice set scoped to one module,
- * lets the student answer it, and grades it in-memory (Phase 1 — attempts are
- * not yet persisted). AI questions are study-only and never affect grades.
+ * grades answers locally for instant feedback, and persists the completed
+ * attempt for study analytics. AI questions are study-only and never affect
+ * grades.
  */
 export function AiQuizRunner({
   courseId,
@@ -69,8 +76,8 @@ export function AiQuizRunner({
     }
   };
 
-  // Shows in-memory grading instantly and persists the attempt in the
-  // background (it feeds weakness detection — a failed persist is non-blocking).
+  // Shows local grading instantly and persists the attempt in the background;
+  // a failed persist must not block the student's result view.
   const handleCheck = () => {
     setGraded(true);
     submitMutation.mutate({
@@ -163,7 +170,6 @@ export function AiQuizRunner({
             {t.quiz.aiDisclaimer}
           </p>
 
-          {/* Phase 0 — intro / start */}
           {generation.isIdle && (
             <div className="space-y-4">
               <p className="text-sm">{t.quiz.intro}</p>
@@ -173,7 +179,6 @@ export function AiQuizRunner({
             </div>
           )}
 
-          {/* Phase 1 — generating */}
           {generation.isPending && (
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Spinner />
@@ -181,7 +186,6 @@ export function AiQuizRunner({
             </div>
           )}
 
-          {/* Phase 2 — generation failed */}
           {generation.isError && (
             <div className="space-y-4">
               <p className="text-muted-foreground text-sm">{errorMessage}</p>
@@ -196,7 +200,6 @@ export function AiQuizRunner({
             </div>
           )}
 
-          {/* Phase 3/4 — answer + results */}
           {generation.isSuccess && questions.length === 0 && (
             <p className="text-muted-foreground text-sm">
               {t.quiz.noQuestions}

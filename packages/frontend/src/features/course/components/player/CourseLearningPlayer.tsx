@@ -1,6 +1,4 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
   LuBookOpen,
   LuBookmark,
@@ -300,8 +298,7 @@ function LessonViewer({
   mode: 'student' | 'preview';
 }) {
   const dictionary = useAuthStore((state) => state.dictionary);
-  const hasArticleContent =
-    Boolean(lesson.content?.trim()) || Boolean(lesson.blocks?.length);
+  const hasArticleContent = Boolean(lesson.blocks?.length);
   const resourcesSectionId = `course-lesson-resources-${lesson.id}`;
 
   return (
@@ -317,7 +314,7 @@ function LessonViewer({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="rounded-xl">
-                {course.category || dictionary.course.list.menu}
+                {course.categoryRef?.name || dictionary.course.list.menu}
               </Badge>
               <Badge variant="outline" className="rounded-xl">
                 {videoSource
@@ -359,6 +356,31 @@ function LessonViewer({
             {dictionary.course.learn.noLessonContent}
           </div>
         )}
+
+        {videoSource &&
+          lesson.videoTranscriptStatus &&
+          lesson.videoTranscriptStatus !== 'notRequested' && (
+            <div className="rounded-2xl border p-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold">
+                <LuFileText className="size-4" />
+                {dictionary.course.videoTranscript.title}
+              </h3>
+              {lesson.videoTranscriptStatus === 'ready' &&
+              lesson.videoTranscriptText ? (
+                <div className="text-muted-foreground bg-nexexam-soft/70 mt-3 max-h-64 overflow-y-auto rounded-xl p-3 text-sm leading-6 whitespace-pre-wrap dark:bg-white/8">
+                  {lesson.videoTranscriptText}
+                </div>
+              ) : (
+                <p className="text-muted-foreground mt-3 text-sm">
+                  {
+                    dictionary.course.videoTranscript.status[
+                      lesson.videoTranscriptStatus || 'notRequested'
+                    ]
+                  }
+                </p>
+              )}
+            </div>
+          )}
 
         {lesson.resourceFiles && lesson.resourceFiles.length > 0 && (
           <div id={resourcesSectionId} className="rounded-2xl border p-4">
@@ -438,13 +460,6 @@ function ArticleBody({
 
   return (
     <div className={compact ? 'grid gap-4' : 'mt-5 grid gap-5'}>
-      {lesson.content && (
-        <div className="prose prose-slate dark:prose-invert max-w-none text-sm leading-7">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {lesson.content}
-          </ReactMarkdown>
-        </div>
-      )}
       {(lesson.blocks?.length || 0) > 0 && (
         <LessonBlockView blocks={lesson.blocks || []} />
       )}
@@ -870,9 +885,7 @@ function formatDurationFromSeconds(
 }
 
 function estimateReadingMinutes(lesson: CourseLesson) {
-  const text = [lesson.content || '', ...(lesson.blocks || []).map(blockText)]
-    .join(' ')
-    .trim();
+  const text = (lesson.blocks || []).map(blockText).join(' ').trim();
   const words = text ? text.split(/\s+/).length : 120;
   return Math.max(1, Math.ceil(words / 180));
 }

@@ -20,6 +20,7 @@ import {
   courseBuilderMetricsController,
   courseBuilderSubmitForReviewController,
   courseBuilderUpdateController,
+  courseBuilderVideoTranscriptRetryController,
   courseBuilderWithdrawController,
 } from './courseBuilderControllers';
 
@@ -160,6 +161,23 @@ courseBuilderRoutes.put('/:id', async (c) => {
     return ApiResponseError(c, context, error);
   }
 });
+
+courseBuilderRoutes.post(
+  '/:id/lessons/:lessonId/video-transcript/retry',
+  async (c) => {
+    let context;
+    try {
+      context = await appContext(c);
+      const payload = await courseBuilderVideoTranscriptRetryController(
+        { id: c.req.param('id'), lessonId: c.req.param('lessonId') },
+        context,
+      );
+      return ApiResponseSuccess(c, context, payload);
+    } catch (error: any) {
+      return ApiResponseError(c, context, error);
+    }
+  },
+);
 
 courseBuilderRoutes.post('/:id/submit', async (c) => {
   let context;

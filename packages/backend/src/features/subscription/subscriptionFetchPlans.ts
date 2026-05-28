@@ -5,6 +5,7 @@ import {
   isRedisAvailable,
 } from '../../shared/lib/redisConnection';
 import { env } from '../../env';
+import type { PricingPackageType } from '../pricing/pricingSchemas';
 
 export interface SubscriptionPlan {
   stripePriceId: string;
@@ -17,6 +18,10 @@ export interface SubscriptionPlan {
   marketingFeatures: Array<{ name: string }>;
   unitLabel: string | null;
   active: boolean;
+  packageType: PricingPackageType;
+  savingsPercent: number | null;
+  recommended: boolean;
+  comparisonGroup: string | null;
 }
 
 const REDIS_KEY = 'stripe:subscription:plans';
@@ -52,7 +57,7 @@ export async function fetchStripePlans(): Promise<SubscriptionPlan[]> {
       limit: 100,
     });
 
-    const plans: SubscriptionPlan[] = prices.data
+    const rawPlans = prices.data
       .filter((price) => price.product && typeof price.product === 'object')
       .map((price) => {
         const product = price.product as Stripe.Product;
@@ -72,6 +77,34 @@ export async function fetchStripePlans(): Promise<SubscriptionPlan[]> {
           active: product.active && price.active,
         };
       });
+    const monthlyByName = new Map(
+      rawPlans
+        .filter((plan) => plan.interval === 'month' && plan.intervalCount === 1)
+        .map((plan) => [plan.name, plan]),
+    );
+    const plans: SubscriptionPlan[] = rawPlans.map((plan) => {
+      const packageType: PricingPackageType =
+        plan.interval === 'year'
+          ? 'annual_subscription'
+          : 'monthly_subscription';
+      const monthly = monthlyByName.get(plan.name);
+      const annualBaseline =
+        monthly && plan.interval === 'year' ? monthly.unitAmount * 12 : null;
+      const savingsPercent =
+        annualBaseline && annualBaseline > plan.unitAmount
+          ? Math.round(
+              ((annualBaseline - plan.unitAmount) / annualBaseline) * 100,
+            )
+          : null;
+
+      return {
+        ...plan,
+        packageType,
+        savingsPercent,
+        recommended: packageType === 'annual_subscription',
+        comparisonGroup: 'subscription',
+      };
+    });
 
     if (await isRedisAvailable()) {
       try {

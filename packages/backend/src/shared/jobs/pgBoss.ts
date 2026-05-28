@@ -6,6 +6,7 @@ import { ONE_ON_ONE_QUEUE } from '../../features/oneOnOneCall/oneOnOneJobSchemas
 import { USER_ACCOUNT_QUEUE } from '../../features/userAccount/userAccountJobSchemas';
 import { FILE_VERIFICATION_QUEUE } from '../../features/file/fileVerificationJobSchemas';
 import { COURSE_AI_QUEUE } from '../../features/courseAi/courseAiJobSchemas';
+import { COURSE_VIDEO_TRANSCRIPT_QUEUE } from '../../features/course/courseVideoTranscriptJobSchemas';
 import { STUDENT_STUDY_REMINDER_QUEUE } from '../../features/studentExperience/studentReminderJobSchemas';
 import { logger } from '../lib/logger';
 
@@ -36,6 +37,7 @@ const QUEUES = [
   USER_ACCOUNT_QUEUE,
   FILE_VERIFICATION_QUEUE,
   COURSE_AI_QUEUE,
+  COURSE_VIDEO_TRANSCRIPT_QUEUE,
   STUDENT_STUDY_REMINDER_QUEUE,
 ];
 

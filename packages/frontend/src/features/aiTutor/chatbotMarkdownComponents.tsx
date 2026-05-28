@@ -1,9 +1,6 @@
 import type { Components } from 'react-markdown';
 
-// Shared markdown component overrides used by the new AI Tutor full-page
-// thread AND (eventually) the legacy ChatbotSheet modal. Mirrors what
-// `features/chatbot/components/ChatbotMessage.tsx` shipped today —
-// extracting it here lets both surfaces use one renderer.
+// Shared markdown overrides for AI tutor surfaces.
 export const chatbotMarkdownComponents: Components = {
   table: ({ children }) => (
     <div className="-mx-4 my-4 overflow-x-auto px-4">
@@ -12,9 +9,7 @@ export const chatbotMarkdownComponents: Components = {
       </table>
     </div>
   ),
-  thead: ({ children }) => (
-    <thead className="bg-muted/50">{children}</thead>
-  ),
+  thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
   tbody: ({ children }) => (
     <tbody className="divide-border bg-background divide-y">{children}</tbody>
   ),

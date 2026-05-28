@@ -15,6 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, type ReactNode } from 'react';
 import { LuGripVertical } from 'react-icons/lu';
+import { useAuthStore } from '@/features/auth/authStore';
 
 /**
  * Generic vertical drag-and-drop list. `renderItem` receives the item plus a
@@ -89,6 +90,7 @@ function SortableRow({
   disabled?: boolean;
   children: (handle: ReactNode) => ReactNode;
 }) {
+  const dictionary = useAuthStore((state) => state.dictionary);
   const {
     attributes,
     listeners,
@@ -107,7 +109,7 @@ function SortableRow({
   const handle = (
     <button
       type="button"
-      aria-label="Drag to reorder"
+      aria-label={dictionary.course.builder.dragHint}
       className="text-muted-foreground hover:text-foreground grid size-8 shrink-0 cursor-grab touch-none place-items-center rounded-lg active:cursor-grabbing"
       {...attributes}
       {...listeners}

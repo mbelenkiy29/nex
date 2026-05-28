@@ -1,0 +1,153 @@
+services:
+  - type: web
+    name: nexexam-marketing
+    runtime: static
+    buildCommand: echo "Static Webflow export; no build step required"
+    staticPublishPath: ./packages/marketing
+    domains:
+      - nexexam.com
+    routes:
+      - type: redirect
+        source: /index.html
+        destination: /
+      - type: rewrite
+        source: /about
+        destination: /about.html
+      - type: rewrite
+        source: /courses
+        destination: /courses.html
+      - type: rewrite
+        source: /blogs
+        destination: /blogs.html
+      - type: rewrite
+        source: /contact
+        destination: /contact.html
+
+  - type: web
+    name: nexexam-app
+    runtime: static
+    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/frontend build
+    staticPublishPath: ./packages/frontend/dist
+    domains:
+      - app.nexexam.com
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://api.nexexam.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: nexexam-api
+    runtime: node
+    plan: starter
+    region: ohio
+    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
+    preDeployCommand: pnpm --filter @project/backend db:migrate
+    startCommand: node packages/backend/dist/server.js
+    healthCheckPath: /api/health
+    domains:
+      - api.nexexam.com
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        value: https://api.nexexam.com
+      - key: FRONTEND_URL
+        value: https://app.nexexam.com
+      - key: MARKETING_URL
+        value: https://nexexam.com
+      - key: DATABASE_RLS_URL
+        sync: false
+      - key: DATABASE_BYPASS_RLS_URL
+        sync: false
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_SMTP_HOST
+        sync: false
+      - key: EMAIL_SMTP_PORT
+        sync: false
+      - key: EMAIL_SMTP_USER
+        sync: false
+      - key: EMAIL_SMTP_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: S3_BUCKET_PUBLIC
+        sync: false
+      - key: S3_BUCKET_PRIVATE
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+
+  - type: worker
+    name: nexexam-worker
+    runtime: node
+    plan: starter
+    region: ohio
+    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
+    startCommand: node packages/backend/dist/workers.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        value: https://api.nexexam.com
+      - key: FRONTEND_URL
+        value: https://app.nexexam.com
+      - key: MARKETING_URL
+        value: https://nexexam.com
+      - key: DATABASE_RLS_URL
+        sync: false
+      - key: DATABASE_BYPASS_RLS_URL
+        sync: false
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_SMTP_HOST
+        sync: false
+      - key: EMAIL_SMTP_PORT
+        sync: false
+      - key: EMAIL_SMTP_USER
+        sync: false
+      - key: EMAIL_SMTP_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: S3_BUCKET_PUBLIC
+        sync: false
+      - key: S3_BUCKET_PRIVATE
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false

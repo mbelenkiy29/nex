@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { chatbotAttachmentInputSchema } from './chatbotSchemas';
 
 // Auto-title trim: take the first 60 chars at a word boundary, fall back to
 // the dictionary's `aiTutor.untitled` string in the controller if the first
@@ -17,9 +18,6 @@ export const chatbotConversationListInputSchema = z.object({
 export const chatbotConversationCreateInputSchema = z.object({
   courseId: z.string().uuid().nullable().optional(),
   lessonId: z.string().uuid().nullable().optional(),
-  // First user message — used to auto-title the conversation. When omitted the
-  // conversation lands with the `untitled` fallback and gets renamed by the
-  // first user turn that flows through chatbotSendMessageController.
   initialMessage: z.string().trim().max(10000).optional(),
 });
 
@@ -27,11 +25,9 @@ export const chatbotConversationRenameInputSchema = z.object({
   title: z.string().trim().min(1).max(CHATBOT_CONVERSATION_TITLE_MAX),
 });
 
-// `:id/message` body — what the frontend sends per turn. `message` mirrors the
-// legacy chatbot input but conversationHistory is no longer client-side: the
-// server loads it from `ChatbotMessage` to keep the source-of-truth in the DB.
 export const chatbotSendConversationMessageInputSchema = z.object({
   message: z.string().trim().min(1).max(10000),
+  attachments: z.array(chatbotAttachmentInputSchema).max(5).optional(),
 });
 
 export type ChatbotConversationListInput = z.infer<

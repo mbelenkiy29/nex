@@ -1,6 +1,7 @@
 import { testPrismaClient } from './testPrismaClient';
 import { createAuthenticatedContext } from './testUtils';
 import { env } from '../env';
+import { COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS } from '../features/course/courseRevenueShare';
 import type {
   Course,
   CourseAssignment,
@@ -189,7 +190,7 @@ export async function createTestCourseSeed(
       priceCents: overrides.priceCents ?? null,
       currency: overrides.currency || 'USD',
       stripePriceId: overrides.stripePriceId ?? null,
-      creatorRevenueShareBps: 7000,
+      creatorRevenueShareBps: COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
       nexVerified: Boolean(creator),
       creatorUserId: creator?.user.id ?? null,
       creatorMemberId: creator?.member.id ?? null,

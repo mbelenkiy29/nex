@@ -23,6 +23,23 @@ type MetricsBucket = {
   value: number;
 };
 
+const monetizationFunnelEventNames = [
+  'course_view',
+  'preview_start',
+  'value_sample_started',
+  'value_sample_completed',
+  'sample_diagnostic_started',
+  'sample_diagnostic_completed',
+  'paywall_seen',
+  'cta_click',
+  'checkout_started',
+  'paid',
+  'first_value_after_payment',
+] as const;
+
+type MonetizationFunnelEventName =
+  (typeof monetizationFunnelEventNames)[number];
+
 const percent = (value: number, total: number) =>
   total > 0 ? Math.round((value / total) * 100) : 0;
 
@@ -110,7 +127,9 @@ function incrementBucket(
   }
 }
 
-function countMap(rows: Array<{ courseId: string | null; _count: { _all: number } }>) {
+function countMap(
+  rows: Array<{ courseId: string | null; _count: { _all: number } }>,
+) {
   const map = new Map<string, number>();
 
   rows.forEach((row) => {
@@ -175,7 +194,153 @@ function emptyMetricsPayload(scope: MetricsScope) {
       aiTokens: emptyTrend,
       revenueCents: emptyTrend,
     },
+    funnel: emptyFunnelPayload(),
     topCourses: [],
+  };
+}
+
+function emptyFunnelPayload() {
+  return {
+    steps: monetizationFunnelEventNames.map((eventName) => ({
+      eventName,
+      count: 0,
+      users: 0,
+      conversionFromPrevious: 0,
+      conversionFromStart: 0,
+    })),
+    summary: {
+      checkoutStartRate: 0,
+      paidConversionRate: 0,
+      firstValueRate: 0,
+      paidUsers: 0,
+      firstValueUsers: 0,
+    },
+    topCourses: [],
+  };
+}
+
+function analyticsActorKey(event: {
+  id: string;
+  userId: string | null;
+  anonymousId: string | null;
+  sessionId: string | null;
+}) {
+  return event.userId || event.anonymousId || event.sessionId || event.id;
+}
+
+function buildFunnelPayload(
+  events: Array<{
+    id: string;
+    eventName: string;
+    courseId: string | null;
+    userId: string | null;
+    anonymousId: string | null;
+    sessionId: string | null;
+  }>,
+  courses: Array<{ id: string; title: string }>,
+) {
+  const courseTitles = new Map(
+    courses.map((course) => [course.id, course.title]),
+  );
+  const usersByStep = new Map<MonetizationFunnelEventName, Set<string>>();
+  const countsByStep = new Map<MonetizationFunnelEventName, number>();
+
+  monetizationFunnelEventNames.forEach((eventName) => {
+    usersByStep.set(eventName, new Set());
+    countsByStep.set(eventName, 0);
+  });
+
+  const courseEvents = new Map<
+    string,
+    Map<MonetizationFunnelEventName, Set<string>>
+  >();
+
+  events.forEach((event) => {
+    if (!monetizationFunnelEventNames.includes(event.eventName as any)) {
+      return;
+    }
+    const eventName = event.eventName as MonetizationFunnelEventName;
+    const actorKey = analyticsActorKey(event);
+
+    countsByStep.set(eventName, (countsByStep.get(eventName) || 0) + 1);
+    usersByStep.get(eventName)!.add(actorKey);
+
+    if (event.courseId) {
+      if (!courseEvents.has(event.courseId)) {
+        courseEvents.set(
+          event.courseId,
+          new Map(
+            monetizationFunnelEventNames.map((name) => [
+              name,
+              new Set<string>(),
+            ]),
+          ),
+        );
+      }
+      courseEvents.get(event.courseId)!.get(eventName)!.add(actorKey);
+    }
+  });
+
+  const startUsers = usersByStep.get('course_view')!.size;
+  let previousUsers = 0;
+  const steps = monetizationFunnelEventNames.map((eventName, index) => {
+    const users = usersByStep.get(eventName)!.size;
+    const step = {
+      eventName,
+      count: countsByStep.get(eventName) || 0,
+      users,
+      conversionFromPrevious:
+        index === 0 ? (users > 0 ? 100 : 0) : percent(users, previousUsers),
+      conversionFromStart:
+        index === 0 ? (users > 0 ? 100 : 0) : percent(users, startUsers),
+    };
+    previousUsers = users;
+    return step;
+  });
+
+  const checkoutUsers = usersByStep.get('checkout_started')!.size;
+  const paidUsers = usersByStep.get('paid')!.size;
+  const firstValueUsers = usersByStep.get('first_value_after_payment')!.size;
+
+  const topCourses = Array.from(courseEvents.entries())
+    .map(([courseId, byEvent]) => {
+      const courseViews = byEvent.get('course_view')!.size;
+      const checkoutStarted = byEvent.get('checkout_started')!.size;
+      const paid = byEvent.get('paid')!.size;
+      const firstValueAfterPayment = byEvent.get(
+        'first_value_after_payment',
+      )!.size;
+
+      return {
+        courseId,
+        title: courseTitles.get(courseId) || courseId,
+        courseViews,
+        paywallSeen: byEvent.get('paywall_seen')!.size,
+        checkoutStarted,
+        paid,
+        firstValueAfterPayment,
+        paidConversionRate: percent(paid, courseViews),
+        firstValueRate: percent(firstValueAfterPayment, paid),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.paidConversionRate - a.paidConversionRate ||
+        b.paid - a.paid ||
+        b.courseViews - a.courseViews,
+    )
+    .slice(0, 8);
+
+  return {
+    steps,
+    summary: {
+      checkoutStartRate: percent(checkoutUsers, startUsers),
+      paidConversionRate: percent(paidUsers, checkoutUsers),
+      firstValueRate: percent(firstValueUsers, paidUsers),
+      paidUsers,
+      firstValueUsers,
+    },
+    topCourses,
   };
 }
 
@@ -248,6 +413,7 @@ export async function platformMetricsBuild(query: unknown) {
     courseAiQuizAverages,
     courseRatingGroups,
     courseRevenueGroups,
+    productAnalyticsEvents,
   ] = await Promise.all([
     prismaDangerouslyBypassRLS.user.findMany({
       where: {
@@ -268,7 +434,12 @@ export async function platformMetricsBuild(query: unknown) {
         ...courseActivityFilter,
         completedAt: { gte: window.start, lte: window.end },
       },
-      select: { courseId: true, lessonId: true, userId: true, completedAt: true },
+      select: {
+        courseId: true,
+        lessonId: true,
+        userId: true,
+        completedAt: true,
+      },
     }),
     prismaDangerouslyBypassRLS.courseEnrollment.groupBy({
       by: ['courseId'],
@@ -302,31 +473,56 @@ export async function platformMetricsBuild(query: unknown) {
         status: 'complete',
         OR: [
           { reviewedAt: { gte: window.start, lte: window.end } },
-          { reviewedAt: null, submittedAt: { gte: window.start, lte: window.end } },
+          {
+            reviewedAt: null,
+            submittedAt: { gte: window.start, lte: window.end },
+          },
         ],
       },
-      select: { courseId: true, assignmentId: true, userId: true, submittedAt: true, reviewedAt: true },
+      select: {
+        courseId: true,
+        assignmentId: true,
+        userId: true,
+        submittedAt: true,
+        reviewedAt: true,
+      },
     }),
     prismaDangerouslyBypassRLS.courseQuizAttempt.findMany({
       where: {
         ...courseActivityFilter,
         submittedAt: { gte: window.start, lte: window.end },
       },
-      select: { courseId: true, userId: true, scorePercent: true, submittedAt: true },
+      select: {
+        courseId: true,
+        userId: true,
+        scorePercent: true,
+        submittedAt: true,
+      },
     }),
     prismaDangerouslyBypassRLS.courseAiQuizAttempt.findMany({
       where: {
         ...courseActivityFilter,
         submittedAt: { gte: window.start, lte: window.end },
       },
-      select: { courseId: true, userId: true, scorePercent: true, submittedAt: true },
+      select: {
+        courseId: true,
+        userId: true,
+        scorePercent: true,
+        submittedAt: true,
+      },
     }),
     prismaDangerouslyBypassRLS.chatbotUsage.findMany({
       where: {
         date: { gte: window.start, lte: window.end },
         ...scopedUserFilter,
       },
-      select: { userId: true, date: true, inputTokens: true, outputTokens: true, totalTokens: true },
+      select: {
+        userId: true,
+        date: true,
+        inputTokens: true,
+        outputTokens: true,
+        totalTokens: true,
+      },
     }),
     prismaDangerouslyBypassRLS.oneOnOneSession.findMany({
       where: {
@@ -334,7 +530,14 @@ export async function platformMetricsBuild(query: unknown) {
         paidAt: { gte: window.start, lte: window.end },
         priceCents: { not: null },
       },
-      select: { courseId: true, studentUserId: true, paidAt: true, priceCents: true, refundedAt: true, refundCents: true },
+      select: {
+        courseId: true,
+        studentUserId: true,
+        paidAt: true,
+        priceCents: true,
+        refundedAt: true,
+        refundCents: true,
+      },
     }),
     prismaDangerouslyBypassRLS.creatorPayout.findMany({
       where: {
@@ -413,7 +616,10 @@ export async function platformMetricsBuild(query: unknown) {
         status: 'complete',
         OR: [
           { reviewedAt: { gte: window.start, lte: window.end } },
-          { reviewedAt: null, submittedAt: { gte: window.start, lte: window.end } },
+          {
+            reviewedAt: null,
+            submittedAt: { gte: window.start, lte: window.end },
+          },
         ],
       },
       _count: { _all: true },
@@ -451,6 +657,21 @@ export async function platformMetricsBuild(query: unknown) {
         priceCents: { not: null },
       },
       _sum: { priceCents: true, refundCents: true },
+    }),
+    prismaDangerouslyBypassRLS.productAnalyticsEvent.findMany({
+      where: {
+        createdAt: { gte: window.start, lte: window.end },
+        eventName: { in: [...monetizationFunnelEventNames] },
+        courseId: isCourseScoped ? { in: scopedCourseIds } : { not: null },
+      },
+      select: {
+        id: true,
+        eventName: true,
+        courseId: true,
+        userId: true,
+        anonymousId: true,
+        sessionId: true,
+      },
     }),
   ]);
 
@@ -556,7 +777,11 @@ export async function platformMetricsBuild(query: unknown) {
     activeEnrollments.map((enrollment) => enrollment.userId),
   ).size;
 
-  const baseBuckets = makeBuckets(window.start, window.bucketCount, window.unit);
+  const baseBuckets = makeBuckets(
+    window.start,
+    window.bucketCount,
+    window.unit,
+  );
   const bucketSet = () => baseBuckets.map((bucket) => ({ ...bucket }));
   const signupsTrend = bucketSet();
   const enrollmentsTrend = bucketSet();
@@ -564,11 +789,15 @@ export async function platformMetricsBuild(query: unknown) {
   const homeworkTrend = bucketSet();
   const aiTrend = bucketSet();
   const revenueTrend = bucketSet();
-  const signupsByDate = new Map(signupsTrend.map((bucket) => [bucket.date, bucket]));
+  const signupsByDate = new Map(
+    signupsTrend.map((bucket) => [bucket.date, bucket]),
+  );
   const enrollmentsByDate = new Map(
     enrollmentsTrend.map((bucket) => [bucket.date, bucket]),
   );
-  const lessonsByDate = new Map(lessonTrend.map((bucket) => [bucket.date, bucket]));
+  const lessonsByDate = new Map(
+    lessonTrend.map((bucket) => [bucket.date, bucket]),
+  );
   const homeworkByDate = new Map(
     homeworkTrend.map((bucket) => [bucket.date, bucket]),
   );
@@ -668,8 +897,12 @@ export async function platformMetricsBuild(query: unknown) {
         revenueCents: revenueByCourse.get(course.id) || 0,
       };
     })
-    .sort((a, b) => b.enrollments - a.enrollments || b.revenueCents - a.revenueCents)
+    .sort(
+      (a, b) =>
+        b.enrollments - a.enrollments || b.revenueCents - a.revenueCents,
+    )
     .slice(0, 8);
+  const funnel = buildFunnelPayload(productAnalyticsEvents, allCoursesForTop);
 
   return {
     range: scope.range,
@@ -720,6 +953,7 @@ export async function platformMetricsBuild(query: unknown) {
       aiTokens: aiTrend,
       revenueCents: revenueTrend,
     },
+    funnel,
     topCourses,
   };
 }

@@ -4,6 +4,7 @@ import type { ChatbotMessage } from '@project/backend/features/chatbot/chatbotSc
 interface ChatbotState {
   messages: ChatbotMessage[];
   isOpen: boolean;
+  conversationId: string | null;
   context: {
     courseId?: string;
     lessonId?: string;
@@ -13,6 +14,7 @@ interface ChatbotState {
   addMessage: (message: ChatbotMessage) => void;
   updateLastMessage: (content: string) => void;
   clearMessages: () => void;
+  setConversationId: (conversationId: string | null) => void;
   setIsOpen: (isOpen: boolean) => void;
   setContext: (context: ChatbotState['context']) => void;
   clearContext: () => void;
@@ -21,6 +23,7 @@ interface ChatbotState {
 export const useChatbotStore = create<ChatbotState>()((set) => ({
   messages: [],
   isOpen: false,
+  conversationId: null,
   context: null,
 
   setMessages: (messages) => set({ messages }),
@@ -47,15 +50,20 @@ export const useChatbotStore = create<ChatbotState>()((set) => ({
       }
     }),
 
-  clearMessages: () => set({ messages: [] }),
+  clearMessages: () => set({ messages: [], conversationId: null }),
+
+  setConversationId: (conversationId) => set({ conversationId }),
 
   setIsOpen: (isOpen) =>
     set((state) => ({
       isOpen,
       context: isOpen ? state.context : null,
+      conversationId: isOpen ? state.conversationId : null,
+      messages: isOpen ? state.messages : [],
     })),
 
-  setContext: (context) => set({ context }),
+  setContext: (context) => set({ context, conversationId: null, messages: [] }),
 
-  clearContext: () => set({ context: null }),
+  clearContext: () =>
+    set({ context: null, conversationId: null, messages: [] }),
 }));

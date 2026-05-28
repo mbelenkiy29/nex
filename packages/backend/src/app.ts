@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
+import { env } from './env';
 import { apiRoutes } from './features/apiRoutes';
 import { corsConfig } from './shared/lib/corsConfig';
 
@@ -11,10 +12,10 @@ app.use('*', logger());
 app.use(
   '*',
   secureHeaders({
-    ...(process.env.FRONTEND_URL
+    ...(env.FRONTEND_URL
       ? {
           contentSecurityPolicy: {
-            frameAncestors: ["'self'", process.env.FRONTEND_URL],
+            frameAncestors: ["'self'", env.FRONTEND_URL],
           },
         }
       : {}),

@@ -52,6 +52,7 @@ import { CategoryAdminCard } from '@/features/courseCategory/CategoryAdminCard';
 import { CoursePurchasesCard } from '@/features/course/CoursePurchasesCard';
 import type {
   PlatformMetrics,
+  PlatformMetricsFunnelEventName,
   PlatformMetricsRange,
 } from '@/features/platformAdmin/platformMetricsTypes';
 import {
@@ -159,8 +160,7 @@ export function PlatformAdminPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [studentPage, setStudentPage] = useState(1);
-  const [metricsRange, setMetricsRange] =
-    useState<PlatformMetricsRange>('30d');
+  const [metricsRange, setMetricsRange] = useState<PlatformMetricsRange>('30d');
   const [promotionForm, setPromotionForm] =
     useState<PlatformPromotionCreateInput>({
       kind: 'toast',
@@ -1457,172 +1457,292 @@ function MetricsOverview({
     })) || [];
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-      <Card className="nex-glass-card border-nexexam-line rounded-2xl shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-        <CardHeader className="border-nexexam-line flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
-          <SectionHeading
-            title={dictionary.platformAdmin.metrics.title}
-            description={dictionary.platformAdmin.metrics.description}
-          />
-          <div className="w-full md:w-44">
-            <LabeledSelect
-              label={dictionary.platformAdmin.metrics.range}
-              value={range}
-              onChange={(value) =>
-                onRangeChange(value as PlatformMetricsRange)
-              }
-              options={[
-                ['7d', dictionary.platformAdmin.metrics.ranges['7d']],
-                ['30d', dictionary.platformAdmin.metrics.ranges['30d']],
-                ['90d', dictionary.platformAdmin.metrics.ranges['90d']],
-                ['12m', dictionary.platformAdmin.metrics.ranges['12m']],
-              ]}
-              compact
+    <section className="grid gap-4">
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card className="nex-glass-card border-nexexam-line rounded-2xl shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+          <CardHeader className="border-nexexam-line flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
+            <SectionHeading
+              title={dictionary.platformAdmin.metrics.title}
+              description={dictionary.platformAdmin.metrics.description}
             />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4">
-          {isLoading && (
-            <div className="text-nexexam-muted rounded-lg border border-dashed p-6 text-center text-sm">
-              {dictionary.platformAdmin.metrics.loading}
-            </div>
-          )}
-          {!isLoading && (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <MetricCard
-                icon={<LuUsers />}
-                label={dictionary.platformAdmin.metrics.signups}
-                value={formatNumber(summary?.signups, locale)}
-                tone="blue"
-                trend={metrics?.trends.signups}
-              />
-              <MetricCard
-                icon={<LuBookOpenCheck />}
-                label={dictionary.platformAdmin.metrics.courseEnrollments}
-                value={formatNumber(summary?.courseEnrollments, locale)}
-                tone="sky"
-                trend={metrics?.trends.enrollments}
-              />
-              <MetricCard
-                icon={<LuCheck />}
-                label={dictionary.platformAdmin.metrics.lessonCompletion}
-                value={formatPercent(summary?.lessonCompletionRate)}
-                tone="purple"
-                trend={metrics?.trends.lessonCompletions}
-              />
-              <MetricCard
-                icon={<LuFileText />}
-                label={dictionary.platformAdmin.metrics.homeworkCompletion}
-                value={formatPercent(summary?.homeworkCompletionRate)}
-                tone="orange"
-                trend={metrics?.trends.homeworkCompletions}
-              />
-              <MetricCard
-                icon={<LuSparkles />}
-                label={dictionary.platformAdmin.metrics.aiUsage}
-                value={formatCompactNumber(summary?.aiTokens || 0, locale)}
-                tone="purple"
-                trend={metrics?.trends.aiTokens}
-              />
-              <MetricCard
-                icon={<LuWallet />}
-                label={dictionary.platformAdmin.metrics.monthlyRevenue}
-                value={currencyFormatter.format(
-                  (summary?.monthlyRevenueCents || 0) / 100,
-                )}
-                tone="pink"
-                trend={revenueTrend}
+            <div className="w-full md:w-44">
+              <LabeledSelect
+                label={dictionary.platformAdmin.metrics.range}
+                value={range}
+                onChange={(value) =>
+                  onRangeChange(value as PlatformMetricsRange)
+                }
+                options={[
+                  ['7d', dictionary.platformAdmin.metrics.ranges['7d']],
+                  ['30d', dictionary.platformAdmin.metrics.ranges['30d']],
+                  ['90d', dictionary.platformAdmin.metrics.ranges['90d']],
+                  ['12m', dictionary.platformAdmin.metrics.ranges['12m']],
+                ]}
+                compact
               />
             </div>
-          )}
-          <div className="grid gap-3 md:grid-cols-3">
-            <MiniMetric
-              label={dictionary.platformAdmin.metrics.quizScores}
-              value={formatPercent(summary?.averageQuizScore)}
-              positive
-            />
-            <MiniMetric
-              label={dictionary.platformAdmin.metrics.refundRate}
-              value={formatPercent(summary?.refundRate)}
-              negative={(summary?.refundRate || 0) > 0}
-            />
-            <MiniMetric
-              label={dictionary.platformAdmin.metrics.studentRetention}
-              value={formatPercent(summary?.studentRetentionRate)}
-              positive
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-4 p-4">
+            {isLoading && (
+              <div className="text-nexexam-muted rounded-lg border border-dashed p-6 text-center text-sm">
+                {dictionary.platformAdmin.metrics.loading}
+              </div>
+            )}
+            {!isLoading && (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <MetricCard
+                  icon={<LuUsers />}
+                  label={dictionary.platformAdmin.metrics.signups}
+                  value={formatNumber(summary?.signups, locale)}
+                  tone="blue"
+                  trend={metrics?.trends.signups}
+                />
+                <MetricCard
+                  icon={<LuBookOpenCheck />}
+                  label={dictionary.platformAdmin.metrics.courseEnrollments}
+                  value={formatNumber(summary?.courseEnrollments, locale)}
+                  tone="sky"
+                  trend={metrics?.trends.enrollments}
+                />
+                <MetricCard
+                  icon={<LuCheck />}
+                  label={dictionary.platformAdmin.metrics.lessonCompletion}
+                  value={formatPercent(summary?.lessonCompletionRate)}
+                  tone="purple"
+                  trend={metrics?.trends.lessonCompletions}
+                />
+                <MetricCard
+                  icon={<LuFileText />}
+                  label={dictionary.platformAdmin.metrics.homeworkCompletion}
+                  value={formatPercent(summary?.homeworkCompletionRate)}
+                  tone="orange"
+                  trend={metrics?.trends.homeworkCompletions}
+                />
+                <MetricCard
+                  icon={<LuSparkles />}
+                  label={dictionary.platformAdmin.metrics.aiUsage}
+                  value={formatCompactNumber(summary?.aiTokens || 0, locale)}
+                  tone="purple"
+                  trend={metrics?.trends.aiTokens}
+                />
+                <MetricCard
+                  icon={<LuWallet />}
+                  label={dictionary.platformAdmin.metrics.monthlyRevenue}
+                  value={currencyFormatter.format(
+                    (summary?.monthlyRevenueCents || 0) / 100,
+                  )}
+                  tone="pink"
+                  trend={revenueTrend}
+                />
+              </div>
+            )}
+            <div className="grid gap-3 md:grid-cols-3">
+              <MiniMetric
+                label={dictionary.platformAdmin.metrics.quizScores}
+                value={formatPercent(summary?.averageQuizScore)}
+                positive
+              />
+              <MiniMetric
+                label={dictionary.platformAdmin.metrics.refundRate}
+                value={formatPercent(summary?.refundRate)}
+                negative={(summary?.refundRate || 0) > 0}
+              />
+              <MiniMetric
+                label={dictionary.platformAdmin.metrics.studentRetention}
+                value={formatPercent(summary?.studentRetentionRate)}
+                positive
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="nex-glass-card border-nexexam-line rounded-2xl shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-        <CardHeader className="border-nexexam-line border-b p-4">
-          <SectionHeading
-            title={dictionary.platformAdmin.metrics.topCourses}
-            description={dictionary.platformAdmin.metrics.topCoursesBody}
-          />
-        </CardHeader>
-        <CardContent className="space-y-3 p-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <MiniMetric
-              label={dictionary.platformAdmin.metrics.creatorEarnings}
-              value={currencyFormatter.format(summary?.creatorEarnings || 0)}
-              positive
+        <Card className="nex-glass-card border-nexexam-line rounded-2xl shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+          <CardHeader className="border-nexexam-line border-b p-4">
+            <SectionHeading
+              title={dictionary.platformAdmin.metrics.topCourses}
+              description={dictionary.platformAdmin.metrics.topCoursesBody}
             />
-            <MiniMetric
-              label={dictionary.platformAdmin.metrics.courseRatings}
-              value={
-                summary?.courseRatingCount
-                  ? dictionary.course.ratings.summary
-                      .replace(
-                        '{0}',
-                        formatRating(summary.averageCourseRating, locale),
-                      )
-                      .replace(
-                        '{1}',
-                        formatNumber(summary.courseRatingCount, locale),
-                      )
-                  : dictionary.course.ratings.noRatings
-              }
-            />
-          </div>
-          <div className="border-nexexam-line overflow-hidden rounded-lg border">
-            <div className="bg-nexexam-soft text-nexexam-muted grid min-w-[680px] grid-cols-[1.35fr_0.55fr_0.6fr_0.65fr_0.55fr_0.7fr] px-3 py-2 text-xs font-semibold">
-              <div>{dictionary.platformAdmin.metrics.course}</div>
-              <div>{dictionary.platformAdmin.metrics.enrollments}</div>
-              <div>{dictionary.platformAdmin.metrics.homework}</div>
-              <div>{dictionary.platformAdmin.metrics.quiz}</div>
-              <div>{dictionary.platformAdmin.metrics.rating}</div>
-              <div>{dictionary.platformAdmin.metrics.revenue}</div>
+          </CardHeader>
+          <CardContent className="space-y-3 p-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <MiniMetric
+                label={dictionary.platformAdmin.metrics.creatorEarnings}
+                value={currencyFormatter.format(summary?.creatorEarnings || 0)}
+                positive
+              />
+              <MiniMetric
+                label={dictionary.platformAdmin.metrics.courseRatings}
+                value={
+                  summary?.courseRatingCount
+                    ? dictionary.course.ratings.summary
+                        .replace(
+                          '{0}',
+                          formatRating(summary.averageCourseRating, locale),
+                        )
+                        .replace(
+                          '{1}',
+                          formatNumber(summary.courseRatingCount, locale),
+                        )
+                    : dictionary.course.ratings.noRatings
+                }
+              />
             </div>
-            <div className="overflow-x-auto">
-              <div className="divide-nexexam-line min-w-[680px] divide-y">
-                {(metrics?.topCourses || []).map((course) => (
-                  <div
-                    key={course.courseId}
-                    className="grid grid-cols-[1.35fr_0.55fr_0.6fr_0.65fr_0.55fr_0.7fr] items-center px-3 py-2 text-sm"
-                  >
-                    <div className="truncate font-semibold">
-                      {course.title}
+            <div className="border-nexexam-line overflow-hidden rounded-lg border">
+              <div className="bg-nexexam-soft text-nexexam-muted grid min-w-[680px] grid-cols-[1.35fr_0.55fr_0.6fr_0.65fr_0.55fr_0.7fr] px-3 py-2 text-xs font-semibold">
+                <div>{dictionary.platformAdmin.metrics.course}</div>
+                <div>{dictionary.platformAdmin.metrics.enrollments}</div>
+                <div>{dictionary.platformAdmin.metrics.homework}</div>
+                <div>{dictionary.platformAdmin.metrics.quiz}</div>
+                <div>{dictionary.platformAdmin.metrics.rating}</div>
+                <div>{dictionary.platformAdmin.metrics.revenue}</div>
+              </div>
+              <div className="overflow-x-auto">
+                <div className="divide-nexexam-line min-w-[680px] divide-y">
+                  {(metrics?.topCourses || []).map((course) => (
+                    <div
+                      key={course.courseId}
+                      className="grid grid-cols-[1.35fr_0.55fr_0.6fr_0.65fr_0.55fr_0.7fr] items-center px-3 py-2 text-sm"
+                    >
+                      <div className="truncate font-semibold">
+                        {course.title}
+                      </div>
+                      <div>{formatNumber(course.enrollments, locale)}</div>
+                      <div>{formatPercent(course.homeworkCompletionRate)}</div>
+                      <div>{formatPercent(course.averageQuizScore)}</div>
+                      <div>{formatRating(course.averageRating, locale)}</div>
+                      <div>
+                        {currencyFormatter.format(course.revenueCents / 100)}
+                      </div>
                     </div>
-                    <div>{formatNumber(course.enrollments, locale)}</div>
-                    <div>{formatPercent(course.homeworkCompletionRate)}</div>
-                    <div>{formatPercent(course.averageQuizScore)}</div>
-                    <div>{formatRating(course.averageRating, locale)}</div>
-                    <div>
-                      {currencyFormatter.format(course.revenueCents / 100)}
-                    </div>
-                  </div>
-                ))}
-                {!metrics?.topCourses.length && (
-                  <EmptyRow label={dictionary.platformAdmin.metrics.empty} />
+                  ))}
+                  {!metrics?.topCourses.length && (
+                    <EmptyRow label={dictionary.platformAdmin.metrics.empty} />
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <FunnelOverview
+        metrics={metrics}
+        locale={locale}
+        dictionary={dictionary}
+      />
+    </section>
+  );
+}
+
+function FunnelOverview({
+  metrics,
+  locale,
+  dictionary,
+}: {
+  metrics?: PlatformMetrics;
+  locale: string | undefined;
+  dictionary: any;
+}) {
+  const funnel = metrics?.funnel;
+  const t = dictionary.platformAdmin.metrics;
+  const stepLabels = t.funnelSteps as Record<
+    PlatformMetricsFunnelEventName,
+    string
+  >;
+
+  return (
+    <Card className="nex-glass-card border-nexexam-line rounded-2xl shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+      <CardHeader className="border-nexexam-line border-b p-4">
+        <SectionHeading
+          title={t.funnelTitle}
+          description={t.funnelDescription}
+        />
+      </CardHeader>
+      <CardContent className="space-y-4 p-4">
+        <div className="grid gap-3 md:grid-cols-3">
+          <MiniMetric
+            label={t.viewToCheckout}
+            value={formatPercent(funnel?.summary.checkoutStartRate)}
+            positive
+          />
+          <MiniMetric
+            label={t.checkoutToPaid}
+            value={formatPercent(funnel?.summary.paidConversionRate)}
+            positive
+          />
+          <MiniMetric
+            label={t.paidToFirstValue}
+            value={formatPercent(funnel?.summary.firstValueRate)}
+            positive
+          />
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-7">
+          {(funnel?.steps || []).map((step) => (
+            <div
+              key={step.eventName}
+              className="border-nexexam-line rounded-xl border bg-white/75 p-3 dark:bg-white/8"
+            >
+              <div className="text-nexexam-muted text-xs font-semibold">
+                {stepLabels[step.eventName]}
+              </div>
+              <div className="mt-2 text-2xl font-extrabold tracking-normal">
+                {formatNumber(step.users, locale)}
+              </div>
+              <div className="text-muted-foreground mt-1 text-xs">
+                {t.funnelEvents.replace(
+                  '{0}',
+                  formatNumber(step.count, locale),
+                )}
+              </div>
+              <Progress
+                value={step.conversionFromStart}
+                className="mt-3 h-1.5"
+              />
+              <div className="text-muted-foreground mt-2 text-xs">
+                {t.fromPrevious.replace(
+                  '{0}',
+                  formatPercent(step.conversionFromPrevious),
                 )}
               </div>
             </div>
+          ))}
+        </div>
+
+        <div className="border-nexexam-line overflow-hidden rounded-lg border">
+          <div className="bg-nexexam-soft text-nexexam-muted grid min-w-[760px] grid-cols-[1.35fr_0.55fr_0.65fr_0.65fr_0.55fr_0.75fr_0.65fr] px-3 py-2 text-xs font-semibold">
+            <div>{t.course}</div>
+            <div>{t.courseViews}</div>
+            <div>{t.paywallSeen}</div>
+            <div>{t.checkoutStarted}</div>
+            <div>{t.paid}</div>
+            <div>{t.firstValue}</div>
+            <div>{t.paidRate}</div>
           </div>
-        </CardContent>
-      </Card>
-    </section>
+          <div className="overflow-x-auto">
+            <div className="divide-nexexam-line min-w-[760px] divide-y">
+              {(funnel?.topCourses || []).map((course) => (
+                <div
+                  key={course.courseId}
+                  className="grid grid-cols-[1.35fr_0.55fr_0.65fr_0.65fr_0.55fr_0.75fr_0.65fr] items-center px-3 py-2 text-sm"
+                >
+                  <div className="truncate font-semibold">{course.title}</div>
+                  <div>{formatNumber(course.courseViews, locale)}</div>
+                  <div>{formatNumber(course.paywallSeen, locale)}</div>
+                  <div>{formatNumber(course.checkoutStarted, locale)}</div>
+                  <div>{formatNumber(course.paid, locale)}</div>
+                  <div>
+                    {formatNumber(course.firstValueAfterPayment, locale)}
+                  </div>
+                  <div>{formatPercent(course.paidConversionRate)}</div>
+                </div>
+              ))}
+              {!funnel?.topCourses.length && <EmptyRow label={t.funnelEmpty} />}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1964,9 +2084,7 @@ function RoleRow({
       </div>
       <div className="min-w-0">
         <div className="text-sm font-semibold">{label}</div>
-        <div className="text-nexexam-muted truncate text-xs">
-          {description}
-        </div>
+        <div className="text-nexexam-muted truncate text-xs">{description}</div>
       </div>
       <div className="font-bold">{count}</div>
     </div>

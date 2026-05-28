@@ -3,6 +3,7 @@ import type {
   CourseStudyAiQuizResult,
   CourseStudyAiSubmitInput,
 } from '@project/backend/features/courseStudyAi/courseStudyAiSchemas';
+import type { AiTrustSignal } from '@project/backend/features/aiTrust/aiTrustSchemas';
 import { apiClient, HTTPError } from '@/shared/lib/apiClient';
 
 export interface DomainWeakness {
@@ -25,7 +26,13 @@ export interface StudyPlanItem {
   plannedForDate: string | null;
   status: string;
   source: string;
+  trustSignals: AiTrustSignal | null;
   completedAt: string | null;
+}
+
+export interface StudyPlanResponse {
+  items: Array<StudyPlanItem>;
+  trust: AiTrustSignal | null;
 }
 
 export interface ExamDate {
@@ -65,6 +72,13 @@ export function resolveStudyAiError(error: unknown): StudyAiErrorCode {
   return 'generic';
 }
 
+const weaknessKey = (courseId: string) =>
+  ['courseStudyAi', 'weaknesses', courseId] as const;
+const studyPlanKey = (courseId: string) =>
+  ['courseStudyAi', 'studyPlan', courseId] as const;
+const examDateKey = (courseId: string) =>
+  ['courseStudyAi', 'examDate', courseId] as const;
+
 // "Quiz me from this module" — a short (~5 question) interactive quiz.
 export function useGenerateAiQuiz(courseId: string) {
   return useMutation({
@@ -88,24 +102,23 @@ export function useGenerateAiPractice(courseId: string) {
 // Persists a completed AI quiz attempt so it feeds weakness detection.
 // Fired in the background — the UI already shows in-memory grading.
 export function useSubmitAiQuiz(courseId: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (input: CourseStudyAiSubmitInput) =>
       apiClient
         .post(`api/course-study-ai/${courseId}/quiz/submit`, { json: input })
         .json<AiQuizSubmitResult>(),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: weaknessKey(courseId) }),
   });
 }
 
-// --- Phase 3: weakness detection, recommendations, study plan --------------
-
-const studyPlanKey = (courseId: string) =>
-  ['courseStudyAi', 'studyPlan', courseId] as const;
-const examDateKey = (courseId: string) =>
-  ['courseStudyAi', 'examDate', courseId] as const;
+// --- Weakness detection, recommendations, study plan -----------------------
 
 export function useWeaknesses(courseId: string) {
   return useQuery({
-    queryKey: ['courseStudyAi', 'weaknesses', courseId],
+    queryKey: weaknessKey(courseId),
     queryFn: () =>
       apiClient
         .get(`api/course-study-ai/${courseId}/weaknesses`)
@@ -119,7 +132,7 @@ export function useStudyPlan(courseId: string) {
     queryFn: () =>
       apiClient
         .get(`api/course-study-ai/${courseId}/study-plan`)
-        .json<{ items: Array<StudyPlanItem> }>(),
+        .json<StudyPlanResponse>(),
   });
 }
 
@@ -161,7 +174,7 @@ export function useGenerateStudyPlan(courseId: string) {
     mutationFn: () =>
       apiClient
         .post(`api/course-study-ai/${courseId}/study-plan/generate`)
-        .json<{ items: Array<StudyPlanItem> }>(),
+        .json<StudyPlanResponse>(),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: studyPlanKey(courseId) }),
   });

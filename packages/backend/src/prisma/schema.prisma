@@ -79,10 +79,13 @@ model User {
   courseStudyPlanItems              CourseStudyPlanItem[]
   courseDiagnosticAttempts          CourseDiagnosticAttempt[]
   courseDomainMastery               CourseDomainMastery[]
+  courseReadinessSnapshots           CourseReadinessSnapshot[]
   courseFlashcardReviews            CourseFlashcardReview[]
   courseStudyStreaks                CourseStudyStreak[]
   courseRemediationPlans            CourseRemediationPlan[]
   courseLearningSessions            CourseLearningSession[]
+  studentOnboardingProfiles         StudentOnboardingProfile[]
+  aiTrustPreference                 AiTrustPreference?
   studentReminderPreferences        StudentReminderPreference[]
   studentReminderDeliveries         StudentReminderDelivery[]
   coursesReviewed                   Course[]                      @relation("courseReviewedBy")
@@ -94,7 +97,12 @@ model User {
   courseCouponRedemptions           CourseCouponRedemption[]
   courseCouponsCreated              CourseCoupon[]
   courseBundlesCreated              CourseBundle[]                @relation("courseBundleCreator")
+  courseBundlePurchases             CourseBundlePurchase[]         @relation("courseBundlePurchaseUser")
   courseCertificates                CourseCertificate[]
+  pricingExperimentsCreated         PricingExperiment[]            @relation("pricingExperimentCreatedBy")
+  pricingExposures                  PricingExposure[]              @relation("pricingExposureUser")
+  aiCreditPurchases                 AiCreditPurchase[]             @relation("aiCreditPurchaseUser")
+  aiCreditLedgerEntries             AiCreditLedgerEntry[]          @relation("aiCreditLedgerUser")
   trustSafetyReportsFiled           TrustSafetyReport[]           @relation("trustSafetyReportReporter")
   trustSafetyReportsTeacher         TrustSafetyReport[]           @relation("trustSafetyReportTeacher")
   trustSafetyReportsResolved        TrustSafetyReport[]           @relation("trustSafetyReportResolvedBy")
@@ -127,6 +135,21 @@ model User {
   @@index([deletionScheduledFor])
 }
 
+model AiTrustPreference {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+  userId             String   @unique @db.Uuid
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  useLessonContent   Boolean  @default(true)
+  useLessonProgress  Boolean  @default(true)
+  usePracticeResults Boolean  @default(true)
+  useChatHistory     Boolean  @default(true)
+  useAttachments     Boolean  @default(true)
+
+  @@index([userId])
+}
+
 model AuditLog {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   timestamp           DateTime @default(now()) @db.Timestamptz(3)
@@ -141,6 +164,173 @@ model AuditLog {
   operation           String
   oldData             Json?
   newData             Json?
+}
+
+model ProductAnalyticsEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  eventName String
+  source    String
+  dedupeKey String? @unique
+
+  userId                  String? @db.Uuid
+  memberId                String? @db.Uuid
+  organizationId          String? @db.Uuid
+  courseId                String? @db.Uuid
+  lessonId                String? @db.Uuid
+  subscriptionId          String? @db.Uuid
+  coursePurchaseId        String? @db.Uuid
+  stripeCheckoutSessionId String?
+  stripePriceId           String?
+  accessType              String?
+  ctaLocation             String?
+  funnelId                String?
+  sessionId               String?
+  anonymousId             String?
+  currentPath             String?
+  referrerPath            String?
+  metadata                Json    @default("{}")
+
+  @@index([eventName, createdAt])
+  @@index([courseId, eventName, createdAt])
+  @@index([userId, createdAt])
+  @@index([funnelId, eventName])
+  @@index([stripeCheckoutSessionId])
+}
+
+model PricingExperiment {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  key             String    @unique
+  name            String
+  status          String    @default("draft")
+  surface         String    @default("global")
+  trafficPercent  Int       @default(100)
+  startsAt        DateTime? @db.Timestamptz(3)
+  endsAt          DateTime? @db.Timestamptz(3)
+  metadata        Json      @default("{}")
+  createdByUserId String?   @db.Uuid
+  createdByUser   User?     @relation("pricingExperimentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  variants  PricingVariant[]
+  exposures PricingExposure[]
+
+  @@index([status, surface])
+  @@index([createdByUserId])
+}
+
+model PricingVariant {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  experimentId String            @db.Uuid
+  experiment   PricingExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  key          String
+  name         String
+  allocationBps Int              @default(10000)
+  isControl    Boolean           @default(false)
+  orderIndex   Int               @default(0)
+  packageConfig Json             @default("{}")
+
+  exposures PricingExposure[]
+
+  @@unique([experimentId, key])
+  @@index([experimentId, orderIndex])
+}
+
+model PricingExposure {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  userId         String?           @db.Uuid
+  user           User?             @relation("pricingExposureUser", fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?           @db.Uuid
+  memberId       String?           @db.Uuid
+  experimentId   String            @db.Uuid
+  experiment     PricingExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  variantId      String            @db.Uuid
+  variant        PricingVariant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  surface        String
+  sessionId      String?
+  anonymousId    String?
+  currentPath    String?
+  metadata       Json              @default("{}")
+
+  @@unique([experimentId, userId])
+  @@index([userId, createdAt])
+  @@index([surface, createdAt])
+  @@index([variantId, createdAt])
+}
+
+model AiCreditPack {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  key             String    @unique
+  name            String
+  description     String?
+  status          String    @default("active")
+  tokenAmount     Int
+  bonusTokenAmount Int      @default(0)
+  priceCents      Int
+  currency        String    @default("USD")
+  stripeProductId String?
+  stripePriceId   String?
+  displayOrder    Int       @default(1000)
+
+  purchases     AiCreditPurchase[]
+  ledgerEntries AiCreditLedgerEntry[]
+
+  @@index([status, displayOrder])
+}
+
+model AiCreditPurchase {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  aiCreditPackId String       @db.Uuid
+  aiCreditPack   AiCreditPack @relation(fields: [aiCreditPackId], references: [id], onDelete: Restrict)
+  userId         String       @db.Uuid
+  user           User         @relation("aiCreditPurchaseUser", fields: [userId], references: [id], onDelete: Restrict)
+  memberId       String?      @db.Uuid
+  organizationId String?      @db.Uuid
+
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?
+  tokensPurchased         Int
+  priceCents              Int
+  currency                String   @default("USD")
+  paidAt                  DateTime @default(now()) @db.Timestamptz(3)
+  pricingPackageId        String?
+  pricingExperimentId     String?
+  pricingVariantId        String?
+
+  ledgerEntries AiCreditLedgerEntry[]
+
+  @@index([userId, createdAt])
+  @@index([aiCreditPackId])
+}
+
+model AiCreditLedgerEntry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  userId         String  @db.Uuid
+  user           User    @relation("aiCreditLedgerUser", fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String? @db.Uuid
+  entryType      String
+  tokenAmount    Int
+  source         String?
+  aiCreditPackId String? @db.Uuid
+  aiCreditPack   AiCreditPack? @relation(fields: [aiCreditPackId], references: [id], onDelete: SetNull)
+  purchaseId     String? @db.Uuid
+  purchase       AiCreditPurchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  metadata       Json    @default("{}")
+
+  @@index([userId, createdAt])
+  @@index([purchaseId])
 }
 
 // Better Auth API Key model
@@ -249,6 +439,7 @@ model Organization {
   creatorPayouts               CreatorPayout[]
   coursesCreator               Course[]            @relation("courseCreatorOrganization")
   coursePurchases              CoursePurchase[]    @relation("coursePurchaseOrganization")
+  studentOnboardingProfiles    StudentOnboardingProfile[]
 
   chatbotConversations ChatbotConversation[]
   chatbotMessages      ChatbotMessage[]
@@ -329,10 +520,40 @@ model Member {
   documentUploadUploadedBy   DocumentUpload[]        @relation("documentUploadUploadedBy_uploadedBy")
   creatorPayoutsCreator      CreatorPayout[]         @relation("creatorPayoutCreatorMember")
   coursePurchases            CoursePurchase[]        @relation("coursePurchaseMember")
+  studentOnboardingProfiles  StudentOnboardingProfile[]
 
   @@unique([id, organizationId])
   @@unique([userId, organizationId])
   @@index([onboardingCompletedAt])
+}
+
+model StudentOnboardingProfile {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt            DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime     @updatedAt @db.Timestamptz(3)
+  organizationId       String       @db.Uuid
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId               String       @db.Uuid
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberId             String?      @db.Uuid
+  member               Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  examGoal             String
+  timeline             String
+  currentLevel         String
+  studyMinutesPerWeek  Int
+  targetScore          String
+  generatedPlan        Json?
+  recommendedCourseIds String[]     @default([])
+  completedAt          DateTime?    @db.Timestamptz(3)
+  createdByUserId      String?      @db.Uuid
+  createdByMemberId    String?      @db.Uuid
+  updatedByUserId      String?      @db.Uuid
+  updatedByMemberId    String?      @db.Uuid
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([memberId])
+  @@index([completedAt])
 }
 
 model PlatformPromotion {
@@ -812,11 +1033,11 @@ model ChatbotUsage {
   @@index([date])
 }
 
-// Persistent per-user chat thread powering /student/ai-tutor (full-page) and the
-// legacy ChatbotSheet quick-ask modal. Course/lesson scoping is optional and
-// drops to NULL if the course or lesson is later deleted, preserving the
-// student's chat history. `archivedAt` is a soft-delete marker — rows survive
-// for audit and recovery; admins use the run_sql_transaction path to hard-purge.
+// Persistent per-user chat thread powering AI Tutor surfaces. Course/lesson
+// scoping is optional and drops to NULL if the course or lesson is later
+// deleted, preserving the student's chat history. `archivedAt` is a soft-delete
+// marker — rows survive for audit and recovery; admins use the
+// run_sql_transaction path to hard-purge.
 model ChatbotConversation {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   createdAt      DateTime      @default(now()) @db.Timestamptz(3)
@@ -858,7 +1079,9 @@ model ChatbotMessage {
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   role           String // 'user' | 'assistant'
   content        String
+  attachments    Json?
   widgets        Json?
+  trustSignals   Json?
   inputTokens    Int?
   outputTokens   Int?
 
@@ -867,8 +1090,7 @@ model ChatbotMessage {
 }
 
 // Curated marketplace taxonomy. Admin-managed via /api/platform-admin/course-categories.
-// `Course.category` (String) is kept as a read-only mirror of `categoryRef.name` in v1
-// for backwards-compat with cached client payloads — it is dropped in v2.
+// Courses use categoryId/categoryRef as the canonical category source.
 model CourseCategory {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
@@ -893,6 +1115,7 @@ model Course {
   slug                   String          @unique
   subtitle               String?
   description            String?
+  // Deprecated compatibility column; new code uses categoryId/categoryRef.
   category               String?
   categoryId             String?         @db.Uuid
   categoryRef            CourseCategory? @relation("courseCategory", fields: [categoryId], references: [id], onDelete: SetNull)
@@ -909,6 +1132,9 @@ model Course {
   priceCents             Int?
   currency               String          @default("USD")
   stripePriceId          String?
+  lifetimeAccessEnabled  Boolean         @default(false)
+  lifetimePriceCents     Int?
+  lifetimeStripePriceId  String?
   subscriptionPlanKey    String?
   creatorRevenueShareBps Int             @default(7000)
   nexVerified            Boolean         @default(false)
@@ -941,6 +1167,7 @@ model Course {
   payouts              CreatorPayout[]
   exams                Exam[]                      @relation("exams_course")
   chapters             Chapter[]                   @relation("chapters_course")
+  // Deprecated compatibility relation for standalone Lesson records.
   legacyLessons        Lesson[]                    @relation("lessons_course")
   practiceQuestions    PracticeQuestion[]          @relation("practiceQuestions_course")
   concepts             Concept[]                   @relation("concepts_course")
@@ -953,6 +1180,7 @@ model Course {
   studyPlanItems       CourseStudyPlanItem[]
   diagnosticAttempts   CourseDiagnosticAttempt[]
   domainMastery        CourseDomainMastery[]
+  readinessSnapshots   CourseReadinessSnapshot[]
   flashcardReviews     CourseFlashcardReview[]
   studyStreaks         CourseStudyStreak[]
   remediationPlans     CourseRemediationPlan[]
@@ -1016,23 +1244,29 @@ model CourseModule {
 }
 
 model CourseLesson {
-  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt            DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt            DateTime      @updatedAt @db.Timestamptz(3)
-  title                String
-  description          String?
-  content              String?
-  videoFiles           Json?
-  videoDurationSeconds Int?
-  orderIndex           Int           @default(0)
-  isPreview            Boolean       @default(false)
-  isHidden             Boolean       @default(false)
-  videoUrl             String?
-  resourceFiles        Json?
-  courseId             String        @db.Uuid
-  course               Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  moduleId             String?       @db.Uuid
-  module               CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  id                         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt                  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt                  DateTime      @updatedAt @db.Timestamptz(3)
+  title                      String
+  description                String?
+  // Deprecated compatibility column; lesson body content is stored in blocks.
+  content                    String?
+  videoFiles                 Json?
+  videoTranscriptText        String?
+  videoTranscriptStatus      String        @default("notRequested")
+  videoTranscriptSourceKey   String?
+  videoTranscriptError       String?
+  videoTranscriptGeneratedAt DateTime?     @db.Timestamptz(3)
+  videoDurationSeconds       Int?
+  orderIndex                 Int           @default(0)
+  isPreview                  Boolean       @default(false)
+  isHidden                   Boolean       @default(false)
+  videoUrl                   String?
+  resourceFiles              Json?
+  courseId                   String        @db.Uuid
+  course                     Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId                   String?       @db.Uuid
+  module                     CourseModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
 
   progress      CourseLessonProgress[]
   assignments   CourseAssignment[]
@@ -1060,6 +1294,9 @@ model CourseEnrollment {
   status         String             @default("active")
   enrolledAt     DateTime           @default(now()) @db.Timestamptz(3)
   completedAt    DateTime?          @db.Timestamptz(3)
+  accessDuration String             @default("standard")
+  accessSource   String?
+  pricingPackageId String?
   // Student's self-set target exam date (ISO date string) for the AI study
   // plan, mirroring CourseStudyPlanItem.plannedForDate.
   targetExamDate String?
@@ -1149,6 +1386,11 @@ model CoursePurchase {
   priceCents              Int
   currency                String   @default("USD")
   paidAt                  DateTime @default(now()) @db.Timestamptz(3)
+  packageType             String?
+  pricingPackageId        String?
+  pricingExperimentId     String?
+  pricingVariantId        String?
+  accessDuration          String   @default("standard")
 
   refundedAt       DateTime? @db.Timestamptz(3)
   refundedByUserId String?   @db.Uuid
@@ -1238,6 +1480,7 @@ model CourseBundle {
   courses     CourseBundleCourse[]
   coupons     CourseCoupon[]
   redemptions CourseCouponRedemption[]
+  purchases   CourseBundlePurchase[]
 
   @@index([status])
   @@index([creatorUserId])
@@ -1255,6 +1498,32 @@ model CourseBundleCourse {
 
   @@unique([bundleId, courseId])
   @@index([courseId])
+}
+
+model CourseBundlePurchase {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  bundleId       String       @db.Uuid
+  bundle         CourseBundle @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+  userId         String       @db.Uuid
+  user           User         @relation("courseBundlePurchaseUser", fields: [userId], references: [id], onDelete: Restrict)
+  memberId       String?      @db.Uuid
+  organizationId String?      @db.Uuid
+
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?
+  priceCents              Int
+  currency                String   @default("USD")
+  paidAt                  DateTime @default(now()) @db.Timestamptz(3)
+  packageType             String   @default("course_bundle")
+  pricingPackageId        String?
+  pricingExperimentId     String?
+  pricingVariantId        String?
+
+  @@index([userId])
+  @@index([bundleId])
 }
 
 model CourseCertificate {
@@ -1575,6 +1844,7 @@ model CourseStudyPlanItem {
   plannedForDate String?
   status         String    @default("todo")
   source         String    @default("manual")
+  trustSignals   Json?
   completedAt    DateTime? @db.Timestamptz(3)
 
   @@index([courseId, userId])
@@ -1648,6 +1918,25 @@ model CourseDomainMastery {
   @@unique([courseId, userId, domain])
   @@index([courseId, userId])
   @@index([userId, scorePercent])
+}
+
+model CourseReadinessSnapshot {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+  courseId         String   @db.Uuid
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId           String   @db.Uuid
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score            Int      @default(0)
+  insufficientData Boolean  @default(true)
+  signals          Json     @default("[]")
+  capturedOn       DateTime @default(now()) @db.Date
+  capturedAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([courseId, userId, capturedOn])
+  @@index([courseId, userId, capturedOn])
+  @@index([userId, capturedOn])
 }
 
 model CourseFlashcardReview {
@@ -1972,9 +2261,8 @@ model CoursePracticeExamAttempt {
   @@index([practiceExamId, userId])
 }
 
-// Phase 8: block-based lesson content. `content` JSON shape depends on blockType
-// (e.g. paragraph {text}, heading {level,text}, callout {variant,text}). The
-// legacy CourseLesson.content (Markdown) is kept; renderers prefer blocks.
+// Block-based lesson content. `content` JSON shape depends on blockType
+// (e.g. paragraph {text}, heading {level,text}, callout {variant,text}).
 model CourseLessonBlock {
   id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   createdAt  DateTime     @default(now()) @db.Timestamptz(3)

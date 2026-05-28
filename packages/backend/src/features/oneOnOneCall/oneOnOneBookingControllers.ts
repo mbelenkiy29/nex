@@ -39,6 +39,7 @@ import {
   trustSafetyRequireCreatorEnabled,
   trustSafetyRequirePolicyAcceptance,
 } from '../trustSafety/trustSafetyService';
+import { checkoutTrustSessionOptions } from '../checkout/checkoutTrust';
 
 // Hard cap on the slot-listing window so a single request can't expand a
 // year's worth of slots.
@@ -138,7 +139,7 @@ export async function oneOnOneListSlotsController(
   });
 }
 
-/** Instant booking — free sessions only in Phase 1. */
+/** Books free sessions immediately and paid sessions through Stripe Checkout. */
 export async function oneOnOneCreateBookingController(
   courseId: string,
   body: unknown,
@@ -245,9 +246,7 @@ export async function oneOnOneCreateBookingController(
         jitsiUrl: room.url,
         priceCents: isPaid ? sessionType.priceCents : null,
         currency: sessionType.currency,
-        paymentExpiresAt: isPaid
-          ? new Date(Date.now() + 30 * 60_000)
-          : null,
+        paymentExpiresAt: isPaid ? new Date(Date.now() + 30 * 60_000) : null,
       },
     });
   } catch (error) {
@@ -271,7 +270,9 @@ export async function oneOnOneCreateBookingController(
       const frontendUrl = getFrontendUrl(context.currentOrganization?.slug);
       const checkout = await stripe.checkout.sessions.create(
         {
+          ...checkoutTrustSessionOptions(context, 'oneOnOneSession'),
           mode: 'payment',
+          submit_type: 'book',
           line_items: [
             {
               quantity: 1,
@@ -279,7 +280,11 @@ export async function oneOnOneCreateBookingController(
                 currency: sessionType.currency.toLowerCase(),
                 unit_amount: sessionType.priceCents!,
                 product_data: {
-                  name: `1:1 with ${course.title}: ${sessionType.title}`,
+                  name: dictionaryFormat(
+                    t.booking.stripeProductName,
+                    course.title,
+                    sessionType.title,
+                  ),
                 },
               },
             },
@@ -294,12 +299,13 @@ export async function oneOnOneCreateBookingController(
               kind: 'oneOnOneSession',
             },
           },
-          success_url: `${frontendUrl}/sessions`,
-          cancel_url: `${frontendUrl}/course/${course.slug}/learn`,
+          success_url: `${frontendUrl}/sessions?payment=success`,
+          cancel_url: `${frontendUrl}/sessions?payment=cancelled`,
           customer_email: context.currentUser?.email,
           expires_at: Math.floor(
-            (session.paymentExpiresAt ?? new Date(Date.now() + 30 * 60_000))
-              .getTime() / 1000,
+            (
+              session.paymentExpiresAt ?? new Date(Date.now() + 30 * 60_000)
+            ).getTime() / 1000,
           ),
         },
         { idempotencyKey: `oneOnOne-checkout:${session.id}` },
@@ -547,10 +553,7 @@ export async function oneOnOneCancelSessionController(
     try {
       final = await refundOneOnOneSession(updated, outcome.refundCents);
     } catch (error) {
-      console.error(
-        `Refund failed for OneOnOneSession ${updated.id}:`,
-        error,
-      );
+      console.error(`Refund failed for OneOnOneSession ${updated.id}:`, error);
     }
   }
 

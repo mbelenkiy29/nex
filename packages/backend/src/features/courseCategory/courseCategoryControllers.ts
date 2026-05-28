@@ -145,9 +145,7 @@ export async function platformAdminCourseCategoryCreateController(
 /**
  * Admin update. If `name` changes, slug is **not** recomputed (slugs are URL-
  * stable identifiers; rename a category by deactivating + creating fresh if a
- * slug change is needed). Renaming a category fans the new `name` out to
- * `Course.category` for every course linked via `categoryId`, keeping the
- * legacy mirror column in sync.
+ * slug change is needed).
  */
 export async function platformAdminCourseCategoryUpdateController(
   params: { id: string },
@@ -175,23 +173,10 @@ export async function platformAdminCourseCategoryUpdateController(
     updatePayload.displayOrder = data.displayOrder;
   if (data.isActive !== undefined) updatePayload.isActive = data.isActive;
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const next = await tx.courseCategory.update({
-      where: { id: params.id },
-      data: updatePayload,
-      select: CATEGORY_SELECT,
-    });
-
-    // Mirror name into the legacy `Course.category` String column for any
-    // courses linked via the new FK.
-    if (data.name !== undefined && data.name !== before.name) {
-      await tx.course.updateMany({
-        where: { categoryId: params.id },
-        data: { category: next.name },
-      });
-    }
-
-    return next;
+  const updated = await prisma.courseCategory.update({
+    where: { id: params.id },
+    data: updatePayload,
+    select: CATEGORY_SELECT,
   });
 
   await auditLogCreate({
@@ -207,9 +192,8 @@ export async function platformAdminCourseCategoryUpdateController(
 }
 
 /**
- * Admin disable. Soft-only — we never hard-delete a category that has
- * courses linked, because that would orphan the legacy `Course.category`
- * mirror string. Pass `isActive` in the body to toggle either way.
+ * Admin disable. Soft-only so existing courses keep their categoryId and
+ * historical catalog grouping. Pass `isActive` in the body to toggle either way.
  */
 export async function platformAdminCourseCategoryDisableController(
   params: { id: string },

@@ -6,10 +6,7 @@ import {
   rateLimitProfiles,
   rateLimitRequest,
 } from '../../shared/lib/rateLimiter';
-import {
-  chatbotSendConversationMessageController,
-  chatbotSendMessageController,
-} from './chatbotController';
+import { chatbotSendConversationMessageController } from './chatbotController';
 import {
   chatbotConversationArchiveController,
   chatbotConversationCreateController,
@@ -90,25 +87,6 @@ chatbotRoutes.post('/conversations/:id/message', async (c) => {
     );
     const body = await c.req.json();
     return await chatbotSendConversationMessageController(id, body, context, c);
-  } catch (error: any) {
-    return ApiResponseError(c, context, error);
-  }
-});
-
-// ---- Legacy in-memory send -----------------------------------------------
-// Kept until Subsystem 3.7 bridges the ChatbotSheet modal onto the new route.
-// Removed in v2.
-chatbotRoutes.post('/message', async (c) => {
-  let context;
-  try {
-    context = await appContext(c);
-    await rateLimitRequest(
-      c,
-      context,
-      rateLimitFromProfile(rateLimitProfiles.ai, 'chatbot-message'),
-    );
-    const body = await c.req.json();
-    return await chatbotSendMessageController(body, context, c);
   } catch (error: any) {
     return ApiResponseError(c, context, error);
   }

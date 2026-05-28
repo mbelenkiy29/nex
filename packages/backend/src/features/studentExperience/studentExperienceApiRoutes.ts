@@ -12,6 +12,7 @@ import {
   studentExperienceFlashcardReviewController,
   studentExperienceHomeworkController,
   studentExperienceLearningOutcomesController,
+  studentExperienceMasteryMapController,
   studentExperienceNoteCreateController,
   studentExperienceNoteDeleteController,
   studentExperienceNotesListController,
@@ -39,6 +40,17 @@ studentExperienceRoutes.get('/dashboard', async (c) => {
   try {
     context = await appContext(c);
     const payload = await studentExperienceDashboardController(context);
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+studentExperienceRoutes.get('/mastery-map', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await studentExperienceMasteryMapController(context);
     return ApiResponseSuccess(c, context, payload);
   } catch (error: any) {
     return ApiResponseError(c, context, error);

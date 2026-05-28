@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useChatbotStore } from '@/features/chatbot/chatbotStore';
-import type {
-  ChatbotMessage,
-  ChatbotSendMessageInput,
-} from '@project/backend/features/chatbot/chatbotSchemas';
+import { aiTutorConversationKey } from '@/features/aiTutor/hooks/useAiTutorConversation';
+import { aiTutorListKey } from '@/features/aiTutor/hooks/useAiTutorConversationList';
+import type { ChatbotMessage } from '@project/backend/features/chatbot/chatbotSchemas';
 
 export interface ChatbotStreamChunk {
   type: 'text' | 'tool_use' | 'tool_result' | 'error' | 'done' | 'usage';
@@ -31,7 +31,14 @@ export interface ChatbotConcurrentRequestError {
   message: string;
 }
 
+interface ChatbotConversationCreateResponse {
+  conversation: {
+    id: string;
+  };
+}
+
 export function useChatbot() {
+  const queryClient = useQueryClient();
   const { dictionary, locale } = useAuthStore(
     useShallow((state) => ({
       dictionary: state.dictionary,
@@ -42,6 +49,8 @@ export function useChatbot() {
   const addMessage = useChatbotStore((state) => state.addMessage);
   const updateLastMessage = useChatbotStore((state) => state.updateLastMessage);
   const setMessages = useChatbotStore((state) => state.setMessages);
+  const conversationId = useChatbotStore((state) => state.conversationId);
+  const setConversationId = useChatbotStore((state) => state.setConversationId);
   const activeContext = useChatbotStore((state) => state.context);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -75,20 +84,49 @@ export function useChatbot() {
       setIsLoading(true);
       setError(null);
       setCurrentToolUse(null);
-
-      const requestBody: ChatbotSendMessageInput = {
-        message: userMessage.trim(),
-        conversationHistory: messages,
-        courseId: activeContext?.courseId,
-        lessonId: activeContext?.lessonId,
-      };
+      let activeConversationId = conversationId;
 
       try {
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
 
         const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
-        const url = `${backendUrl}/api/chatbot/message`;
+
+        if (!activeConversationId) {
+          const createResponse = await fetch(
+            `${backendUrl}/api/chatbot/conversations`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': locale,
+              },
+              body: JSON.stringify({
+                courseId: activeContext?.courseId ?? null,
+                lessonId: activeContext?.lessonId ?? null,
+                initialMessage: userMessage.trim(),
+              }),
+              credentials: 'include',
+              signal: abortController.signal,
+            },
+          );
+
+          if (!createResponse.ok) {
+            throw new Error(dictionary.chatbot.error);
+          }
+
+          const createData =
+            (await createResponse.json()) as ChatbotConversationCreateResponse;
+          activeConversationId = createData.conversation.id;
+          setConversationId(activeConversationId);
+          queryClient.invalidateQueries({ queryKey: aiTutorListKey(false) });
+        }
+
+        if (!activeConversationId) {
+          throw new Error(dictionary.chatbot.error);
+        }
+
+        const url = `${backendUrl}/api/chatbot/conversations/${activeConversationId}/message`;
 
         const response = await fetch(url, {
           method: 'POST',
@@ -96,8 +134,8 @@ export function useChatbot() {
             'Content-Type': 'application/json',
             'Accept-Language': locale,
           },
-          body: JSON.stringify(requestBody),
-          credentials: 'include', // Important for session cookies
+          body: JSON.stringify({ message: userMessage.trim() }),
+          credentials: 'include',
           signal: abortController.signal,
         });
 
@@ -128,11 +166,11 @@ export function useChatbot() {
         }
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(dictionary.chatbot.error);
         }
 
         if (!response.body) {
-          throw new Error('No response body');
+          throw new Error(dictionary.chatbot.error);
         }
 
         const reader = response.body.getReader();
@@ -149,14 +187,12 @@ export function useChatbot() {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // Split by SSE message delimiter (double newline)
           const lines = buffer.split('\n\n');
           buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (!line.trim()) continue;
 
-            // Parse SSE format: "event: eventname\ndata: jsondata"
             const dataMatch = line.match(/data: (.+)/);
 
             if (!dataMatch) continue;
@@ -190,15 +226,23 @@ export function useChatbot() {
         console.error('Chatbot error:', err);
         setError(err.message || dictionary.chatbot.error);
       } finally {
+        if (activeConversationId) {
+          queryClient.invalidateQueries({
+            queryKey: aiTutorConversationKey(activeConversationId),
+          });
+          queryClient.invalidateQueries({ queryKey: aiTutorListKey(false) });
+        }
         setIsLoading(false);
         abortControllerRef.current = null;
       }
     },
     [
-      messages,
       isLoading,
       dictionary,
       locale,
+      conversationId,
+      setConversationId,
+      queryClient,
       activeContext,
       addMessage,
       updateLastMessage,
@@ -220,9 +264,10 @@ export function useChatbot() {
         content: dictionary.chatbot.welcome,
       },
     ]);
+    setConversationId(null);
     setError(null);
     setCurrentToolUse(null);
-  }, [dictionary, setMessages]);
+  }, [dictionary, setConversationId, setMessages]);
 
   return {
     messages,

@@ -26,6 +26,7 @@ import { courseBuilderRoutes } from './course/courseBuilderApiRoutes';
 import { courseCategoryRoutes } from './courseCategory/courseCategoryApiRoutes';
 import { courseAiRoutes } from './courseAi/courseAiApiRoutes';
 import { courseStudyAiRoutes } from './courseStudyAi/courseStudyAiApiRoutes';
+import { aiTrustRoutes } from './aiTrust/aiTrustApiRoutes';
 import { oneOnOneRoutes } from './oneOnOneCall/oneOnOneApiRoutes';
 import { creatorEarningsRoutes } from './creatorEarnings/creatorEarningsApiRoutes';
 import { creatorApplicationRoutes } from './creatorApplication/creatorApplicationApiRoutes';
@@ -34,6 +35,9 @@ import { studentExperienceRoutes } from './studentExperience/studentExperienceAp
 import { pushTokenRoutes } from './pushToken/pushTokenApiRoutes';
 import { notificationRoutes } from './notification/notificationApiRoutes';
 import { backgroundJobsRoutes } from './backgroundJobs/backgroundJobsApiRoutes';
+import { productAnalyticsRoutes } from './productAnalytics/productAnalyticsApiRoutes';
+import { pricingRoutes } from './pricing/pricingApiRoutes';
+import { aiCreditRoutes } from './aiCredit/aiCreditApiRoutes';
 import {
   platformAdminRoutes,
   platformPromotionRoutes,
@@ -71,6 +75,7 @@ apiRoutes.route('/course-builder', courseBuilderRoutes);
 apiRoutes.route('/course-categories', courseCategoryRoutes);
 apiRoutes.route('/course-ai', courseAiRoutes);
 apiRoutes.route('/course-study-ai', courseStudyAiRoutes);
+apiRoutes.route('/ai-trust', aiTrustRoutes);
 apiRoutes.route('/one-on-one', oneOnOneRoutes);
 apiRoutes.route('/creator/earnings', creatorEarningsRoutes);
 apiRoutes.route('/creator-application', creatorApplicationRoutes);
@@ -81,6 +86,9 @@ apiRoutes.route('/notification', notificationRoutes);
 apiRoutes.route('/platform-admin', platformAdminRoutes);
 apiRoutes.route('/platform-promotion', platformPromotionRoutes);
 apiRoutes.route('/background-jobs', backgroundJobsRoutes);
+apiRoutes.route('/product-analytics', productAnalyticsRoutes);
+apiRoutes.route('/pricing', pricingRoutes);
+apiRoutes.route('/ai-credit-packs', aiCreditRoutes);
 apiRoutes.route('/user-account', userAccountRoutes);
 
 // MCP server endpoint

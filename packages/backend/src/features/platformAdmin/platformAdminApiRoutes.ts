@@ -31,6 +31,7 @@ import {
   platformAdminCourseListController,
   platformAdminCourseReviewController,
   platformAdminCourseUpdateController,
+  platformAdminCourseVideoTranscriptRetryController,
 } from '../course/courseControllers';
 import {
   platformAdminCourseCategoryCreateController,
@@ -61,6 +62,16 @@ import {
   platformAdminTrustSafetyRiskFlagUpdateController,
   platformAdminTrustSafetyRuleScanController,
 } from '../trustSafety/trustSafetyControllers';
+import {
+  platformAdminPricingExperimentCreateController,
+  platformAdminPricingExperimentListController,
+  platformAdminPricingExperimentUpdateController,
+} from '../pricing/pricingAdminControllers';
+import {
+  platformAdminAiCreditPackCreateController,
+  platformAdminAiCreditPackListController,
+  platformAdminAiCreditPackUpdateController,
+} from '../aiCredit/aiCreditControllers';
 
 export const platformAdminRoutes = new Hono();
 export const platformPromotionRoutes = new Hono();
@@ -324,6 +335,86 @@ platformAdminRoutes.get('/promotions', async (c) => {
   }
 });
 
+platformAdminRoutes.get('/pricing-experiments', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminPricingExperimentListController(context);
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+platformAdminRoutes.post('/pricing-experiments', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminPricingExperimentCreateController(
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+platformAdminRoutes.patch('/pricing-experiments/:id', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminPricingExperimentUpdateController(
+      { id: c.req.param('id') },
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+platformAdminRoutes.get('/ai-credit-packs', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminAiCreditPackListController(context);
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+platformAdminRoutes.post('/ai-credit-packs', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminAiCreditPackCreateController(
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+platformAdminRoutes.patch('/ai-credit-packs/:id', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await platformAdminAiCreditPackUpdateController(
+      { id: c.req.param('id') },
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
 platformAdminRoutes.post('/promotions', async (c) => {
   let context;
   try {
@@ -431,6 +522,23 @@ platformAdminRoutes.put('/courses/:id', async (c) => {
     return ApiResponseError(c, context, error);
   }
 });
+
+platformAdminRoutes.post(
+  '/courses/:id/lessons/:lessonId/video-transcript/retry',
+  async (c) => {
+    let context;
+    try {
+      context = await appContext(c);
+      const payload = await platformAdminCourseVideoTranscriptRetryController(
+        { id: c.req.param('id'), lessonId: c.req.param('lessonId') },
+        context,
+      );
+      return ApiResponseSuccess(c, context, payload);
+    } catch (error: any) {
+      return ApiResponseError(c, context, error);
+    }
+  },
+);
 
 platformAdminRoutes.post('/courses/:id/review', async (c) => {
   let context;

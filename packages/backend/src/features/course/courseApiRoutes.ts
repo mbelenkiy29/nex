@@ -10,6 +10,7 @@ import {
 } from '../../shared/lib/rateLimiter';
 import {
   courseAssignmentSubmissionController,
+  courseActivationController,
   courseAutocompleteController,
   courseCatalogController,
   courseCertificateController,
@@ -35,6 +36,13 @@ import {
   courseWishlistsController,
 } from './courseControllers';
 import { courseCheckoutController } from './courseCheckoutController';
+import { courseBundleCheckoutController } from './courseBundleCheckoutController';
+import {
+  courseFreeSampleController,
+  courseFreeSampleDiagnosticAnswerController,
+  courseFreeSampleDiagnosticCompleteController,
+  courseFreeSampleDiagnosticStartController,
+} from './courseFreeSampleControllers';
 
 export const courseRoutes = new Hono();
 
@@ -218,6 +226,21 @@ courseRoutes.get('/certificates/verify/:verificationCode', async (c) => {
   }
 });
 
+courseRoutes.post('/bundles/:id/checkout', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await courseBundleCheckoutController(
+      { id: c.req.param('id') },
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
 courseRoutes.get('/:slug', async (c) => {
   let context;
   try {
@@ -231,6 +254,88 @@ courseRoutes.get('/:slug', async (c) => {
     return ApiResponseError(c, context, error);
   }
 });
+
+courseRoutes.get('/:id/free-sample', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    await rateLimitRequest(
+      c,
+      context,
+      rateLimitFromProfile(rateLimitProfiles.publicRead, 'course-free-sample'),
+    );
+    const payload = await courseFreeSampleController(
+      { id: c.req.param('id') },
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+courseRoutes.post('/:id/free-sample/diagnostic/start', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    await rateLimitRequest(
+      c,
+      context,
+      rateLimitFromProfile(
+        rateLimitProfiles.publicRead,
+        'course-free-sample-diagnostic-start',
+      ),
+    );
+    const payload = await courseFreeSampleDiagnosticStartController(
+      { id: c.req.param('id') },
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+courseRoutes.post(
+  '/:id/free-sample/diagnostic/:attemptId/answer',
+  async (c) => {
+    let context;
+    try {
+      context = await appContext(c);
+      const payload = await courseFreeSampleDiagnosticAnswerController(
+        {
+          id: c.req.param('id'),
+          attemptId: c.req.param('attemptId'),
+        },
+        await c.req.json(),
+        context,
+      );
+      return ApiResponseSuccess(c, context, payload);
+    } catch (error: any) {
+      return ApiResponseError(c, context, error);
+    }
+  },
+);
+
+courseRoutes.post(
+  '/:id/free-sample/diagnostic/:attemptId/complete',
+  async (c) => {
+    let context;
+    try {
+      context = await appContext(c);
+      const payload = await courseFreeSampleDiagnosticCompleteController(
+        {
+          id: c.req.param('id'),
+          attemptId: c.req.param('attemptId'),
+        },
+        context,
+      );
+      return ApiResponseSuccess(c, context, payload);
+    } catch (error: any) {
+      return ApiResponseError(c, context, error);
+    }
+  },
+);
 
 courseRoutes.get('/:id/certificate', async (c) => {
   let context;
@@ -331,6 +436,26 @@ courseRoutes.get('/:id/learn', async (c) => {
   try {
     context = await appContext(c);
     const payload = await courseLearnController(
+      {
+        id: c.req.param('id'),
+        activationSource:
+          c.req.query('activation') === '1'
+            ? 'post_purchase_activation'
+            : undefined,
+      },
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+courseRoutes.get('/:id/activation', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await courseActivationController(
       { id: c.req.param('id') },
       context,
     );

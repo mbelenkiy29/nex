@@ -1,7 +1,9 @@
-import { LuTriangleAlert, LuX } from 'react-icons/lu';
+import { Link } from '@tanstack/react-router';
+import { LuTriangleAlert, LuX, LuZap } from 'react-icons/lu';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/components/ui/button';
 import type { AiTutorAlertRow as AlertRow } from '@/features/aiTutor/aiTutorTypes';
 
 interface AiTutorAlertRowProps {
@@ -37,7 +39,21 @@ export function AiTutorAlertRow({ alert, onDismiss }: AiTutorAlertRowProps) {
       role="status"
     >
       <LuTriangleAlert className="mt-0.5 size-4 flex-shrink-0" />
-      <div className="min-w-0 flex-1">{text}</div>
+      <div className="min-w-0 flex-1">
+        <div>{text}</div>
+        {alert.kind === 'limitDaily' && (
+          <Button
+            nativeButton={false}
+            size="sm"
+            variant="outline"
+            className="mt-3 h-8 rounded-xl bg-white/70"
+            render={<Link to="/subscription" />}
+          >
+            <LuZap className="size-3.5" />
+            {dictionary.pricing.addAiCredits}
+          </Button>
+        )}
+      </div>
       <button
         type="button"
         onClick={onDismiss}

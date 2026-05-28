@@ -4,7 +4,12 @@ import { AiTutorAssistantBody } from './AiTutorAssistantBody';
 
 export function AiTutorMessageRow({ message }: { message: AiTutorMessage }) {
   if (message.role === 'user') {
-    return <AiTutorUserBubble content={message.content} />;
+    return (
+      <AiTutorUserBubble
+        content={message.content}
+        attachments={message.attachments}
+      />
+    );
   }
   return <AiTutorAssistantBody message={message} />;
 }

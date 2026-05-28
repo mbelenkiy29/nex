@@ -5,7 +5,6 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Switch } from '@/shared/components/ui/switch';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Spinner } from '@/shared/components/ui/spinner';
 import {
@@ -13,9 +12,18 @@ import {
   useDeleteSessionType,
   useMyAvailability,
 } from './hooks/useOneOnOneCall';
+import {
+  formatOneOnOnePrice,
+  isOneOnOneCurrencyValid,
+  normalizeOneOnOneCurrency,
+  ONE_ON_ONE_MAX_PRICE_CENTS,
+  ONE_ON_ONE_MIN_PRICE_CENTS,
+  parseOneOnOnePriceAmount,
+} from './oneOnOneCallFormat';
 
 export function SessionTypeEditor() {
   const t = useAuthStore((s) => s.dictionary.oneOnOneCall.sessionType);
+  const locale = useAuthStore((s) => s.locale);
   const query = useMyAvailability();
   const create = useCreateSessionType();
   const remove = useDeleteSessionType();
@@ -25,29 +33,48 @@ export function SessionTypeEditor() {
   const [description, setDescription] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [isFree, setIsFree] = useState(true);
-  const [priceCents, setPriceCents] = useState(0);
+  const [priceAmount, setPriceAmount] = useState('25.00');
+  const [currency, setCurrency] = useState('USD');
   const [bufferMinutes, setBufferMinutes] = useState(0);
   const [minNoticeHours, setMinNoticeHours] = useState(12);
+
+  const normalizedCurrency = normalizeOneOnOneCurrency(currency);
+  const priceCents = parseOneOnOnePriceAmount(priceAmount);
+  const isPaidPriceInvalid =
+    !isFree &&
+    (priceCents === null ||
+      priceCents < ONE_ON_ONE_MIN_PRICE_CENTS ||
+      priceCents > ONE_ON_ONE_MAX_PRICE_CENTS);
+  const isCurrencyInvalid =
+    !isFree && !isOneOnOneCurrencyValid(normalizedCurrency);
+  const canSave =
+    Boolean(title.trim()) &&
+    !isPaidPriceInvalid &&
+    !isCurrencyInvalid &&
+    !create.isPending;
 
   const resetForm = () => {
     setTitle('');
     setDescription('');
     setDurationMinutes(30);
     setIsFree(true);
-    setPriceCents(0);
+    setPriceAmount('25.00');
+    setCurrency('USD');
     setBufferMinutes(0);
     setMinNoticeHours(12);
     setShowForm(false);
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) return;
+    if (!canSave || (!isFree && priceCents === null)) return;
+
     await create.mutateAsync({
       title: title.trim(),
       description: description.trim() || null,
       durationMinutes,
       isFree,
       priceCents: isFree ? null : priceCents,
+      currency: normalizedCurrency,
       bufferMinutes,
       minNoticeHours,
     });
@@ -77,10 +104,7 @@ export function SessionTypeEditor() {
           <div className="space-y-3 rounded-xl border p-4">
             <div className="space-y-2">
               <Label>{t.fields.title}</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>{t.fields.description}</Label>
@@ -122,36 +146,78 @@ export function SessionTypeEditor() {
                 />
               </div>
             </div>
-            <Label className="flex items-center gap-2">
-              <Switch checked={isFree} onCheckedChange={setIsFree} />
-              {t.fields.isFree}
-            </Label>
+            <div className="space-y-2">
+              <Label>{t.pricingModeLabel}</Label>
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="group"
+                aria-label={t.pricingModeLabel}
+              >
+                <Button
+                  type="button"
+                  variant={isFree ? 'default' : 'outline'}
+                  onClick={() => setIsFree(true)}
+                >
+                  {t.freeMode}
+                </Button>
+                <Button
+                  type="button"
+                  variant={isFree ? 'outline' : 'default'}
+                  onClick={() => setIsFree(false)}
+                >
+                  {t.paidMode}
+                </Button>
+              </div>
+            </div>
             {!isFree ? (
               <>
-                <div className="space-y-2">
-                  <Label>{t.fields.priceCents}</Label>
-                  <Input
-                    type="number"
-                    min={50}
-                    max={1_000_000}
-                    value={priceCents}
-                    onChange={(e) => setPriceCents(Number(e.target.value))}
-                  />
+                <div className="grid grid-cols-[1fr_7rem] gap-3">
+                  <div className="space-y-2">
+                    <Label>{t.fields.priceAmount}</Label>
+                    <Input
+                      inputMode="decimal"
+                      placeholder={t.priceAmountPlaceholder}
+                      value={priceAmount}
+                      aria-invalid={isPaidPriceInvalid}
+                      onChange={(e) => setPriceAmount(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t.fields.currency}</Label>
+                    <Input
+                      value={currency}
+                      maxLength={3}
+                      aria-invalid={isCurrencyInvalid}
+                      onChange={(e) =>
+                        setCurrency(
+                          e.target.value
+                            .replace(/[^a-z]/gi, '')
+                            .toUpperCase()
+                            .slice(0, 3),
+                        )
+                      }
+                    />
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-xs">
-                  {t.paidDisabledHint}
-                </p>
+                {isPaidPriceInvalid ? (
+                  <p className="text-destructive text-xs" role="alert">
+                    {t.priceInvalid}
+                  </p>
+                ) : null}
+                {isCurrencyInvalid ? (
+                  <p className="text-destructive text-xs" role="alert">
+                    {t.currencyInvalid}
+                  </p>
+                ) : null}
+                <p className="text-muted-foreground text-xs">{t.paidHelper}</p>
               </>
             ) : null}
             <div className="flex gap-2">
-              <Button
-                onClick={handleCreate}
-                disabled={!title.trim() || create.isPending}
-              >
+              <Button onClick={handleCreate} disabled={!canSave}>
                 {t.save}
               </Button>
               <Button variant="ghost" onClick={resetForm}>
-                Cancel
+                {t.cancel}
               </Button>
             </div>
           </div>
@@ -171,10 +237,14 @@ export function SessionTypeEditor() {
                 <div>
                   <div className="font-semibold">{st.title}</div>
                   <div className="text-muted-foreground text-xs">
-                    {st.durationMinutes} min ·{' '}
+                    {t.durationMinutesShort.replace(
+                      '{0}',
+                      String(st.durationMinutes),
+                    )}{' '}
+                    ·{' '}
                     {st.isFree
-                      ? 'Free'
-                      : `${(st.priceCents ?? 0) / 100} ${st.currency}`}
+                      ? t.freeLabel
+                      : formatOneOnOnePrice(st.priceCents, st.currency, locale)}
                   </div>
                 </div>
                 <Button

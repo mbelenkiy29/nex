@@ -35,6 +35,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Progress } from '@/shared/components/ui/progress';
 import { Spinner } from '@/shared/components/ui/spinner';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { ContextualPaywall } from '@/features/pricing/ContextualPaywall';
 import { apiClient } from '@/shared/lib/apiClient';
 import type { Dictionary } from '@/features/auth/authStore';
 import type {
@@ -54,12 +55,20 @@ export const studentCourseOverviewLazyRoute = createLazyRoute(
 
 export function StudentCourseOverviewPage() {
   const dictionary = useAuthStore((state) => state.dictionary);
+  const currentSubscription = useAuthStore(
+    (state) => state.currentSubscription,
+  );
+  const config = useAuthStore((state) => state.config);
   const { courseId } = useParams({ from: '/student/course/$courseId' });
   const search = useSearch({ strict: false }) as {
     focus?: string;
     itemId?: string;
   };
   const queryClient = useQueryClient();
+  const canSubscribe = config?.subscriptionMode !== 'disabled';
+  const [diagnosticPaywallAttemptId, setDiagnosticPaywallAttemptId] = useState<
+    string | null
+  >(null);
   const setChatbotOpen = useChatbotStore((state) => state.setIsOpen);
   const setChatbotContext = useChatbotStore((state) => state.setContext);
   const overviewQuery = useQuery({
@@ -99,6 +108,9 @@ export function StudentCourseOverviewPage() {
     });
     await queryClient.invalidateQueries({
       queryKey: ['studentExperience', 'dashboard'],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ['studentExperience', 'masteryMap'],
     });
   };
 
@@ -206,8 +218,9 @@ export function StudentCourseOverviewPage() {
       apiClient
         .post(`api/student/course/${courseId}/diagnostic/${attemptId}/complete`)
         .json(),
-    onSuccess: async () => {
+    onSuccess: async (_data, attemptId) => {
       await invalidateOverview();
+      setDiagnosticPaywallAttemptId(attemptId);
       toast.success(dictionary.studentExperience.success.diagnosticCompleted);
     },
     onError: (error: Error) =>
@@ -329,6 +342,15 @@ export function StudentCourseOverviewPage() {
               <LuSparkles className="size-4" />
               {dictionary.studentExperience.askCourseTutor}
             </Button>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link to="/student/mastery-map" />}
+              className="h-11 rounded-xl bg-white/70"
+            >
+              <LuMap className="size-4" />
+              {dictionary.studentExperience.masteryMap.openCta}
+            </Button>
           </div>
         </div>
       </section>
@@ -353,6 +375,11 @@ export function StudentCourseOverviewPage() {
             <LearningOutcomesPanel
               overview={overview}
               dictionary={dictionary}
+              diagnosticPaywallAttemptId={
+                canSubscribe && !currentSubscription
+                  ? diagnosticPaywallAttemptId
+                  : null
+              }
               isStartingDiagnostic={diagnosticStartMutation.isPending}
               isAnsweringDiagnostic={diagnosticAnswerMutation.isPending}
               isCompletingDiagnostic={diagnosticCompleteMutation.isPending}
@@ -746,6 +773,7 @@ function ReadinessSummary({
 function LearningOutcomesPanel({
   overview,
   dictionary,
+  diagnosticPaywallAttemptId,
   isStartingDiagnostic,
   isAnsweringDiagnostic,
   isCompletingDiagnostic,
@@ -759,6 +787,7 @@ function LearningOutcomesPanel({
 }: {
   overview: StudentCourseOverviewResponse;
   dictionary: Dictionary;
+  diagnosticPaywallAttemptId: string | null;
   isStartingDiagnostic: boolean;
   isAnsweringDiagnostic: boolean;
   isCompletingDiagnostic: boolean;
@@ -838,6 +867,11 @@ function LearningOutcomesPanel({
             attempt={outcomes.diagnostic.activeAttempt || null}
             lastAttempt={outcomes.diagnostic.lastAttempt || null}
             availableQuestions={outcomes.diagnostic.availableQuestions}
+            showPaywall={Boolean(
+              diagnosticPaywallAttemptId &&
+              outcomes.diagnostic.lastAttempt?.id ===
+                diagnosticPaywallAttemptId,
+            )}
             dictionary={dictionary}
             isStarting={isStartingDiagnostic}
             isAnswering={isAnsweringDiagnostic}
@@ -886,6 +920,7 @@ function DiagnosticCheckpoint({
   attempt,
   lastAttempt,
   availableQuestions,
+  showPaywall,
   dictionary,
   isStarting,
   isAnswering,
@@ -897,6 +932,7 @@ function DiagnosticCheckpoint({
   attempt: StudentDiagnosticAttempt | null;
   lastAttempt: StudentDiagnosticAttempt | null;
   availableQuestions: number;
+  showPaywall: boolean;
   dictionary: Dictionary;
   isStarting: boolean;
   isAnswering: boolean;
@@ -950,6 +986,23 @@ function DiagnosticCheckpoint({
               lastAttempt.totalQuestions,
             )}
           </div>
+        )}
+        {showPaywall && lastAttempt && (
+          <ContextualPaywall
+            source="diagnostic_result"
+            courseId={lastAttempt.courseId}
+            attemptId={lastAttempt.id}
+            preferredPackageTypes={[
+              'annual_subscription',
+              'monthly_subscription',
+            ]}
+            compact
+            className="mt-3"
+            metadata={{
+              scorePercent: lastAttempt.scorePercent,
+              totalQuestions: lastAttempt.totalQuestions,
+            }}
+          />
         )}
         <Button
           type="button"
@@ -1312,7 +1365,15 @@ function MockExamSummary({
   mockExams: StudentCourseOverviewResponse['learningOutcomes']['mockExams'];
   dictionary: Dictionary;
 }) {
+  const currentSubscription = useAuthStore(
+    (state) => state.currentSubscription,
+  );
+  const config = useAuthStore((state) => state.config);
   const text = dictionary.studentExperience.learningOutcomes.mockExams;
+  const showPracticeExamPaywall =
+    !currentSubscription &&
+    config?.subscriptionMode !== 'disabled' &&
+    mockExams.availableExams > 0;
 
   return (
     <OutcomeSection
@@ -1361,6 +1422,23 @@ function MockExamSummary({
             <LuPlay className="size-4" />
             {text.openPlayer}
           </Button>
+          {showPracticeExamPaywall && (
+            <ContextualPaywall
+              source="locked_practice_exam"
+              courseId={courseId}
+              lockedFeature="practice_exam"
+              preferredPackageTypes={[
+                'annual_subscription',
+                'monthly_subscription',
+              ]}
+              compact
+              className="mt-3"
+              metadata={{
+                availableExams: mockExams.availableExams,
+                simulatedExams: mockExams.simulatedExams,
+              }}
+            />
+          )}
         </>
       ) : (
         <p className="text-muted-foreground text-sm">{text.noExams}</p>

@@ -72,6 +72,14 @@ export function menus(
       isExact: true,
     });
 
+    menus.push({
+      id: 'studentMasteryMap',
+      label: dictionary.studentExperience.menu.masteryMap,
+      href: `/student/mastery-map`,
+      Icon: featureIcons.masteryMap,
+      isExact: true,
+    });
+
     if (
       hasPermission({
         course: ['read'],
@@ -104,9 +112,6 @@ export function menus(
     menus.push({
       id: 'studentAiTutor',
       label: dictionary.studentExperience.menu.aiTutor,
-      // Routes to the full-page AI Tutor. Previously this was an
-      // `action: 'chatbot'` entry that opened the legacy ChatbotSheet — that
-      // Sheet is no longer mounted, so clicks went nowhere.
       href: `/student/ai-tutor`,
       Icon: featureIcons.aiTutor,
     });

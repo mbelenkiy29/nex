@@ -26,8 +26,8 @@ export type CourseStudyAiPracticeInput = z.infer<
 >;
 
 // One AI-generated multiple-choice question. This is both the AI output shape
-// and the response shape — Phase 1 grades client-side, so options carry the
-// `isCorrect` flag. AI questions are study-only and never count toward grades.
+// and the response shape, so options carry the `isCorrect` flag for instant
+// local grading. AI questions are study-only and never count toward grades.
 export const courseStudyAiQuestionSchema = z.object({
   questionText: z.string().min(1),
   explanation: z.string().default(''),
@@ -64,8 +64,8 @@ export interface CourseStudyAiStreamChunk {
   };
 }
 
-// Submitting a completed AI quiz so the attempt is persisted (Phase 2). The
-// generated questions are echoed back since they are not bank questions.
+// Submitting a completed AI quiz persists the generated questions and answers;
+// generated questions are echoed back because they are not bank questions.
 export const courseStudyAiSubmitInputSchema = z.object({
   kind: z.enum(['quiz', 'practice']),
   moduleId: z.string().uuid().nullish(),

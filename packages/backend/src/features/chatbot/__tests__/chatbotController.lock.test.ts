@@ -2,14 +2,15 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { testPrismaClient } from '../../../test/testPrismaClient';
 import { createTestUserWithOrganization } from '../../../test/testFactories';
 import { createAuthenticatedContext } from '../../../test/testUtils';
-import { chatbotSendMessageController } from '../chatbotController';
+import { chatbotSendConversationMessageController } from '../chatbotController';
 import { releaseChatbotLock } from '../chatbotLockService';
 import { Context } from 'hono';
 
 describe('chatbotController - Lock Protection', () => {
   beforeEach(async () => {
     const prisma = testPrismaClient();
-    // Clean up test data
+    await prisma.chatbotMessage.deleteMany();
+    await prisma.chatbotConversation.deleteMany();
     await prisma.chatbotUsage.deleteMany();
   });
 
@@ -27,23 +28,26 @@ describe('chatbotController - Lock Protection', () => {
       newResponse: (body: any, init?: any) => new Response(body, init),
     } as unknown as Context;
 
-    const input = {
-      message: 'Hello',
-      conversationHistory: [],
-    };
+    const conversation = await testPrismaClient().chatbotConversation.create({
+      data: {
+        userId: user.id,
+        organizationId: organization.id,
+        title: 'Test conversation',
+      },
+    });
+    const input = { message: 'Hello' };
 
-    // First request should acquire lock and start processing
-    const firstRequest = chatbotSendMessageController(
+    const firstRequest = chatbotSendConversationMessageController(
+      conversation.id,
       input,
       context,
       mockHonoContext,
     );
 
-    // Wait a tiny bit for lock to be acquired
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    // Second concurrent request should be rejected
-    const secondRequest = chatbotSendMessageController(
+    const secondRequest = chatbotSendConversationMessageController(
+      conversation.id,
       input,
       context,
       mockHonoContext,
@@ -51,19 +55,14 @@ describe('chatbotController - Lock Protection', () => {
 
     const secondResponse = (await secondRequest) as any;
 
-    // Second request should return 409 Conflict
     expect(secondResponse.status).toBe(409);
     expect(secondResponse.data.error).toBe('concurrent_request');
     expect(secondResponse.data.message).toContain(
       'already have a chatbot request in progress',
     );
 
-    // Clean up - release the lock from first request
     await releaseChatbotLock(user.id);
-
-    // Wait for first request to complete or timeout
-    // Note: In tests without mocking Claude API, this will fail to stream
-    // but that's okay - we're testing the lock mechanism
+    await firstRequest;
   }, 10000);
 
   it('should allow request after previous request completes', async () => {
@@ -80,30 +79,33 @@ describe('chatbotController - Lock Protection', () => {
       newResponse: (body: any, init?: any) => new Response(body, init),
     } as unknown as Context;
 
-    const input = {
-      message: 'Hello',
-      conversationHistory: [],
-    };
+    const conversation = await testPrismaClient().chatbotConversation.create({
+      data: {
+        userId: user.id,
+        organizationId: organization.id,
+        title: 'Test conversation',
+      },
+    });
+    const input = { message: 'Hello' };
 
-    // First request
-    const firstRequest = chatbotSendMessageController(
+    const firstRequest = chatbotSendConversationMessageController(
+      conversation.id,
       input,
       context,
       mockHonoContext,
     );
 
-    // Release lock manually (simulating completion)
     await releaseChatbotLock(user.id);
 
-    // Second request should succeed in acquiring lock
-    const secondRequest = chatbotSendMessageController(
+    const secondRequest = chatbotSendConversationMessageController(
+      conversation.id,
       input,
       context,
       mockHonoContext,
     );
 
-    // Clean up
     await releaseChatbotLock(user.id);
+    await Promise.all([firstRequest, secondRequest]);
   }, 10000);
 
   it('should allow different users to have concurrent requests', async () => {
@@ -130,25 +132,38 @@ describe('chatbotController - Lock Protection', () => {
       newResponse: (body: any, init?: any) => new Response(body, init),
     } as unknown as Context;
 
-    const input = {
-      message: 'Hello',
-      conversationHistory: [],
-    };
+    const prisma = testPrismaClient();
+    const conversation1 = await prisma.chatbotConversation.create({
+      data: {
+        userId: user1Data.user.id,
+        organizationId: user1Data.organization.id,
+        title: 'Test conversation',
+      },
+    });
+    const conversation2 = await prisma.chatbotConversation.create({
+      data: {
+        userId: user2Data.user.id,
+        organizationId: user2Data.organization.id,
+        title: 'Test conversation',
+      },
+    });
+    const input = { message: 'Hello' };
 
-    // Both users should be able to start requests
-    const request1 = chatbotSendMessageController(
+    const request1 = chatbotSendConversationMessageController(
+      conversation1.id,
       input,
       context1,
       mockHonoContext,
     );
-    const request2 = chatbotSendMessageController(
+    const request2 = chatbotSendConversationMessageController(
+      conversation2.id,
       input,
       context2,
       mockHonoContext,
     );
 
-    // Clean up
     await releaseChatbotLock(user1Data.user.id);
     await releaseChatbotLock(user2Data.user.id);
+    await Promise.all([request1, request2]);
   }, 10000);
 });

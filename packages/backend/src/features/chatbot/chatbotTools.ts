@@ -22,6 +22,16 @@ import {
   computeWeaknesses,
   daysUntilDate,
 } from '../courseStudyAi/courseStudyAiAnalytics';
+import {
+  aiTrustGetPreferences,
+  aiTrustLimitations,
+  aiTrustSignal,
+  aiTrustSource,
+} from '../aiTrust/aiTrustService';
+import type {
+  AiTrustPreferences,
+  AiTrustSignal,
+} from '../aiTrust/aiTrustSchemas';
 
 // Each STUDY_TOOL maps a Claude tool_use call to an existing courseStudyAi
 // generator. The agent emits the widget payload as a `tool_result` chunk so the
@@ -61,7 +71,11 @@ interface StudyToolDefinition {
   input_schema: Anthropic.Tool.InputSchema;
   run: (
     input: Record<string, unknown>,
-    ctx: { context: AppContext; courseId: string | null },
+    ctx: {
+      context: AppContext;
+      courseId: string | null;
+      preferences?: AiTrustPreferences;
+    },
   ) => Promise<StudyToolResult>;
 }
 
@@ -100,6 +114,87 @@ function studyAiGenerationMessages(context: AppContext) {
   };
 }
 
+async function preferencesForTool(
+  context: AppContext,
+  preferences?: AiTrustPreferences,
+) {
+  return preferences ?? (await aiTrustGetPreferences(context));
+}
+
+function lessonTrustSignal(params: {
+  context: AppContext;
+  preferences: AiTrustPreferences;
+  lessonContext: Awaited<ReturnType<typeof buildLessonContext>>;
+  reason: string;
+}): AiTrustSignal {
+  const { context, preferences, lessonContext } = params;
+  return aiTrustSignal({
+    context,
+    preferences,
+    whyGenerated: params.reason,
+    influencingData: [
+      aiTrustSource('courseOutline', 'used', {
+        details: [lessonContext.course.title, lessonContext.lesson.title],
+      }),
+      preferences.useLessonContent
+        ? aiTrustSource(
+            'lessonContent',
+            lessonContext.hasContent ? 'used' : 'unavailable',
+            { count: lessonContext.hasContent ? 1 : 0 },
+          )
+        : aiTrustSource('lessonContent', 'omitted'),
+    ],
+    confidenceLevel:
+      preferences.useLessonContent && lessonContext.hasContent ? 'high' : 'low',
+    limitations: aiTrustLimitations(context, preferences, [
+      !lessonContext.hasContent
+        ? context.dictionary.aiTrust.limitations.noLessonContent
+        : null,
+    ]),
+  });
+}
+
+function moduleTrustSignal(params: {
+  context: AppContext;
+  preferences: AiTrustPreferences;
+  moduleContext: Awaited<ReturnType<typeof buildModuleContext>>;
+  reason: string;
+  questionCount: number;
+}): AiTrustSignal {
+  const { context, preferences, moduleContext } = params;
+  return aiTrustSignal({
+    context,
+    preferences,
+    whyGenerated: params.reason,
+    influencingData: [
+      aiTrustSource('courseOutline', 'used', {
+        details: [moduleContext.course.title, moduleContext.module.title],
+      }),
+      preferences.useLessonContent
+        ? aiTrustSource(
+            'lessonContent',
+            moduleContext.hasContent ? 'used' : 'unavailable',
+            {
+              count: moduleContext.lessons.length,
+              details: moduleContext.lessons
+                .slice(0, 5)
+                .map((lesson) => lesson.title)
+                .filter(Boolean),
+            },
+          )
+        : aiTrustSource('lessonContent', 'omitted'),
+    ],
+    confidenceLevel:
+      preferences.useLessonContent && moduleContext.hasContent ? 'high' : 'low',
+    limitations: aiTrustLimitations(context, preferences, [
+      context.dictionary.aiTrust.limitations.verifyAnswers,
+      params.questionCount === 0
+        ? context.dictionary.aiTrust.limitations.noLessonContent
+        : null,
+    ]),
+  });
+}
+
 const studyTools: StudyToolDefinition[] = [
   {
     name: 'study_explain_lesson',
@@ -112,8 +207,12 @@ const studyTools: StudyToolDefinition[] = [
       },
       required: ['lessonId'],
     },
-    async run(input, { context, courseId }) {
+    async run(input, { context, courseId, preferences: providedPreferences }) {
       const scopedCourseId = requireCourseScope(courseId, context);
+      const preferences = await preferencesForTool(
+        context,
+        providedPreferences,
+      );
       const lessonId = String(input.lessonId ?? '');
       if (!lessonId) {
         throw new Error400(
@@ -124,6 +223,7 @@ const studyTools: StudyToolDefinition[] = [
         scopedCourseId,
         lessonId,
         context,
+        preferences,
       );
       const { json: _ignored, usage } = await runCourseStudyAiGeneration(
         explainLessonSystemPrompt(languageNameOf(context)) +
@@ -145,6 +245,12 @@ const studyTools: StudyToolDefinition[] = [
             courseTitle: lessonContext.course.title,
             summary: parsed.summary,
             keyPoints: parsed.keyPoints,
+            trust: lessonTrustSignal({
+              context,
+              preferences,
+              lessonContext,
+              reason: context.dictionary.aiTrust.reasons.lessonExplain,
+            }),
           },
         },
         textForModel: capTextForModel(
@@ -165,8 +271,12 @@ const studyTools: StudyToolDefinition[] = [
       },
       required: ['lessonId'],
     },
-    async run(input, { context, courseId }) {
+    async run(input, { context, courseId, preferences: providedPreferences }) {
       const scopedCourseId = requireCourseScope(courseId, context);
+      const preferences = await preferencesForTool(
+        context,
+        providedPreferences,
+      );
       const lessonId = String(input.lessonId ?? '');
       if (!lessonId) {
         throw new Error400(
@@ -177,6 +287,7 @@ const studyTools: StudyToolDefinition[] = [
         scopedCourseId,
         lessonId,
         context,
+        preferences,
       );
       const { json, usage } = await runCourseStudyAiGeneration(
         summarizeLessonSystemPrompt(languageNameOf(context)) +
@@ -195,6 +306,12 @@ const studyTools: StudyToolDefinition[] = [
             courseTitle: lessonContext.course.title,
             summary: parsed.summary,
             keyPoints: parsed.keyPoints,
+            trust: lessonTrustSignal({
+              context,
+              preferences,
+              lessonContext,
+              reason: context.dictionary.aiTrust.reasons.lessonSummary,
+            }),
           },
         },
         textForModel: capTextForModel(
@@ -215,8 +332,12 @@ const studyTools: StudyToolDefinition[] = [
       },
       required: ['moduleId'],
     },
-    async run(input, { context, courseId }) {
+    async run(input, { context, courseId, preferences: providedPreferences }) {
       const scopedCourseId = requireCourseScope(courseId, context);
+      const preferences = await preferencesForTool(
+        context,
+        providedPreferences,
+      );
       const moduleId = String(input.moduleId ?? '');
       if (!moduleId) {
         throw new Error400(
@@ -227,6 +348,7 @@ const studyTools: StudyToolDefinition[] = [
         scopedCourseId,
         moduleId,
         context,
+        preferences,
       );
       if (!moduleContext.hasContent) {
         throw new Error400(
@@ -252,6 +374,13 @@ const studyTools: StudyToolDefinition[] = [
             courseId: scopedCourseId,
             courseTitle: moduleContext.course.title,
             questions,
+            trust: moduleTrustSignal({
+              context,
+              preferences,
+              moduleContext,
+              reason: context.dictionary.aiTrust.reasons.quiz,
+              questionCount: questions.length,
+            }),
           },
         },
         textForModel: capTextForModel(
@@ -273,8 +402,12 @@ const studyTools: StudyToolDefinition[] = [
       },
       required: ['moduleId'],
     },
-    async run(input, { context, courseId }) {
+    async run(input, { context, courseId, preferences: providedPreferences }) {
       const scopedCourseId = requireCourseScope(courseId, context);
+      const preferences = await preferencesForTool(
+        context,
+        providedPreferences,
+      );
       const moduleId = String(input.moduleId ?? '');
       if (!moduleId) {
         throw new Error400(
@@ -290,6 +423,7 @@ const studyTools: StudyToolDefinition[] = [
         scopedCourseId,
         moduleId,
         context,
+        preferences,
       );
       if (!moduleContext.hasContent) {
         throw new Error400(
@@ -315,6 +449,13 @@ const studyTools: StudyToolDefinition[] = [
             courseId: scopedCourseId,
             courseTitle: moduleContext.course.title,
             questions,
+            trust: moduleTrustSignal({
+              context,
+              preferences,
+              moduleContext,
+              reason: context.dictionary.aiTrust.reasons.practice,
+              questionCount: questions.length,
+            }),
           },
         },
         textForModel: capTextForModel(
@@ -332,8 +473,12 @@ const studyTools: StudyToolDefinition[] = [
       type: 'object',
       properties: {},
     },
-    async run(_input, { context, courseId }) {
+    async run(_input, { context, courseId, preferences: providedPreferences }) {
       const scopedCourseId = requireCourseScope(courseId, context);
+      const preferences = await preferencesForTool(
+        context,
+        providedPreferences,
+      );
       const userId = context.currentUser?.id;
       if (!userId) {
         throw new Error400(
@@ -342,7 +487,14 @@ const studyTools: StudyToolDefinition[] = [
       }
       const course = await prisma.course.findUnique({
         where: { id: scopedCourseId },
-        select: { id: true, title: true, audience: true, examType: true },
+        select: {
+          id: true,
+          title: true,
+          audience: true,
+          examType: true,
+          lessons: { select: { id: true, title: true, isHidden: true } },
+          modules: { select: { id: true, title: true } },
+        },
       });
       if (!course) throw new Error404();
       const enrollment = await prisma.courseEnrollment.findFirst({
@@ -351,11 +503,15 @@ const studyTools: StudyToolDefinition[] = [
       });
 
       const [weaknesses, progress] = await Promise.all([
-        computeWeaknesses(scopedCourseId, userId),
-        prisma.courseLessonProgress.findMany({
-          where: { courseId: scopedCourseId, userId },
-          select: { lessonId: true },
-        }),
+        preferences.usePracticeResults
+          ? computeWeaknesses(scopedCourseId, userId)
+          : Promise.resolve({ domains: [], totalAnswered: 0 }),
+        preferences.useLessonProgress
+          ? prisma.courseLessonProgress.findMany({
+              where: { courseId: scopedCourseId, userId },
+              select: { lessonId: true },
+            })
+          : Promise.resolve([]),
       ]);
       const completed = new Set(progress.map((row) => row.lessonId));
       const examDate = enrollment?.targetExamDate ?? null;
@@ -368,6 +524,7 @@ const studyTools: StudyToolDefinition[] = [
           examName: enrollment?.examName ?? null,
           daysUntil,
         },
+        preferences,
       );
 
       const errors = context.dictionary.course.studyAi.errors;
@@ -389,6 +546,50 @@ const studyTools: StudyToolDefinition[] = [
             examName: enrollment?.examName ?? null,
             daysUntil,
             items,
+            trust: aiTrustSignal({
+              context,
+              preferences,
+              whyGenerated: context.dictionary.aiTrust.reasons.studyPlan,
+              influencingData: [
+                aiTrustSource('courseOutline', 'used', {
+                  count: course.lessons.length,
+                  details: course.modules
+                    .slice(0, 5)
+                    .map((module) => module.title),
+                }),
+                preferences.useLessonProgress
+                  ? aiTrustSource('lessonProgress', 'used', {
+                      count: completed.size,
+                    })
+                  : aiTrustSource('lessonProgress', 'omitted'),
+                preferences.usePracticeResults
+                  ? aiTrustSource(
+                      'practiceResults',
+                      weaknesses.totalAnswered > 0 ? 'used' : 'unavailable',
+                      {
+                        count: weaknesses.totalAnswered,
+                        details: weaknesses.domains
+                          .slice(0, 5)
+                          .map(
+                            (domain) => `${domain.domain}: ${domain.percent}%`,
+                          ),
+                      },
+                    )
+                  : aiTrustSource('practiceResults', 'omitted'),
+                examDate
+                  ? aiTrustSource('examDate', 'used')
+                  : aiTrustSource('examDate', 'unavailable'),
+              ],
+              confidenceLevel:
+                weaknesses.totalAnswered > 0 || completed.size > 0
+                  ? 'medium'
+                  : 'low',
+              limitations: aiTrustLimitations(context, preferences, [
+                weaknesses.totalAnswered === 0
+                  ? context.dictionary.aiTrust.limitations.noPracticeData
+                  : null,
+              ]),
+            }),
           },
         },
         textForModel: capTextForModel(
@@ -433,7 +634,11 @@ export function isStudyToolName(name: string): name is StudyToolName {
 export async function runStudyTool(
   name: StudyToolName,
   input: Record<string, unknown>,
-  ctx: { context: AppContext; courseId: string | null },
+  ctx: {
+    context: AppContext;
+    courseId: string | null;
+    preferences?: AiTrustPreferences;
+  },
 ): Promise<StudyToolResult> {
   const tool = studyTools.find((t) => t.name === name);
   if (!tool) {

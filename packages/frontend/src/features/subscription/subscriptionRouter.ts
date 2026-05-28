@@ -35,4 +35,40 @@ export const subscriptionRoute = createRoute({
   import('./pages/SubscriptionPage').then((d) => d.subscriptionLazyRoute),
 );
 
-export const subscriptionRouter = [subscriptionRoute];
+export const subscriptionActivationRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/subscription/activation',
+  head: () => ({
+    meta: [
+      {
+        title: buildPageTitle(
+          useAuthStore.getState().dictionary.subscription.activation.title,
+        ),
+      },
+    ],
+  }),
+  beforeLoad: async ({ location }) => {
+    const { currentUser, currentMember, config } = useAuthStore.getState();
+
+    if (config?.subscriptionMode === 'disabled') {
+      throw redirect({ to: '/' });
+    }
+
+    authGuardFrontend(
+      { currentUser, currentMember },
+      {
+        subscription: ['read'],
+      },
+      location.pathname,
+    );
+  },
+}).lazy(() =>
+  import('./pages/SubscriptionActivationPage').then(
+    (d) => d.subscriptionActivationLazyRoute,
+  ),
+);
+
+export const subscriptionRouter = [
+  subscriptionRoute,
+  subscriptionActivationRoute,
+];

@@ -23,6 +23,8 @@ interface ChatbotSheetProps {
 export function ChatbotSheet({ open, onOpenChange }: ChatbotSheetProps) {
   const dictionary = useAuthStore((state) => state.dictionary);
   const activeContext = useChatbotStore((state) => state.context);
+  const conversationId = useChatbotStore((state) => state.conversationId);
+  const setConversationId = useChatbotStore((state) => state.setConversationId);
   const navigate = useNavigate();
   const createConversation = useAiTutorCreateConversation();
   const {
@@ -35,14 +37,21 @@ export function ChatbotSheet({ open, onOpenChange }: ChatbotSheetProps) {
     clearConversation,
   } = useChatbot();
 
-  // Bridge to the new full-page AI Tutor — creates a course-scoped (or
-  // free-form) conversation that mirrors the modal's current context and
-  // navigates the user there. v2 deprecates this modal entirely.
   const handleOpenFullTutor = async () => {
+    if (conversationId) {
+      onOpenChange(false);
+      await navigate({
+        to: '/student/ai-tutor/$conversationId',
+        params: { conversationId },
+      });
+      return;
+    }
+
     const result = await createConversation.mutateAsync({
       courseId: activeContext?.courseId ?? null,
       lessonId: activeContext?.lessonId ?? null,
     });
+    setConversationId(result.conversation.id);
     onOpenChange(false);
     await navigate({
       to: '/student/ai-tutor/$conversationId',

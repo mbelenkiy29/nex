@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { configFrontendUrlValidator } from './features/config/configFrontendUrlValidator';
 import { rolesIds } from './features/permissions';
 
 const envSchema = z
@@ -63,7 +62,8 @@ const envSchema = z
     // - Multi-domain subdomain (ORGANIZATION_MODE=multi-domain, ORGANIZATION_MULTI_DOMAIN_MODE=subdomain):
     //   Use wildcard: https://*.project.localhost
     //   Allows: https://org1.project.localhost, https://org2.project.localhost, etc.
-    FRONTEND_URL: configFrontendUrlValidator,
+    FRONTEND_URL: z.string().optional(),
+    MARKETING_URL: z.string().optional(),
 
     // Recaptcha
     RECAPTCHA_SECRET_KEY: z.string().optional(),
@@ -117,6 +117,18 @@ const envSchema = z
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+    STRIPE_CHECKOUT_AUTOMATIC_TAX_ENABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === 'true'),
+    STRIPE_CHECKOUT_ADAPTIVE_PRICING_ENABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === 'true'),
+    STRIPE_CHECKOUT_TERMS_ACCEPTANCE_REQUIRED: z
+      .string()
+      .optional()
+      .transform((val) => val === 'true'),
 
     // S3 File Storage (AWS S3 or S3-compatible: Minio, Cloudflare R2, Backblaze B2, etc.)
     // Optional to allow localhost development without S3 setup
@@ -165,8 +177,16 @@ const envSchema = z
     S3_REGION: z.string().optional().default('us-east-1'),
     S3_ENDPOINT: z.string().optional(),
 
-    // Anthropic API (for AI Chatbot)
+    // Anthropic API (primary AI text provider)
     ANTHROPIC_API_KEY: z.string().optional(),
+
+    // OpenAI API (AI text fallback and course video transcription)
+    OPENAI_API_KEY: z.string().optional(),
+    OPENAI_TRANSCRIBE_MODEL: z
+      .string()
+      .optional()
+      .default('gpt-4o-mini-transcribe'),
+    FFMPEG_PATH: z.string().optional().default('ffmpeg'),
 
     // Chatbot Token Limits (tokens per day)
     CHATBOT_DAILY_TOKEN_LIMIT_USER: z.string().optional().default('50000'),
@@ -238,6 +258,31 @@ const envSchema = z
     // Cron Secret for background job processing endpoint
     // Used to authenticate requests to /api/background-jobs/process (required for cron mode)
     CRON_SECRET: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.NODE_ENV === 'test') {
+      return;
+    }
+
+    if (
+      data.ORGANIZATION_MODE === 'multi-domain' &&
+      data.ORGANIZATION_MULTI_DOMAIN_MODE === 'subdomain' &&
+      data.FRONTEND_URL &&
+      !data.FRONTEND_URL.includes('*')
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FRONTEND_URL'],
+        message:
+          `must use wildcard format (https://*.yourdomain.com) when ORGANIZATION_MODE=multi-domain and ORGANIZATION_MULTI_DOMAIN_MODE=subdomain\n\n` +
+          `     Current value: ${data.FRONTEND_URL}\n` +
+          `     Required format: https://*.yourdomain.com\n\n` +
+          `     Example configuration:\n` +
+          `       FRONTEND_URL=https://*.project.localhost\n\n` +
+          `     This enables subdomain-based multi-tenancy where each organization\n` +
+          `     gets its own subdomain (e.g., acme.project.localhost, corp.project.localhost)`,
+      });
+    }
   })
   .refine(
     (data) => {

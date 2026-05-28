@@ -102,9 +102,7 @@ function AssignmentEditor({
   ) =>
     patch({
       rubric: assignment.rubric.map((criterion) =>
-        criterion.id === criterionId
-          ? { ...criterion, ...changes }
-          : criterion,
+        criterion.id === criterionId ? { ...criterion, ...changes } : criterion,
       ),
     });
 
@@ -263,6 +261,7 @@ function ModuleRow({
   expandedLessons,
   onToggleLesson,
   onExpandLesson,
+  courseId,
 }: {
   module: BuilderModule;
   handle: ReactNode;
@@ -274,6 +273,7 @@ function ModuleRow({
   expandedLessons: Set<string>;
   onToggleLesson: (id: string) => void;
   onExpandLesson: (id: string) => void;
+  courseId?: string | null;
 }) {
   const dictionary = useAuthStore((state) => state.dictionary);
   const builder = dictionary.course.builder;
@@ -298,10 +298,14 @@ function ModuleRow({
           moduleId: module.id,
           title: '',
           description: '',
-          content: '',
           videoFiles: [],
           videoUrl: '',
           resourceFiles: [],
+          videoTranscriptText: null,
+          videoTranscriptStatus: null,
+          videoTranscriptSourceKey: null,
+          videoTranscriptError: null,
+          videoTranscriptGeneratedAt: null,
           videoDurationSeconds: null,
           isPreview: false,
           isHidden: false,
@@ -326,8 +330,7 @@ function ModuleRow({
       ),
       quizQuestions: current.quizQuestions.filter((question) =>
         current.quizzes.some(
-          (quiz) =>
-            quiz.id === question.quizId && quiz.moduleId !== module.id,
+          (quiz) => quiz.id === question.quizId && quiz.moduleId !== module.id,
         ),
       ),
       blocks: current.blocks.filter(
@@ -434,6 +437,7 @@ function ModuleRow({
                   setForm={setForm}
                   expanded={expandedLessons.has(lesson.id)}
                   onToggle={() => onToggleLesson(lesson.id)}
+                  courseId={courseId}
                 />
               )}
             />
@@ -543,10 +547,7 @@ function submissionReviewDraft(
   submission: CourseAssignmentSubmission,
 ): ReviewDraft {
   const existingScores = new Map(
-    (submission.rubricScores || []).map((score) => [
-      score.criterionId,
-      score,
-    ]),
+    (submission.rubricScores || []).map((score) => [score.criterionId, score]),
   );
 
   return {
@@ -662,7 +663,7 @@ function CreatorSubmissionReviewPanel({
               </div>
             </div>
             {submission.text && (
-              <p className="text-muted-foreground whitespace-pre-wrap rounded-lg border bg-white/70 p-3 text-sm dark:bg-white/8">
+              <p className="text-muted-foreground rounded-lg border bg-white/70 p-3 text-sm whitespace-pre-wrap dark:bg-white/8">
                 {submission.text}
               </p>
             )}
@@ -738,7 +739,7 @@ function CreatorSubmissionReviewPanel({
                   return (
                     <div
                       key={criterion.id}
-                      className="grid gap-2 rounded-lg border bg-white/70 p-3 dark:bg-white/8 md:grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)]"
+                      className="grid gap-2 rounded-lg border bg-white/70 p-3 md:grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)] dark:bg-white/8"
                     >
                       <div>
                         <div className="text-sm font-semibold">
@@ -881,12 +882,16 @@ function CurriculumScreen() {
       lessons: templateForm.lessons,
       assignments: templateForm.assignments,
       quizzes: templateForm.quizzes,
-      outcomes: current.outcomes.length ? current.outcomes : templateForm.outcomes,
+      outcomes: current.outcomes.length
+        ? current.outcomes
+        : templateForm.outcomes,
       requirements: current.requirements.length
         ? current.requirements
         : templateForm.requirements,
     }));
-    setExpandedModules(new Set(templateForm.modules.map((module) => module.id)));
+    setExpandedModules(
+      new Set(templateForm.modules.map((module) => module.id)),
+    );
   };
 
   return (
@@ -977,6 +982,7 @@ function CurriculumScreen() {
                 expandedLessons={expandedLessons}
                 onToggleLesson={(id) => toggleSet(setExpandedLessons, id)}
                 onExpandLesson={(id) => expandInSet(setExpandedLessons, id)}
+                courseId={courseId}
               />
             )}
           />

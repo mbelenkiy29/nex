@@ -1,6 +1,10 @@
-// Default creator revenue share, mirroring Course.creatorRevenueShareBps
-// (7000 bps = 70% to the creator, 30% platform).
-export const DEFAULT_REVENUE_SHARE_BPS = 7000;
+import {
+  COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+  COURSE_REVENUE_SHARE_TOTAL_BPS,
+} from '../course/courseRevenueShare';
+
+export const DEFAULT_REVENUE_SHARE_BPS =
+  COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS;
 
 export interface CreatorPayoutSplit {
   // Payout amount in major currency units (e.g. dollars), 2-dp rounded —
@@ -20,8 +24,13 @@ export function computeCreatorPayout(
   revenueShareBps: number = DEFAULT_REVENUE_SHARE_BPS,
 ): CreatorPayoutSplit {
   const cents = Math.max(0, Math.round(priceCents || 0));
-  const bps = Math.min(10000, Math.max(0, Math.round(revenueShareBps)));
-  const payoutCents = Math.round((cents * bps) / 10000);
+  const bps = Math.min(
+    COURSE_REVENUE_SHARE_TOTAL_BPS,
+    Math.max(0, Math.round(revenueShareBps)),
+  );
+  const payoutCents = Math.round(
+    (cents * bps) / COURSE_REVENUE_SHARE_TOTAL_BPS,
+  );
   return {
     amount: payoutCents / 100,
     currency: currency || 'USD',

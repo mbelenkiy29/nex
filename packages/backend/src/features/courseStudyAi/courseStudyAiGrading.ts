@@ -21,8 +21,8 @@ export const AI_QUIZ_PASS_THRESHOLD = 70;
 
 /**
  * Grades an AI quiz attempt and tallies a per-topic (examDomain) breakdown.
- * Pure — the controller persists the result; Phase 3 weakness detection reads
- * the stored domainScores. Unanswered questions count as incorrect.
+ * Pure - the controller persists the result; weakness detection reads the
+ * stored domainScores. Unanswered questions count as incorrect.
  */
 export function gradeAiQuiz(
   questions: Array<CourseStudyAiQuestion>,
@@ -37,8 +37,7 @@ export function gradeAiQuiz(
   questions.forEach((question, index) => {
     const selected = selectedByIndex.get(index);
     const isCorrect =
-      selected !== undefined &&
-      question.options[selected]?.isCorrect === true;
+      selected !== undefined && question.options[selected]?.isCorrect === true;
     if (isCorrect) {
       correct += 1;
     }

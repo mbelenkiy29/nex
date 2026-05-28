@@ -204,7 +204,6 @@ async function buildGenerationPrompt(input: {
     `Creator request: ${input.prompt}`,
     `Existing lesson title: ${lesson.title}`,
     `Existing lesson description: ${lesson.description || ''}`,
-    `Existing markdown content: ${lesson.content || ''}`,
     `Existing blocks JSON: ${JSON.stringify(lesson.blocks || [])}`,
   ].join('\n\n');
 }

@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { fileUploadedSchema } from '../file/fileSchemas';
 import { orderBySchema } from '../../shared/schemas/orderBySchema';
+import {
+  COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+  COURSE_REVENUE_SHARE_TOTAL_BPS,
+} from './courseRevenueShare';
+import { pricingCheckoutMetadataSchema } from '../pricing/pricingSchemas';
 
 export const courseStatusSchema = z.enum([
   'draft',
@@ -111,9 +116,15 @@ export const courseWishlistCreateInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
 });
 
-export const courseCheckoutInputSchema = z.object({
-  couponCode: z.string().trim().max(80).optional().nullable(),
-});
+export const courseCheckoutInputSchema = z
+  .object({
+    couponCode: z.string().trim().max(80).optional().nullable(),
+  })
+  .merge(pricingCheckoutMetadataSchema.partial());
+
+export const courseBundleCheckoutInputSchema = pricingCheckoutMetadataSchema
+  .partial()
+  .default({});
 
 export const courseAutocompleteInputSchema = z.object({
   search: z.string().trim().optional(),
@@ -139,7 +150,6 @@ export const courseLessonManageInputSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(2000).optional().nullable(),
-  content: z.string().trim().max(50000).optional().nullable(),
   videoFiles: optionalCourseFileArraySchema,
   videoUrl: z
     .string()
@@ -181,7 +191,7 @@ export const courseFlashcardManageInputSchema = z.object({
   orderIndex: z.coerce.number().int().min(0).default(0),
 });
 
-// Phase 8: block-based lesson content.
+// Typed block-editor lesson content.
 export const courseLessonBlockTypeSchema = z.enum([
   'heading',
   'paragraph',
@@ -337,7 +347,6 @@ export const courseManageInputSchema = z.object({
   slug: z.string().trim().max(220).optional().nullable(),
   subtitle: z.string().trim().max(300).optional().nullable(),
   description: z.string().trim().max(50000).optional().nullable(),
-  category: z.string().trim().max(120).optional().nullable(),
   categoryId: nullableUuidSchema,
   examType: z.string().trim().max(120).optional().nullable(),
   thumbnail: optionalCourseFileArraySchema,
@@ -353,13 +362,16 @@ export const courseManageInputSchema = z.object({
   certificateEnabled: z.boolean().default(true),
   currency: z.string().trim().length(3).toUpperCase().default('USD'),
   stripePriceId: z.string().trim().max(255).optional().nullable(),
+  lifetimeAccessEnabled: z.boolean().default(false),
+  lifetimePriceCents: z.coerce.number().int().min(0).optional().nullable(),
+  lifetimeStripePriceId: z.string().trim().max(255).optional().nullable(),
   subscriptionPlanKey: z.string().trim().max(120).optional().nullable(),
   creatorRevenueShareBps: z.coerce
     .number()
     .int()
     .min(0)
-    .max(10000)
-    .default(7000),
+    .max(COURSE_REVENUE_SHARE_TOTAL_BPS)
+    .default(COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS),
   nexVerified: z.boolean().default(false),
   creatorUserId: nullableUuidSchema,
   creatorMemberId: nullableUuidSchema,
@@ -390,7 +402,6 @@ export const courseBuilderManageInputSchema = z.object({
   slug: z.string().trim().max(220).optional().nullable(),
   subtitle: z.string().trim().max(300).optional().nullable(),
   description: z.string().trim().max(50000).optional().nullable(),
-  category: z.string().trim().max(120).optional().nullable(),
   categoryId: nullableUuidSchema,
   examType: z.string().trim().max(120).optional().nullable(),
   thumbnail: optionalCourseFileArraySchema,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pricingPackageTypeSchema } from '../pricing/pricingSchemas';
 
 const organizationModeSchema = z.enum(['single', 'multi', 'multi-domain']);
 export type OrganizationMode = z.infer<typeof organizationModeSchema>;
@@ -29,6 +30,10 @@ export const configPublicSchema = z.object({
         marketingFeatures: z.array(z.object({ name: z.string() })),
         unitLabel: z.string().nullable(),
         active: z.boolean(),
+        packageType: pricingPackageTypeSchema,
+        savingsPercent: z.number().nullable(),
+        recommended: z.boolean(),
+        comparisonGroup: z.string().nullable(),
       }),
     )
     .optional(),

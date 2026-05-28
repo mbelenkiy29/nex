@@ -12,6 +12,7 @@ import {
 } from '@/shared/components/ui/dialog';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
+import { dictionaryFormat } from '@/shared/lib/dictionaryFormat';
 import {
   Select,
   SelectContent,
@@ -25,11 +26,13 @@ import {
   PolicyAcceptanceDialog,
   useTrustSafetyPolicies,
 } from '@/features/trustSafety/PolicyAcceptanceDialog';
+import { CheckoutTrustPanel } from '@/features/checkout/CheckoutTrustPanel';
 import {
   useCourseSlots,
   useCreateBooking,
   type OneOnOneSessionType,
 } from './hooks/useOneOnOneCall';
+import { formatOneOnOnePrice } from './oneOnOneCallFormat';
 
 interface Props {
   open: boolean;
@@ -70,6 +73,7 @@ export function BookSessionDialog({
   sessionTypes,
 }: Props) {
   const t = useAuthStore((s) => s.dictionary.oneOnOneCall.booking);
+  const locale = useAuthStore((s) => s.locale);
   const navigate = useNavigate();
 
   const [sessionTypeId, setSessionTypeId] = useState<string>(
@@ -81,12 +85,30 @@ export function BookSessionDialog({
   const [pendingStartUtc, setPendingStartUtc] = useState<string | null>(null);
 
   const range = useMemo(() => localDayRangeUtc(dateStr), [dateStr]);
-  const slots = useCourseSlots(courseId, sessionTypeId || null, range.from, range.to);
+  const slots = useCourseSlots(
+    courseId,
+    sessionTypeId || null,
+    range.from,
+    range.to,
+  );
   const booking = useCreateBooking(courseId);
   const policiesQuery = useTrustSafetyPolicies(open);
   const selectedSessionType = sessionTypes.find(
     (sessionType) => sessionType.id === sessionTypeId,
   );
+  const selectedSessionTypeIsPaid = Boolean(
+    selectedSessionType &&
+    !selectedSessionType.isFree &&
+    (selectedSessionType.priceCents ?? 0) > 0,
+  );
+  const selectedSessionPriceLabel =
+    selectedSessionType && selectedSessionTypeIsPaid
+      ? formatOneOnOnePrice(
+          selectedSessionType.priceCents,
+          selectedSessionType.currency,
+          locale,
+        )
+      : null;
   const missingRefundPolicies = missingTrustSafetyPolicies(
     policiesQuery.data?.policies,
     ['refundPolicy'],
@@ -119,7 +141,8 @@ export function BookSessionDialog({
     } catch (error: any) {
       const message =
         error?.response && typeof error.response.json === 'function'
-          ? (await error.response.json().catch(() => null))?.errors?.[0]?.message
+          ? (await error.response.json().catch(() => null))?.errors?.[0]
+              ?.message
           : null;
       setErrorMessage(message || t.noSlots);
     }
@@ -150,12 +173,37 @@ export function BookSessionDialog({
                   <SelectContent>
                     {sessionTypes.map((st) => (
                       <SelectItem key={st.id} value={st.id}>
-                        {st.title} — {st.durationMinutes} min
-                        {st.isFree ? '' : ' (paid)'}
+                        {dictionaryFormat(
+                          t.sessionTypeOptionLabel,
+                          st.title,
+                          t.durationMinutesShort.replace(
+                            '{0}',
+                            String(st.durationMinutes),
+                          ),
+                          st.isFree
+                            ? t.freeLabel
+                            : formatOneOnOnePrice(
+                                st.priceCents,
+                                st.currency,
+                                locale,
+                              ),
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedSessionTypeIsPaid ? (
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground text-xs">
+                      {t.paidBookingNotice}
+                    </p>
+                    <CheckoutTrustPanel
+                      variant="oneOnOneSession"
+                      priceLabel={selectedSessionPriceLabel}
+                      compact
+                    />
+                  </div>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -172,7 +220,7 @@ export function BookSessionDialog({
               <div className="space-y-2">
                 <Label>{t.pickTime}</Label>
                 {slots.isFetching ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <Spinner className="size-4" />
                   </div>
                 ) : (slots.data?.slots.length ?? 0) === 0 ? (
@@ -205,7 +253,7 @@ export function BookSessionDialog({
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Close
+              {t.close}
             </Button>
           </DialogFooter>
         </DialogContent>

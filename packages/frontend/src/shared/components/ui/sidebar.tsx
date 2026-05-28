@@ -164,6 +164,7 @@ function Sidebar({
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const dictionary = useAuthStore((store) => store.dictionary);
 
   if (collapsible === 'none') {
     return (
@@ -197,8 +198,10 @@ function Sidebar({
           side={side}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+            <SheetTitle>{dictionary.shared.sidebar}</SheetTitle>
+            <SheetDescription>
+              {dictionary.shared.sidebarDescription}
+            </SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>

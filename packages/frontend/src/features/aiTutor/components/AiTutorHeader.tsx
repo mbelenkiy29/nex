@@ -12,6 +12,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { dictionaryFormat } from '@/shared/lib/dictionaryFormat';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { cn } from '@/shared/lib/utils';
+import { AiPrivacyControlsSheet } from '@/features/aiTrust/AiPrivacyControlsSheet';
 
 interface AiTutorHeaderProps {
   title: string;
@@ -34,16 +35,15 @@ export function AiTutorHeader({
   );
   const [showTimer, setShowTimer] = useState(false);
 
-  const initials =
-    (currentUser?.name || currentUser?.email || 'U')
-      .slice(0, 1)
-      .toUpperCase();
+  const initials = (currentUser?.name || currentUser?.email || 'U')
+    .slice(0, 1)
+    .toUpperCase();
 
   return (
     <>
       <header
         className={cn(
-          'sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/80 bg-white/84 px-4 py-3 shadow-[0_10px_30px_rgb(15_23_42/0.04)] backdrop-blur-xl dark:bg-background/72',
+          'border-border/80 dark:bg-background/72 sticky top-0 z-20 flex items-center justify-between gap-3 border-b bg-white/84 px-4 py-3 shadow-[0_10px_30px_rgb(15_23_42/0.04)] backdrop-blur-xl',
         )}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -52,30 +52,30 @@ export function AiTutorHeader({
               type="button"
               onClick={onOpenHistory}
               aria-label={dictionary.aiTutor.header.openHistory}
-              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full p-1.5 transition-colors md:hidden"
             >
               <LuMenu className="size-5" />
             </button>
           ) : null}
-          <span className="font-semibold tracking-normal text-foreground">
+          <span className="text-foreground font-semibold tracking-normal">
             {dictionary.aiTutor.title}
           </span>
-          <span className="hidden text-sm font-normal text-muted-foreground sm:inline">
+          <span className="text-muted-foreground hidden text-sm font-normal sm:inline">
             {dictionary.aiTutor.header.studyMode}
           </span>
           {title ? (
             <>
-              <span className="hidden text-muted-foreground/50 sm:inline">
+              <span className="text-muted-foreground/50 hidden sm:inline">
                 ·
               </span>
-              <span className="hidden min-w-0 max-w-[34vw] truncate text-sm text-muted-foreground lg:inline">
+              <span className="text-muted-foreground hidden max-w-[34vw] min-w-0 truncate text-sm lg:inline">
                 {title}
               </span>
             </>
           ) : null}
           {courseTitle ? (
             <span
-              className="ml-2 hidden items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground sm:inline-flex"
+              className="bg-muted text-muted-foreground ml-2 hidden items-center gap-1 rounded-full px-2 py-0.5 text-xs sm:inline-flex"
               title={courseTitle}
             >
               <LuGraduationCap className="size-3" />
@@ -87,6 +87,7 @@ export function AiTutorHeader({
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          <AiPrivacyControlsSheet />
           <button
             type="button"
             onClick={() => setShowTimer((value) => !value)}
@@ -101,8 +102,8 @@ export function AiTutorHeader({
           >
             <LuTimer className="size-5" />
           </button>
-          <Avatar className="size-8 bg-primary text-primary-foreground">
-            <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+          <Avatar className="bg-primary text-primary-foreground size-8">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -143,9 +144,9 @@ function AiTutorStudyTimer({ onClose }: { onClose: () => void }) {
     : dictionary.aiTutor.timer.resume;
 
   return (
-    <div className="absolute top-16 right-4 z-30 w-52 rounded-2xl border border-border bg-white p-3 shadow-[0_20px_44px_rgb(15_23_42/0.16)] dark:bg-background">
+    <div className="border-border dark:bg-background absolute top-16 right-4 z-30 w-52 rounded-2xl border bg-white p-3 shadow-[0_20px_44px_rgb(15_23_42/0.16)]">
       <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+        <div className="text-primary inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
           <LuTimer className="size-3.5" />
           {dictionary.aiTutor.timer.label}
         </div>
@@ -153,13 +154,13 @@ function AiTutorStudyTimer({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={onClose}
           aria-label={dictionary.aiTutor.timer.close}
-          className="rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full p-0.5 transition-colors"
         >
           <LuX className="size-4" />
         </button>
       </div>
       <div className="flex items-center justify-between gap-3">
-        <div className="font-mono text-3xl font-light tracking-normal text-foreground">
+        <div className="text-foreground font-mono text-3xl font-light tracking-normal">
           {minutes.toString().padStart(2, '0')}:
           {seconds.toString().padStart(2, '0')}
         </div>
@@ -182,9 +183,9 @@ function AiTutorStudyTimer({ onClose }: { onClose: () => void }) {
           )}
         </button>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="bg-muted mt-3 h-1.5 overflow-hidden rounded-full">
         <div
-          className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+          className="bg-primary h-full rounded-full transition-[width] duration-1000 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>

@@ -1,4 +1,8 @@
 import { FileUploaded } from '@project/backend/features/file/fileSchemas';
+import {
+  COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+  COURSE_REVENUE_SHARE_TOTAL_BPS,
+} from '@project/backend/features/course/courseRevenueShare';
 import { storage } from '@project/backend/features/permissions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createLazyRoute, Link } from '@tanstack/react-router';
@@ -11,7 +15,9 @@ import {
   LuLayers3,
   LuPlus,
   LuReceipt,
+  LuRefreshCw,
   LuSave,
+  LuLoader,
   LuUserPlus,
 } from 'react-icons/lu';
 import { useEffect, useMemo, useState } from 'react';
@@ -25,6 +31,7 @@ import {
   CourseManageForm,
   CourseStatus,
 } from '@/features/course/courseTypes';
+import { useAdminCourseCategoriesQuery } from '@/features/courseCategory/useCourseCategories';
 import { FilesList } from '@/features/file/components/FilesList';
 import { FilesUploadDropzone } from '@/features/file/components/FilesUploadDropzone';
 import { ImagesUploadDropzone } from '@/features/file/components/ImagesUploadDropzone';
@@ -56,7 +63,7 @@ function blankForm(): CourseManageForm {
     slug: '',
     subtitle: '',
     description: '',
-    category: '',
+    categoryId: '',
     examType: '',
     thumbnail: [],
     introVideoFiles: [],
@@ -65,8 +72,11 @@ function blankForm(): CourseManageForm {
     priceCents: null,
     currency: 'USD',
     stripePriceId: '',
+    lifetimeAccessEnabled: false,
+    lifetimePriceCents: null,
+    lifetimeStripePriceId: '',
     subscriptionPlanKey: '',
-    creatorRevenueShareBps: 7000,
+    creatorRevenueShareBps: COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
     nexVerified: false,
     creatorUserId: '',
     creatorMemberId: '',
@@ -74,6 +84,7 @@ function blankForm(): CourseManageForm {
     modules: [],
     lessons: [],
     assignments: [],
+    blocks: [],
   };
 }
 
@@ -84,7 +95,7 @@ function courseToForm(course: Course): CourseManageForm {
     slug: course.slug,
     subtitle: course.subtitle || '',
     description: course.description || '',
-    category: course.category || '',
+    categoryId: course.categoryId || '',
     examType: course.examType || '',
     thumbnail: course.thumbnail || [],
     introVideoFiles: course.introVideoFiles || [],
@@ -93,8 +104,12 @@ function courseToForm(course: Course): CourseManageForm {
     priceCents: course.priceCents ?? null,
     currency: course.currency || 'USD',
     stripePriceId: course.stripePriceId || '',
+    lifetimeAccessEnabled: Boolean(course.lifetimeAccessEnabled),
+    lifetimePriceCents: course.lifetimePriceCents ?? null,
+    lifetimeStripePriceId: course.lifetimeStripePriceId || '',
     subscriptionPlanKey: course.subscriptionPlanKey || '',
-    creatorRevenueShareBps: course.creatorRevenueShareBps ?? 7000,
+    creatorRevenueShareBps:
+      course.creatorRevenueShareBps ?? COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
     nexVerified: course.nexVerified,
     creatorUserId: course.creatorUserId || '',
     creatorMemberId: course.creatorMemberId || '',
@@ -103,15 +118,23 @@ function courseToForm(course: Course): CourseManageForm {
       ...module,
       clientId: module.id,
     })),
-    lessons: course.lessons.map((lesson) => ({
-      ...lesson,
-      videoFiles: lesson.videoFiles || [],
-      clientId: lesson.id,
-    })),
+    lessons: course.lessons.map((rawLesson) => {
+      const { content: _content, ...lesson } = rawLesson as NonNullable<
+        Course['lessons']
+      >[number] & {
+        content?: string | null;
+      };
+      return {
+        ...lesson,
+        videoFiles: lesson.videoFiles || [],
+        clientId: lesson.id,
+      };
+    }),
     assignments: course.assignments.map((assignment) => ({
       ...assignment,
       clientId: assignment.id,
     })),
+    blocks: course.lessons.flatMap((lesson) => lesson.blocks || []),
   };
 }
 
@@ -125,7 +148,7 @@ function serializeForm(form: CourseManageForm) {
     slug: form.slug || null,
     subtitle: form.subtitle || null,
     description: form.description || null,
-    category: form.category || null,
+    categoryId: form.categoryId || null,
     examType: form.examType || null,
     thumbnail: form.thumbnail || [],
     introVideoFiles: form.introVideoFiles || [],
@@ -134,8 +157,12 @@ function serializeForm(form: CourseManageForm) {
     priceCents: form.priceCents ?? null,
     currency: form.currency || 'USD',
     stripePriceId: form.stripePriceId || null,
+    lifetimeAccessEnabled: Boolean(form.lifetimeAccessEnabled),
+    lifetimePriceCents: form.lifetimePriceCents ?? null,
+    lifetimeStripePriceId: form.lifetimeStripePriceId || null,
     subscriptionPlanKey: form.subscriptionPlanKey || null,
-    creatorRevenueShareBps: form.creatorRevenueShareBps ?? 7000,
+    creatorRevenueShareBps:
+      form.creatorRevenueShareBps ?? COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
     nexVerified: form.nexVerified,
     creatorUserId: nullableUuid(form.creatorUserId),
     creatorMemberId: nullableUuid(form.creatorMemberId),
@@ -145,13 +172,22 @@ function serializeForm(form: CourseManageForm) {
       id: nullableUuid(module.id),
       orderIndex: index,
     })),
-    lessons: form.lessons.map(({ clientId: _clientId, ...lesson }, index) => ({
-      ...lesson,
-      id: nullableUuid(lesson.id),
-      moduleId: nullableUuid(lesson.moduleId),
-      videoFiles: lesson.videoFiles || [],
-      orderIndex: index,
-    })),
+    lessons: form.lessons.map((rawLesson, index) => {
+      const {
+        clientId: _clientId,
+        content: _content,
+        ...lesson
+      } = rawLesson as CourseManageForm['lessons'][number] & {
+        content?: string | null;
+      };
+      return {
+        ...lesson,
+        id: nullableUuid(lesson.id),
+        moduleId: nullableUuid(lesson.moduleId),
+        videoFiles: lesson.videoFiles || [],
+        orderIndex: index,
+      };
+    }),
     assignments: form.assignments.map(
       ({ clientId: _clientId, ...assignment }, index) => ({
         ...assignment,
@@ -161,6 +197,14 @@ function serializeForm(form: CourseManageForm) {
         orderIndex: index,
       }),
     ),
+    blocks: form.blocks.map((block) => {
+      const id = nullableUuid(block.id);
+      return {
+        ...block,
+        ...(id ? { id } : {}),
+        lessonId: block.lessonId,
+      };
+    }),
   };
 }
 
@@ -169,10 +213,7 @@ function submissionReviewDraft(
   submission: CourseAssignmentSubmission,
 ) {
   const existingScores = new Map(
-    (submission.rubricScores || []).map((score) => [
-      score.criterionId,
-      score,
-    ]),
+    (submission.rubricScores || []).map((score) => [score.criterionId, score]),
   );
 
   return {
@@ -206,9 +247,7 @@ export function PlatformCoursesPage() {
     >
   >({});
   const [courseReviewNotes, setCourseReviewNotes] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | CourseStatus>(
-    'all',
-  );
+  const [statusFilter, setStatusFilter] = useState<'all' | CourseStatus>('all');
 
   const coursesQuery = useQuery({
     queryKey: ['platformAdmin', 'courses'],
@@ -229,6 +268,23 @@ export function PlatformCoursesPage() {
           linkedContent?: Record<string, number>;
         }>(),
   });
+  const categoriesQuery = useAdminCourseCategoriesQuery();
+  const categoryOptions = useMemo(
+    () =>
+      [
+        ['', dictionary.shared.selectPlaceholder],
+        ...(categoriesQuery.data?.categories || [])
+          .filter(
+            (category) => category.isActive || category.id === form.categoryId,
+          )
+          .map((category) => [category.id, category.name] as [string, string]),
+      ] satisfies Array<[string, string]>,
+    [
+      categoriesQuery.data?.categories,
+      dictionary.shared.selectPlaceholder,
+      form.categoryId,
+    ],
+  );
 
   useEffect(() => {
     if (courseQuery.data?.course) {
@@ -454,10 +510,11 @@ export function PlatformCoursesPage() {
                 value={form.subtitle || ''}
                 onChange={(value) => setForm({ ...form, subtitle: value })}
               />
-              <Field
+              <SelectField
                 label={dictionary.course.fields.category}
-                value={form.category || ''}
-                onChange={(value) => setForm({ ...form, category: value })}
+                value={form.categoryId || ''}
+                onChange={(value) => setForm({ ...form, categoryId: value })}
+                options={categoryOptions}
               />
               <Field
                 label={dictionary.course.fields.examType}
@@ -510,6 +567,35 @@ export function PlatformCoursesPage() {
                 value={form.stripePriceId || ''}
                 onChange={(value) => setForm({ ...form, stripePriceId: value })}
               />
+              <label className="flex items-center justify-between rounded-2xl border bg-white/70 p-4 dark:bg-white/8">
+                <span className="font-semibold">
+                  {dictionary.course.fields.lifetimeAccessEnabled}
+                </span>
+                <Switch
+                  checked={Boolean(form.lifetimeAccessEnabled)}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, lifetimeAccessEnabled: checked })
+                  }
+                />
+              </label>
+              <Field
+                label={dictionary.course.fields.lifetimePriceCents}
+                type="number"
+                value={String(form.lifetimePriceCents ?? '')}
+                onChange={(value) =>
+                  setForm({
+                    ...form,
+                    lifetimePriceCents: value ? Number(value) : null,
+                  })
+                }
+              />
+              <Field
+                label={dictionary.course.fields.lifetimeStripePriceId}
+                value={form.lifetimeStripePriceId || ''}
+                onChange={(value) =>
+                  setForm({ ...form, lifetimeStripePriceId: value })
+                }
+              />
               <Field
                 label={dictionary.course.fields.subscriptionPlanKey}
                 testId="admin-course-subscription-plan-input"
@@ -522,7 +608,10 @@ export function PlatformCoursesPage() {
                 label={dictionary.course.fields.creatorRevenueShareBps}
                 testId="admin-course-revenue-share-input"
                 type="number"
-                value={String(form.creatorRevenueShareBps ?? 7000)}
+                value={String(
+                  form.creatorRevenueShareBps ??
+                    COURSE_DEFAULT_CREATOR_REVENUE_SHARE_BPS,
+                )}
                 onChange={(value) =>
                   setForm({
                     ...form,
@@ -534,7 +623,8 @@ export function PlatformCoursesPage() {
                 <LuReceipt className="text-primary mr-2 size-4" />
                 <span>
                   {dictionary.course.fields.platformRevenueShare}:{' '}
-                  {10000 - (form.creatorRevenueShareBps ?? 0)}
+                  {COURSE_REVENUE_SHARE_TOTAL_BPS -
+                    (form.creatorRevenueShareBps ?? 0)}
                 </span>
               </div>
               <label className="flex items-center justify-between rounded-2xl border bg-white/70 p-4 dark:bg-white/8">
@@ -785,7 +875,7 @@ export function PlatformCoursesPage() {
                             return (
                               <div
                                 key={criterion.id}
-                                className="grid gap-2 rounded-xl border bg-white/70 p-3 dark:bg-white/8 md:grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)]"
+                                className="grid gap-2 rounded-xl border bg-white/70 p-3 md:grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)] dark:bg-white/8"
                               >
                                 <div>
                                   <div className="text-sm font-semibold">
@@ -810,8 +900,8 @@ export function PlatformCoursesPage() {
                                         ...current,
                                         [submission.id]: {
                                           ...draft,
-                                          rubricScores:
-                                            draft.rubricScores.map((item) =>
+                                          rubricScores: draft.rubricScores.map(
+                                            (item) =>
                                               item.criterionId === criterion.id
                                                 ? {
                                                     ...item,
@@ -820,7 +910,7 @@ export function PlatformCoursesPage() {
                                                     ),
                                                   }
                                                 : item,
-                                            ),
+                                          ),
                                         },
                                       }))
                                     }
@@ -846,7 +936,9 @@ export function PlatformCoursesPage() {
                                       },
                                     }))
                                   }
-                                  placeholder={dictionary.course.fields.feedback}
+                                  placeholder={
+                                    dictionary.course.fields.feedback
+                                  }
                                   className="h-9 rounded-lg bg-white/80 dark:bg-white/8"
                                 />
                               </div>
@@ -886,6 +978,8 @@ function ContentBuilder({
   setForm: (form: CourseManageForm) => void;
 }) {
   const dictionary = useAuthStore((state) => state.dictionary);
+  const queryClient = useQueryClient();
+  const transcript = dictionary.course.videoTranscript;
 
   const updateArray = (
     key: 'modules' | 'lessons' | 'assignments',
@@ -899,6 +993,29 @@ function ContentBuilder({
       ),
     } as CourseManageForm);
   };
+  const retryTranscript = useMutation({
+    mutationFn: async (lesson: CourseManageForm['lessons'][number]) => {
+      const response = await apiClient
+        .post(
+          `api/platform-admin/courses/${form.id}/lessons/${lesson.id}/video-transcript/retry`,
+        )
+        .json<{ lesson: CourseManageForm['lessons'][number] }>();
+      return { clientId: lesson.clientId, lesson: response.lesson };
+    },
+    onSuccess: async ({ clientId, lesson }) => {
+      updateArray('lessons', clientId, {
+        videoTranscriptText: lesson.videoTranscriptText ?? null,
+        videoTranscriptStatus: lesson.videoTranscriptStatus ?? 'queued',
+        videoTranscriptSourceKey: lesson.videoTranscriptSourceKey ?? null,
+        videoTranscriptError: lesson.videoTranscriptError ?? null,
+        videoTranscriptGeneratedAt: lesson.videoTranscriptGeneratedAt ?? null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['platformAdmin'] });
+      toast.success(transcript.retryQueued);
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || dictionary.shared.errors.unknown),
+  });
 
   const move = (
     key: 'modules' | 'lessons' | 'assignments',
@@ -976,9 +1093,13 @@ function ContentBuilder({
                 {
                   clientId: clientId(),
                   title: '',
-                  content: '',
                   moduleId: form.modules[0]?.id || '',
                   videoFiles: [],
+                  videoTranscriptText: null,
+                  videoTranscriptStatus: null,
+                  videoTranscriptSourceKey: null,
+                  videoTranscriptError: null,
+                  videoTranscriptGeneratedAt: null,
                   isPreview: false,
                 },
               ],
@@ -1011,14 +1132,6 @@ function ContentBuilder({
                   updateArray('lessons', lesson.clientId, { moduleId: value })
                 }
               />
-              <TextField
-                label={dictionary.course.fields.lessonContent}
-                testId="admin-course-lesson-content-input"
-                value={lesson.content || ''}
-                onChange={(value) =>
-                  updateArray('lessons', lesson.clientId, { content: value })
-                }
-              />
               <div>
                 <span className="text-sm font-semibold">
                   {dictionary.course.fields.videoFiles}
@@ -1030,9 +1143,45 @@ function ContentBuilder({
                   onChange={(value) =>
                     updateArray('lessons', lesson.clientId, {
                       videoFiles: (value || []) as FileUploaded[],
+                      videoTranscriptText: null,
+                      videoTranscriptStatus: value?.length ? 'queued' : null,
+                      videoTranscriptSourceKey: null,
+                      videoTranscriptError: null,
+                      videoTranscriptGeneratedAt: null,
                     })
                   }
                 />
+                {lesson.videoFiles?.length ? (
+                  <div className="bg-nexexam-soft/70 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs dark:bg-white/8">
+                    <span className="font-semibold">
+                      {transcript.statusLabel}:{' '}
+                      {
+                        transcript.status[
+                          lesson.videoTranscriptStatus || 'notRequested'
+                        ]
+                      }
+                    </span>
+                    {lesson.videoTranscriptStatus === 'failed' &&
+                      form.id &&
+                      lesson.id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg bg-white/80 text-xs dark:bg-white/10"
+                          disabled={retryTranscript.isPending}
+                          onClick={() => retryTranscript.mutate(lesson)}
+                        >
+                          {retryTranscript.isPending ? (
+                            <LuLoader className="mr-1.5 size-3.5 animate-spin" />
+                          ) : (
+                            <LuRefreshCw className="mr-1.5 size-3.5" />
+                          )}
+                          {transcript.retry}
+                        </Button>
+                      )}
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}
@@ -1211,7 +1360,6 @@ function LinkedContentMap({ counts }: { counts: Record<string, number> }) {
   const items: Array<[string, string, number | undefined]> = [
     ['exams', dictionary.exam.list.menu, counts.exams],
     ['chapters', dictionary.chapter.list.menu, counts.chapters],
-    ['lessons', dictionary.lesson.list.menu, counts.legacyLessons],
     ['concepts', dictionary.concept.list.menu, counts.concepts],
     [
       'practice-questions',
@@ -1225,11 +1373,7 @@ function LinkedContentMap({ counts }: { counts: Record<string, number> }) {
       counts.documentUploads,
     ],
     ['exam-types', dictionary.examType.list.menu, counts.examTypes],
-    [
-      'exam-instances',
-      dictionary.examInstance.list.menu,
-      counts.examInstances,
-    ],
+    ['exam-instances', dictionary.examInstance.list.menu, counts.examInstances],
   ];
 
   return (

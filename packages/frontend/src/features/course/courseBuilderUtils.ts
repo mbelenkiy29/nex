@@ -3,6 +3,7 @@ import type {
   CourseAssignmentRubricCriterion,
   CourseFile,
   CourseLessonBlockType,
+  CourseVideoTranscriptStatus,
   CourseQuestionDifficulty,
   CourseQuestionType,
   CourseQuestionStatus,
@@ -23,10 +24,14 @@ export type BuilderLesson = {
   moduleId: string | null;
   title: string;
   description: string;
-  content: string;
   videoFiles: CourseFile[];
   videoUrl: string;
   resourceFiles: CourseFile[];
+  videoTranscriptText: string | null;
+  videoTranscriptStatus: CourseVideoTranscriptStatus | null;
+  videoTranscriptSourceKey: string | null;
+  videoTranscriptError: string | null;
+  videoTranscriptGeneratedAt: string | null;
   videoDurationSeconds: number | null;
   isPreview: boolean;
   isHidden: boolean;
@@ -153,7 +158,6 @@ export type CourseBuilderForm = {
   title: string;
   subtitle: string;
   description: string;
-  category: string;
   // CourseCategory.id when the creator picks from the curated dropdown.
   // Empty string = "no category selected" so the dropdown can stay
   // controlled. The build-payload step converts '' → null.
@@ -311,7 +315,6 @@ export function emptyBuilderForm(): CourseBuilderForm {
     title: '',
     subtitle: '',
     description: '',
-    category: '',
     categoryId: '',
     examType: '',
     difficulty: '',
@@ -392,7 +395,6 @@ export function courseToBuilderForm(course: Course): CourseBuilderForm {
     title: course.title,
     subtitle: course.subtitle || '',
     description: course.description || '',
-    category: course.category || '',
     categoryId: course.categoryId || '',
     examType: course.examType || '',
     difficulty: course.difficulty || '',
@@ -414,10 +416,14 @@ export function courseToBuilderForm(course: Course): CourseBuilderForm {
       moduleId: lesson.moduleId || null,
       title: lesson.title,
       description: lesson.description || '',
-      content: lesson.content || '',
       videoFiles: lesson.videoFiles || [],
       videoUrl: lesson.videoUrl || '',
       resourceFiles: lesson.resourceFiles || [],
+      videoTranscriptText: lesson.videoTranscriptText || null,
+      videoTranscriptStatus: lesson.videoTranscriptStatus || null,
+      videoTranscriptSourceKey: lesson.videoTranscriptSourceKey || null,
+      videoTranscriptError: lesson.videoTranscriptError || null,
+      videoTranscriptGeneratedAt: lesson.videoTranscriptGeneratedAt || null,
       videoDurationSeconds: lesson.videoDurationSeconds ?? null,
       isPreview: lesson.isPreview,
       isHidden: lesson.isHidden ?? false,
@@ -587,7 +593,6 @@ export function builderFormToPayload(form: CourseBuilderForm) {
     title: form.title.trim(),
     subtitle: form.subtitle.trim() || null,
     description: form.description.trim() || null,
-    category: form.category.trim() || null,
     categoryId: form.categoryId || null,
     examType: form.examType.trim() || null,
     difficulty: form.difficulty.trim() || null,
@@ -654,7 +659,6 @@ export function courseBuilderPayloadToForm(
     title: checkpointString(data.title),
     subtitle: checkpointString(data.subtitle),
     description: checkpointString(data.description),
-    category: checkpointString(data.category),
     categoryId: checkpointString(data.categoryId),
     examType: checkpointString(data.examType),
     difficulty: checkpointString(data.difficulty),
@@ -685,10 +689,20 @@ export function courseBuilderPayloadToForm(
         moduleId: lesson.moduleId || null,
         title: checkpointString(lesson.title),
         description: checkpointString(lesson.description),
-        content: checkpointString(lesson.content),
         videoFiles: checkpointArray<CourseFile>(lesson.videoFiles),
         videoUrl: checkpointString(lesson.videoUrl),
         resourceFiles: checkpointArray<CourseFile>(lesson.resourceFiles),
+        videoTranscriptText: checkpointString(lesson.videoTranscriptText),
+        videoTranscriptStatus:
+          (lesson.videoTranscriptStatus as CourseVideoTranscriptStatus | null) ||
+          null,
+        videoTranscriptSourceKey: checkpointString(
+          lesson.videoTranscriptSourceKey,
+        ),
+        videoTranscriptError: checkpointString(lesson.videoTranscriptError),
+        videoTranscriptGeneratedAt: checkpointString(
+          lesson.videoTranscriptGeneratedAt,
+        ),
         videoDurationSeconds: checkpointNumberOrNull(
           lesson.videoDurationSeconds,
         ),
@@ -915,11 +929,16 @@ export function evaluatePublishChecklist(
       section: 'curriculum',
       met: form.lessons.some(
         (lesson) =>
-          lesson.content.trim().length > 0 ||
           lesson.videoUrl.trim().length > 0 ||
           lesson.videoFiles.length > 0 ||
           form.blocks.some((block) => block.lessonId === lesson.id),
       ),
+      severity: 'warning',
+    },
+    {
+      key: 'previewLessonRecommendedItem',
+      section: 'curriculum',
+      met: form.lessons.some((lesson) => lesson.isPreview),
       severity: 'warning',
     },
     {
@@ -1040,10 +1059,14 @@ export function courseBuilderTemplateToForm(
         moduleId: moduleIds[moduleIndex],
         title: lessonTitle,
         description: '',
-        content: '',
         videoFiles: [],
         videoUrl: '',
         resourceFiles: [],
+        videoTranscriptText: null,
+        videoTranscriptStatus: null,
+        videoTranscriptSourceKey: null,
+        videoTranscriptError: null,
+        videoTranscriptGeneratedAt: null,
         videoDurationSeconds: null,
         isPreview: moduleIndex === 0 && lessonIndex === 0,
         isHidden: false,

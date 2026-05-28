@@ -1,0 +1,71 @@
+.navbar-menu-dropdown,
+.nav-button-2 {
+  display: none !important;
+}
+
+.footer-grid-content:nth-child(2) {
+  display: none !important;
+}
+
+.footer-big-text {
+  opacity: 0.9;
+}
+
+[data-nexexam-course-tabs] .tab-link:not([data-nexexam-all-courses]) {
+  display: none;
+}
+
+[data-nexexam-course-tabs] .tabs-menu {
+  grid-template-columns: minmax(160px, max-content);
+}
+
+[data-nexexam-course-tabs] .w-tab-pane:not(.tab-pane-tab-1) {
+  display: none !important;
+}
+
+.nexexam-course-status {
+  grid-column: 1 / -1;
+  width: 100%;
+  border: 1px solid rgba(91, 92, 246, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #334155;
+  padding: 28px;
+  text-align: center;
+}
+
+.nexexam-course-status[data-state='error'] {
+  border-color: rgba(239, 68, 68, 0.24);
+  color: #991b1b;
+}
+
+.nexexam-course-card {
+  height: 100%;
+}
+
+.nexexam-course-card .courses-inner-wrap {
+  height: 100%;
+}
+
+.nexexam-course-card .courses-title {
+  min-height: 2.6em;
+}
+
+.nexexam-course-card .courses-details {
+  display: -webkit-box;
+  min-height: 4.5em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.nexexam-course-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(135deg, rgba(91, 92, 246, 0.12), rgba(59, 130, 246, 0.18)),
+    #f8fafc;
+  color: #5b5cf6;
+  font-weight: 700;
+}

@@ -41,13 +41,35 @@ import {
   courseReviewDecisionCreate,
   courseReviewDecisionFindMany,
 } from './courseReviewDecisionService';
+import {
+  courseLessonVideoSourceKey,
+  courseVideoTranscriptSyncData,
+} from './courseVideoTranscriptService';
+import {
+  courseVideoTranscriptEnqueue,
+  courseVideoTranscriptEnqueueQueuedLessons,
+} from './courseVideoTranscriptQueue';
+import { productAnalyticsTrackSystemEvent } from '../productAnalytics/productAnalyticsService';
+import { AI_TRUST_DEFAULT_PREFERENCES } from '../aiTrust/aiTrustService';
+import { studentExperienceReadinessSnapshotCapture } from '../studentExperience/studentExperienceControllers';
+import type { AiTrustPreferences } from '../aiTrust/aiTrustSchemas';
 
 const defaultTake = 25;
 const catalogTake = 50;
 const aiContextMaxLength = 20000;
 const catalogMaxCandidates = 500;
 
+const courseCategoryRefSelect = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  iconName: true,
+  displayOrder: true,
+} satisfies Prisma.CourseCategorySelect;
+
 export const courseInclude = {
+  categoryRef: { select: courseCategoryRefSelect },
   modules: {
     orderBy: { orderIndex: 'asc' as const },
     include: {
@@ -251,52 +273,15 @@ function courseAssignmentRubricScorePayload({
   };
 }
 
-// Looks up a CourseCategory by id to mirror its `name` into the legacy
-// `Course.category` String column. Returns `undefined` when the caller
-// didn't supply a categoryId (skip mirror), `null` when explicitly clearing.
-async function resolveCategoryNameMirror(
-  tx: {
-    courseCategory: {
-      findUnique: (args: {
-        where: { id: string };
-        select: { name: true };
-      }) => Promise<{ name: string } | null>;
-    };
-  },
-  categoryId: string | null | undefined,
-): Promise<string | null | undefined> {
-  if (categoryId === undefined) {
-    return undefined;
-  }
-  if (categoryId === null) {
-    return null;
-  }
-  const row = await tx.courseCategory.findUnique({
-    where: { id: categoryId },
-    select: { name: true },
-  });
-  return row?.name ?? null;
-}
-
 function courseBaseData(
   data: ReturnType<typeof courseManageInputSchema.parse>,
-  options?: { categoryNameMirror?: string | null },
 ) {
   const publishedAt = data.status === 'published' ? new Date() : null;
-
-  // When a categoryId is supplied, the resolved CourseCategory.name overrides
-  // the freeform `category` string so the legacy column stays in lock-step
-  // with the FK.
-  const category =
-    options?.categoryNameMirror !== undefined
-      ? options.categoryNameMirror
-      : normalizeNullableString(data.category);
 
   return {
     title: data.title,
     subtitle: normalizeNullableString(data.subtitle),
     description: normalizeNullableString(data.description),
-    category,
     categoryId: data.categoryId ?? null,
     examType: normalizeNullableString(data.examType),
     thumbnail: data.thumbnail as Prisma.InputJsonValue,
@@ -312,6 +297,9 @@ function courseBaseData(
     certificateEnabled: data.certificateEnabled,
     currency: data.currency || 'USD',
     stripePriceId: normalizeNullableString(data.stripePriceId),
+    lifetimeAccessEnabled: data.lifetimeAccessEnabled,
+    lifetimePriceCents: data.lifetimePriceCents ?? null,
+    lifetimeStripePriceId: normalizeNullableString(data.lifetimeStripePriceId),
     subscriptionPlanKey: normalizeNullableString(data.subscriptionPlanKey),
     creatorRevenueShareBps: data.creatorRevenueShareBps,
     nexVerified: data.nexVerified,
@@ -327,6 +315,7 @@ function stripProtectedCourseFiles(course: any) {
   const stripLesson = (lesson: any) => {
     lesson.videoFiles = null;
     lesson.resourceFiles = null;
+    lesson.videoTranscriptText = null;
   };
   for (const lesson of cleaned.lessons || []) {
     stripLesson(lesson);
@@ -395,6 +384,9 @@ async function withCourseCreators(courses: Array<any>) {
 
   return courses.map((course) => ({
     ...course,
+    category: Object.prototype.hasOwnProperty.call(course, 'categoryRef')
+      ? (course.categoryRef?.name ?? null)
+      : course.category,
     creatorUser: course.creatorUserId
       ? creatorsById.get(course.creatorUserId) || null
       : null,
@@ -573,6 +565,180 @@ function courseMarketplacePayload(
     enrollments: undefined,
     quizzes: undefined,
     practiceExams: undefined,
+  };
+}
+
+function courseHasPremiumAccess(course: { accessType?: string | null }) {
+  return course.accessType === 'paid' || course.accessType === 'subscription';
+}
+
+function coursePurchaseProofLessonPayload(
+  lesson: any,
+  isPremiumAccess: boolean,
+) {
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    description: lesson.description,
+    orderIndex: lesson.orderIndex,
+    videoDurationSeconds: lesson.videoDurationSeconds,
+    isPreview: lesson.isPreview,
+    isLocked: isPremiumAccess && !lesson.isPreview,
+  };
+}
+
+function coursePurchaseProofCurriculum(course: any) {
+  const isPremiumAccess = courseHasPremiumAccess(course);
+  const moduleLessonIds = new Set<string>();
+  const modules = (course.modules || [])
+    .map((module: any) => {
+      const lessons = (module.lessons || [])
+        .filter((lesson: any) => !lesson.isHidden)
+        .map((lesson: any) => {
+          moduleLessonIds.add(lesson.id);
+          return coursePurchaseProofLessonPayload(lesson, isPremiumAccess);
+        });
+
+      return {
+        id: module.id,
+        title: module.title,
+        description: module.description,
+        orderIndex: module.orderIndex,
+        lessons,
+      };
+    })
+    .filter((module: any) => module.lessons.length > 0);
+  const visibleLessons = (course.lessons || []).filter(
+    (lesson: any) => !lesson.isHidden,
+  );
+  const standaloneLessons = visibleLessons
+    .filter(
+      (lesson: any) => !lesson.moduleId && !moduleLessonIds.has(lesson.id),
+    )
+    .map((lesson: any) =>
+      coursePurchaseProofLessonPayload(lesson, isPremiumAccess),
+    );
+
+  return {
+    previewLessonCount: visibleLessons.filter((lesson: any) => lesson.isPreview)
+      .length,
+    lockedLessonCount: isPremiumAccess
+      ? visibleLessons.filter((lesson: any) => !lesson.isPreview).length
+      : 0,
+    totalLessonCount: visibleLessons.length,
+    modules,
+    standaloneLessons,
+  };
+}
+
+async function coursePurchaseProofPayload(course: any) {
+  if (!courseHasPremiumAccess(course)) {
+    return null;
+  }
+
+  const activeEnrollments = (course.enrollments || []).filter(
+    (enrollment: any) =>
+      enrollment.status === 'active' || enrollment.status === 'completed',
+  );
+  const completedEnrollments = activeEnrollments.filter(
+    (enrollment: any) =>
+      enrollment.status === 'completed' || Boolean(enrollment.completedAt),
+  );
+  const enrollmentCount = activeEnrollments.length;
+  const showCompletionRate = enrollmentCount >= 5;
+  const [creatorApplication, certificateCount, reviewRows, purchases] =
+    await Promise.all([
+      course.creatorUserId
+        ? prisma.creatorApplication.findUnique({
+            where: { userId: course.creatorUserId },
+            select: {
+              displayName: true,
+              professionalTitle: true,
+              bio: true,
+              credentials: true,
+              expertise: true,
+              links: true,
+              status: true,
+              nexVerified: true,
+            },
+          })
+        : Promise.resolve(null),
+      prisma.courseCertificate.count({
+        where: { courseId: course.id, revokedAt: null },
+      }),
+      prisma.courseRating.findMany({
+        where: {
+          courseId: course.id,
+          isPublic: true,
+          comment: { not: null },
+        },
+        orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+        take: 12,
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+        },
+      }),
+      prisma.coursePurchase.findMany({
+        where: { courseId: course.id, refundedAt: null },
+        select: { userId: true },
+      }),
+    ]);
+  const approvedCreatorApplication =
+    creatorApplication?.status === 'approved' ? creatorApplication : null;
+  const verifiedUserIds = new Set([
+    ...activeEnrollments.map((enrollment: any) => enrollment.userId),
+    ...purchases.map((purchase) => purchase.userId),
+  ]);
+  const verifiedReviews = reviewRows
+    .filter((review) => review.comment?.trim())
+    .slice(0, 3)
+    .map((review) => ({
+      id: review.id,
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.createdAt,
+      verifiedLearner: verifiedUserIds.has(review.userId),
+      reviewer: {
+        id: review.user.id,
+        name: review.user.name,
+        image: review.user.image,
+      },
+    }));
+
+  return {
+    creator: {
+      id: course.creatorUser?.id || course.creatorUserId || null,
+      name:
+        approvedCreatorApplication?.displayName ||
+        course.creatorUser?.name ||
+        null,
+      image: course.creatorUser?.image || null,
+      professionalTitle: approvedCreatorApplication?.professionalTitle || null,
+      bio: approvedCreatorApplication?.bio || null,
+      credentials: approvedCreatorApplication?.credentials || null,
+      expertise: approvedCreatorApplication?.expertise || null,
+      links: approvedCreatorApplication?.links || [],
+      nexVerified:
+        course.nexVerified || approvedCreatorApplication?.nexVerified === true,
+    },
+    sampleOutcome: course.outcomes?.[0]?.text || course.subtitle || null,
+    completionStats: {
+      enrollmentCount,
+      completedCount: completedEnrollments.length,
+      completionRate: showCompletionRate
+        ? Math.round((completedEnrollments.length / enrollmentCount) * 100)
+        : null,
+      showCompletionRate,
+      certificateCount,
+      ratingAverage: course.ratingSummary?.average ?? 0,
+      ratingCount: course.ratingSummary?.count ?? 0,
+    },
+    verifiedReviews,
+    previewCurriculum: coursePurchaseProofCurriculum(course),
+    refundPolicy: {
+      supported: true,
+      reviewRequired: true,
+    },
   };
 }
 
@@ -817,7 +983,6 @@ export async function courseCatalogController(
   const data = courseListInputSchema.parse(query);
   const search = data.filter?.search?.trim();
   const categoryId = data.filter?.categoryId?.trim();
-  const category = data.filter?.category?.trim();
   const examType = data.filter?.examType?.trim();
   const difficulty = data.filter?.difficulty?.trim();
   const language = data.filter?.language?.trim();
@@ -855,7 +1020,11 @@ export async function courseCatalogController(
         { title: { contains: search, mode: 'insensitive' } },
         { subtitle: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
+        {
+          categoryRef: {
+            is: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
         { examType: { contains: search, mode: 'insensitive' } },
       ],
     });
@@ -863,8 +1032,6 @@ export async function courseCatalogController(
 
   if (categoryId) {
     whereAnd.push({ categoryId });
-  } else if (category) {
-    whereAnd.push({ category: { equals: category, mode: 'insensitive' } });
   }
 
   if (examType) {
@@ -904,6 +1071,7 @@ export async function courseCatalogController(
       prisma.course.findMany({
         where,
         include: {
+          categoryRef: { select: courseCategoryRefSelect },
           modules: { select: { id: true } },
           lessons: { select: { id: true, videoDurationSeconds: true } },
           assignments: { select: { id: true } },
@@ -941,6 +1109,7 @@ export async function courseCatalogController(
       prisma.course.findMany({
         where: { status: 'published', safetyHold: false, nexVerified: true },
         include: {
+          categoryRef: { select: courseCategoryRefSelect },
           modules: { select: { id: true } },
           lessons: { select: { id: true, videoDurationSeconds: true } },
           assignments: { select: { id: true } },
@@ -1088,6 +1257,7 @@ export async function courseCompareController(
       safetyHold: false,
     },
     include: {
+      categoryRef: { select: courseCategoryRefSelect },
       modules: { select: { id: true } },
       lessons: { select: { id: true, videoDurationSeconds: true } },
       assignments: { select: { id: true } },
@@ -1119,6 +1289,7 @@ export async function courseWishlistsController(context: AppContext) {
         include: {
           course: {
             include: {
+              categoryRef: { select: courseCategoryRefSelect },
               modules: { select: { id: true } },
               lessons: { select: { id: true, videoDurationSeconds: true } },
               assignments: { select: { id: true } },
@@ -1365,6 +1536,7 @@ export async function courseCreatorProfileController(
         safetyHold: false,
       },
       include: {
+        categoryRef: { select: courseCategoryRefSelect },
         modules: { select: { id: true } },
         lessons: { select: { id: true, videoDurationSeconds: true } },
         assignments: { select: { id: true } },
@@ -1526,6 +1698,7 @@ export async function courseOnboardingSuggestionsController(
   const courses = await prisma.course.findMany({
     where: { status: 'published', safetyHold: false },
     include: {
+      categoryRef: { select: courseCategoryRefSelect },
       modules: { select: { id: true } },
       lessons: { select: { id: true } },
       assignments: { select: { id: true } },
@@ -1611,7 +1784,11 @@ export async function courseAutocompleteController(
       OR: [
         { title: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
+        {
+          categoryRef: {
+            is: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
         { examType: { contains: search, mode: 'insensitive' } },
       ],
     });
@@ -1667,12 +1844,14 @@ export async function courseDetailController(
       })
     : null;
   const durationSeconds = courseDurationSeconds(courseWithRating);
+  const purchaseProof = await coursePurchaseProofPayload(courseWithRating);
 
   return {
     course: {
       ...courseWithRating,
       durationSeconds,
       isSaved: savedCourseIds.has(courseWithRating.id),
+      purchaseProof,
       socialProof: {
         enrollmentCount: courseWithRating.enrollments?.length ?? 0,
         ratingAverage: courseWithRating.ratingSummary?.average ?? 0,
@@ -1698,6 +1877,7 @@ export async function courseMyLearningController(context: AppContext) {
     include: {
       course: {
         include: {
+          categoryRef: { select: courseCategoryRefSelect },
           lessons: {
             orderBy: [{ orderIndex: 'asc' }, { createdAt: 'asc' }],
             select: {
@@ -1750,6 +1930,7 @@ export async function courseMyLearningController(context: AppContext) {
           : {}),
       },
       include: {
+        categoryRef: { select: courseCategoryRefSelect },
         _count: {
           select: {
             modules: true,
@@ -1818,7 +1999,7 @@ export async function courseMyLearningController(context: AppContext) {
         title: course.title,
         slug: course.slug,
         subtitle: course.subtitle,
-        category: course.category,
+        category: course.categoryRef?.name ?? null,
         thumbnail: course.thumbnail,
         nexVerified: course.nexVerified,
         creatorUser: course.creatorUser,
@@ -1879,7 +2060,7 @@ export async function courseMyLearningController(context: AppContext) {
       title: course.title,
       slug: course.slug,
       subtitle: course.subtitle,
-      category: course.category,
+      category: course.categoryRef?.name ?? null,
       thumbnail: course.thumbnail,
       nexVerified: course.nexVerified,
       creatorUser: course.creatorUser,
@@ -2032,7 +2213,7 @@ export async function courseRatingUpsertController(
 }
 
 export async function courseLearnController(
-  params: { id: string },
+  params: { id: string; activationSource?: string },
   context: AppContext,
 ) {
   const { currentUser } = requireSignedIn(context);
@@ -2076,6 +2257,26 @@ export async function courseLearnController(
   await filePopulateDownloadUrlInTree(safeCourse);
   await filePopulateDownloadUrlInTree(submissions);
 
+  if (course.accessType === 'paid' || course.accessType === 'subscription') {
+    const firstLesson = course.lessons?.find((lesson) => !lesson.isHidden);
+    await productAnalyticsTrackSystemEvent({
+      eventName: 'first_value_after_payment',
+      source: 'backend',
+      dedupeKey: `first_value_after_payment:course:${course.id}:${currentUser.id}`,
+      userId: currentUser.id,
+      memberId: context.currentMember?.id ?? null,
+      organizationId: context.currentOrganization?.id ?? null,
+      courseId: course.id,
+      lessonId: resume?.lessonId ?? firstLesson?.id ?? null,
+      accessType: course.accessType,
+      funnelId: `course:${course.id}`,
+      metadata: {
+        firstValueType: 'lesson_opened',
+        activationSource: params.activationSource ?? null,
+      },
+    });
+  }
+
   return {
     course: safeCourse,
     enrollment,
@@ -2084,6 +2285,189 @@ export async function courseLearnController(
     quizAttempts,
     certificate,
     resume,
+  };
+}
+
+function courseActivationLessonPayload(lesson: any) {
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    description: lesson.description,
+    moduleId: lesson.moduleId,
+    orderIndex: lesson.orderIndex,
+    videoDurationSeconds: lesson.videoDurationSeconds,
+  };
+}
+
+function courseActivationCoursePayload(course: any) {
+  const visibleLessons = (course.lessons || []).filter(
+    (lesson: any) => !lesson.isHidden,
+  );
+
+  return {
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    subtitle: course.subtitle,
+    category: course.categoryRef?.name ?? course.category ?? null,
+    examType: course.examType,
+    accessType: course.accessType,
+    certificateEnabled: course.certificateEnabled,
+    nexVerified: course.nexVerified,
+    moduleCount: course._count?.modules ?? course.modules?.length ?? 0,
+    lessonCount: visibleLessons.length,
+    assignmentCount: course._count?.assignments ?? 0,
+  };
+}
+
+async function courseActivationPracticeQuestionCount(courseId: string) {
+  const questions = await prisma.practiceQuestion.findMany({
+    where: {
+      courseId,
+      isActive: true,
+      archivedAt: null,
+    },
+    select: {
+      answerOptions: true,
+      correctAnswerIndex: true,
+    },
+    take: 100,
+  });
+
+  return questions.filter(
+    (question) =>
+      Array.isArray(question.answerOptions) &&
+      question.answerOptions.length > 0 &&
+      question.correctAnswerIndex >= 0 &&
+      question.correctAnswerIndex < question.answerOptions.length,
+  ).length;
+}
+
+export async function courseActivationController(
+  params: { id: string },
+  context: AppContext,
+) {
+  const { currentUser } = requireSignedIn(context);
+  const course = await prisma.course.findUnique({
+    where: { id: params.id },
+    include: {
+      categoryRef: { select: courseCategoryRefSelect },
+      modules: {
+        orderBy: { orderIndex: 'asc' },
+        include: {
+          lessons: {
+            orderBy: { orderIndex: 'asc' },
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              moduleId: true,
+              orderIndex: true,
+              videoDurationSeconds: true,
+              isHidden: true,
+            },
+          },
+        },
+      },
+      lessons: {
+        orderBy: { orderIndex: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          moduleId: true,
+          orderIndex: true,
+          videoDurationSeconds: true,
+          isHidden: true,
+        },
+      },
+      _count: {
+        select: {
+          modules: true,
+          lessons: true,
+          assignments: true,
+        },
+      },
+    },
+  });
+
+  if (
+    !course ||
+    ((course.status !== 'published' || course.safetyHold) &&
+      !isPlatformAdmin(context))
+  ) {
+    throw new Error404();
+  }
+
+  const enrollment = await courseFindEnrollment(course.id, currentUser.id);
+  const activationReady = Boolean(enrollment || isPlatformAdmin(context));
+  const [progress, certificate, practiceQuestionCount] = await Promise.all([
+    activationReady
+      ? prisma.courseLessonProgress.findMany({
+          where: { courseId: course.id, userId: currentUser.id },
+          select: { lessonId: true },
+        })
+      : Promise.resolve([]),
+    enrollment
+      ? prisma.courseCertificate.findUnique({
+          where: { enrollmentId: enrollment.id },
+        })
+      : Promise.resolve(null),
+    activationReady
+      ? courseActivationPracticeQuestionCount(course.id)
+      : Promise.resolve(null),
+  ]);
+
+  const completedLessonIds = new Set(progress.map((item) => item.lessonId));
+  const visibleLessons = course.lessons.filter((lesson) => !lesson.isHidden);
+  const recommendedLesson =
+    activationReady && visibleLessons.length
+      ? visibleLessons.find((lesson) => !completedLessonIds.has(lesson.id)) ||
+        visibleLessons[0]
+      : null;
+  const completedLessons = completedLessonIds.size;
+  const totalLessons = visibleLessons.length;
+  const percent = totalLessons
+    ? Math.round((completedLessons / totalLessons) * 100)
+    : 0;
+
+  return {
+    activationReady,
+    course: courseActivationCoursePayload(course),
+    enrollment,
+    unlockedPlan: {
+      accessType: course.accessType,
+      moduleCount: course.modules.length,
+      lessonCount: totalLessons,
+      assignmentCount: course._count.assignments,
+      practiceIncluded: Boolean(practiceQuestionCount),
+      aiTutorIncluded: true,
+      certificateEnabled: course.certificateEnabled,
+    },
+    recommendedLesson: recommendedLesson
+      ? courseActivationLessonPayload(recommendedLesson)
+      : null,
+    practiceSet: {
+      availableQuestionCount: practiceQuestionCount,
+    },
+    certificatePath: {
+      enabled: course.certificateEnabled,
+      completedLessons,
+      totalLessons,
+      percent,
+      certificate: certificate
+        ? {
+            id: certificate.id,
+            verificationCode: certificate.verificationCode,
+            issuedAt: certificate.issuedAt,
+          }
+        : null,
+    },
+    aiTutorStarter: {
+      courseId: course.id,
+      lessonId: recommendedLesson?.id ?? null,
+      lessonTitle: recommendedLesson?.title ?? null,
+    },
   };
 }
 
@@ -2387,6 +2771,7 @@ export async function coursePracticeExamSubmitController(
     memberId: context.currentMember?.id || null,
     newData: updated,
   });
+  await studentExperienceReadinessSnapshotCapture(course.id, context);
 
   return {
     attempt: updated,
@@ -2447,6 +2832,7 @@ export async function courseLessonCompleteController(
     userId: currentUser.id,
     context,
   });
+  await studentExperienceReadinessSnapshotCapture(course.id, context);
 
   return { progress, ...completion };
 }
@@ -2530,6 +2916,7 @@ export async function courseAssignmentSubmissionController(
     oldData: latestSubmission,
     newData: submission,
   });
+  await studentExperienceReadinessSnapshotCapture(course.id, context);
 
   await filePopulateDownloadUrlInTree(submission);
   return { submission };
@@ -2552,7 +2939,11 @@ export async function platformAdminCourseListController(
       OR: [
         { title: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
+        {
+          categoryRef: {
+            is: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
         { examType: { contains: search, mode: 'insensitive' } },
       ],
     });
@@ -2579,6 +2970,7 @@ export async function platformAdminCourseListController(
     prisma.course.findMany({
       where,
       include: {
+        categoryRef: { select: courseCategoryRefSelect },
         _count: {
           select: {
             modules: true,
@@ -2628,13 +3020,9 @@ export async function platformAdminCourseCreateController(
   const slug = await courseUniqueSlug(data.title, data.slug);
 
   const course = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
-    const categoryNameMirror = await resolveCategoryNameMirror(
-      tx,
-      data.categoryId,
-    );
     const created = await tx.course.create({
       data: {
-        ...courseBaseData(data, { categoryNameMirror }),
+        ...courseBaseData(data),
         slug,
         createdByUserId: currentUser.id,
         updatedByUserId: currentUser.id,
@@ -2658,6 +3046,7 @@ export async function platformAdminCourseCreateController(
     newData: course,
   });
 
+  await courseVideoTranscriptEnqueueQueuedLessons(course.lessons);
   await filePopulateDownloadUrlInTree(course);
   return { course };
 }
@@ -2666,7 +3055,6 @@ async function courseLinkedContentCounts(courseId: string) {
   const [
     exams,
     chapters,
-    legacyLessons,
     concepts,
     practiceQuestions,
     studyNotes,
@@ -2676,7 +3064,6 @@ async function courseLinkedContentCounts(courseId: string) {
   ] = await Promise.all([
     prisma.exam.count({ where: { courseId } }),
     prisma.chapter.count({ where: { courseId } }),
-    prisma.lesson.count({ where: { courseId } }),
     prisma.concept.count({ where: { courseId } }),
     prisma.practiceQuestion.count({ where: { courseId } }),
     prisma.studyNote.count({ where: { courseId } }),
@@ -2688,7 +3075,6 @@ async function courseLinkedContentCounts(courseId: string) {
   return {
     exams,
     chapters,
-    legacyLessons,
     concepts,
     practiceQuestions,
     studyNotes,
@@ -2725,14 +3111,10 @@ export async function platformAdminCourseUpdateController(
   }
 
   const course = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
-    const categoryNameMirror = await resolveCategoryNameMirror(
-      tx,
-      data.categoryId,
-    );
     await tx.course.update({
       where: { id: oldData.id },
       data: {
-        ...courseBaseData(data, { categoryNameMirror }),
+        ...courseBaseData(data),
         slug,
         updatedByUserId: currentUser.id,
         publishedAt:
@@ -2781,8 +3163,68 @@ export async function platformAdminCourseUpdateController(
     }
   }
 
+  await courseVideoTranscriptEnqueueQueuedLessons(course.lessons);
   await filePopulateDownloadUrlInTree(course);
   return { course };
+}
+
+export async function platformAdminCourseVideoTranscriptRetryController(
+  params: { id: string; lessonId: string },
+  context: AppContext,
+) {
+  const { currentUser } = authGuardPlatformAdminBackend(context);
+  const course = await prisma.course.findUnique({
+    where: { id: params.id },
+    include: courseInclude,
+  });
+  if (!course) {
+    throw new Error404();
+  }
+
+  const lesson = course.lessons.find((item) => item.id === params.lessonId);
+  if (!lesson) {
+    throw new Error404();
+  }
+
+  const sourceKey = courseLessonVideoSourceKey(lesson.videoFiles);
+  if (!sourceKey) {
+    throw new Error400(context.dictionary.course.errors.videoTranscriptNoVideo);
+  }
+
+  const updated = await prisma.courseLesson.update({
+    where: { id: lesson.id },
+    data: {
+      videoTranscriptText: null,
+      videoTranscriptStatus: 'queued',
+      videoTranscriptSourceKey: sourceKey,
+      videoTranscriptError: null,
+      videoTranscriptGeneratedAt: null,
+    },
+  });
+
+  await auditLogCreate({
+    entityId: updated.id,
+    entityName: 'CourseLesson',
+    operation: auditLogOperations.update,
+    organizationId: null,
+    userId: currentUser.id,
+    oldData: {
+      videoTranscriptStatus: lesson.videoTranscriptStatus,
+      videoTranscriptSourceKey: lesson.videoTranscriptSourceKey,
+    },
+    newData: {
+      videoTranscriptStatus: updated.videoTranscriptStatus,
+      videoTranscriptSourceKey: updated.videoTranscriptSourceKey,
+    },
+  });
+
+  await courseVideoTranscriptEnqueue({
+    kind: 'transcribe',
+    lessonId: updated.id,
+    sourceKey,
+  });
+
+  return { lesson: updated };
 }
 
 export async function platformAdminCourseReviewController(
@@ -2904,6 +3346,18 @@ export async function courseSyncContent(
   const flashcardSetIds = idsOf(data.flashcardSets);
   const flashcardIds = idsOf(data.flashcards);
   const blockIds = idsOf(data.blocks);
+  const existingLessons = await tx.courseLesson.findMany({
+    where: { courseId },
+    select: {
+      id: true,
+      videoFiles: true,
+      videoTranscriptStatus: true,
+      videoTranscriptSourceKey: true,
+    },
+  });
+  const existingLessonsById = new Map(
+    existingLessons.map((lesson) => [lesson.id, lesson]),
+  );
 
   // Delete rows that are no longer present in the submitted payload.
   await tx.courseLessonBlock.deleteMany({
@@ -3018,10 +3472,13 @@ export async function courseSyncContent(
     const lessonData = {
       title: lesson.title,
       description: normalizeNullableString(lesson.description),
-      content: normalizeNullableString(lesson.content),
       videoFiles: lesson.videoFiles as Prisma.InputJsonValue,
       videoUrl: lesson.videoUrl,
       resourceFiles: lesson.resourceFiles as Prisma.InputJsonValue,
+      ...courseVideoTranscriptSyncData(
+        lesson.videoFiles,
+        lesson.id ? existingLessonsById.get(lesson.id) : undefined,
+      ),
       videoDurationSeconds: lesson.videoDurationSeconds || null,
       orderIndex: lesson.orderIndex,
       isPreview: lesson.isPreview,
@@ -3525,27 +3982,81 @@ export async function platformAdminAssignmentSubmissionReviewController(
   );
 }
 
+function courseLessonBlocksText(
+  blocks: Array<{ blockType: string; content: unknown }>,
+) {
+  return blocks
+    .map((block) => {
+      const content =
+        block.content && typeof block.content === 'object'
+          ? (block.content as Record<string, unknown>)
+          : {};
+      const text = typeof content.text === 'string' ? content.text.trim() : '';
+      if (
+        block.blockType === 'paragraph' ||
+        block.blockType === 'aiTutorPrompt'
+      ) {
+        return text;
+      }
+      if (block.blockType === 'heading') {
+        return text ? `## ${text}` : '';
+      }
+      if (block.blockType === 'callout') {
+        return text ? `> ${text}` : '';
+      }
+      if (
+        block.blockType === 'bulletList' ||
+        block.blockType === 'numberedList'
+      ) {
+        const items = Array.isArray(content.items) ? content.items : [];
+        return items
+          .map((item) =>
+            typeof item === 'string'
+              ? item.trim()
+              : typeof item === 'object' &&
+                  item &&
+                  typeof (item as Record<string, unknown>).text === 'string'
+                ? String((item as Record<string, unknown>).text).trim()
+                : '',
+          )
+          .filter(Boolean)
+          .map((item) => `- ${item}`)
+          .join('\n');
+      }
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+}
+
 export async function courseBuildAiContext(
   courseId: string,
   lessonId: string | undefined,
   context: AppContext,
+  options: { preferences?: AiTrustPreferences } = {},
 ) {
   const { currentUser } = requireSignedIn(context);
   const { course } = await courseEnsureLearningAccess(courseId, context);
+  const preferences = options.preferences ?? AI_TRUST_DEFAULT_PREFERENCES;
   const [progress, submissions, legacyContent] = await Promise.all([
-    prisma.courseLessonProgress.findMany({
-      where: { courseId, userId: currentUser.id },
-      select: { lessonId: true, completedAt: true },
-    }),
-    prisma.courseAssignmentSubmission.findMany({
-      where: { courseId, userId: currentUser.id },
-      select: {
-        assignmentId: true,
-        status: true,
-        submittedAt: true,
-        feedback: true,
-      },
-    }),
+    preferences.useLessonProgress
+      ? prisma.courseLessonProgress.findMany({
+          where: { courseId, userId: currentUser.id },
+          select: { lessonId: true, completedAt: true },
+        })
+      : Promise.resolve([]),
+    preferences.useLessonProgress
+      ? prisma.courseAssignmentSubmission.findMany({
+          where: { courseId, userId: currentUser.id },
+          select: {
+            assignmentId: true,
+            status: true,
+            submittedAt: true,
+            feedback: true,
+          },
+        })
+      : Promise.resolve([]),
     courseLegacyAiContent(courseId),
   ]);
 
@@ -3556,12 +4067,16 @@ export async function courseBuildAiContext(
   const focusedLesson = lessonId
     ? course.lessons.find((lesson) => lesson.id === lessonId)
     : null;
+  const lessonsById = new Map(
+    course.lessons.map((lesson) => [lesson.id, lesson]),
+  );
+  const categoryName = course.categoryRef?.name ?? null;
 
   const lines = [
     context.dictionary.chatbot.courseContextHeader,
     `${context.dictionary.course.fields.title}: ${course.title}`,
-    course.category
-      ? `${context.dictionary.course.fields.category}: ${course.category}`
+    categoryName
+      ? `${context.dictionary.course.fields.category}: ${categoryName}`
       : null,
     focusedLesson
       ? `${context.dictionary.course.ai.focusedLesson}: ${focusedLesson.title}`
@@ -3574,6 +4089,12 @@ export async function courseBuildAiContext(
   for (const module of course.modules) {
     lines.push(`- ${module.title}`);
     for (const lesson of module.lessons) {
+      const fullLesson = (lessonsById.get(lesson.id) ?? lesson) as {
+        blocks?: Array<{ blockType: string; content: unknown }>;
+      };
+      const lessonContent = preferences.useLessonContent
+        ? courseLessonBlocksText(fullLesson.blocks || [])
+        : '';
       lines.push(
         `  - ${lesson.title}${
           completedLessonIds.has(lesson.id)
@@ -3581,17 +4102,25 @@ export async function courseBuildAiContext(
             : ''
         }`,
       );
-      if (lesson.content) {
-        lines.push(`    ${lesson.content.slice(0, 1800)}`);
+      if (lessonContent) {
+        lines.push(`    ${lessonContent.slice(0, 1800)}`);
+      }
+      if (preferences.useLessonContent && lesson.videoTranscriptText) {
+        lines.push(
+          `    ${context.dictionary.course.ai.videoTranscript}: ${lesson.videoTranscriptText.slice(
+            0,
+            2400,
+          )}`,
+        );
       }
     }
     for (const assignment of module.assignments) {
       const submission = submissionsByAssignmentId.get(assignment.id);
+      const assignmentPrompt = preferences.useLessonContent
+        ? `; ${assignment.prompt.slice(0, 1200)}`
+        : '';
       lines.push(
-        `  - ${context.dictionary.course.ai.assignment}: ${assignment.title}; ${assignment.prompt.slice(
-          0,
-          1200,
-        )}${
+        `  - ${context.dictionary.course.ai.assignment}: ${assignment.title}${assignmentPrompt}${
           submission
             ? ` (${context.dictionary.course.fields.status}: ${submission.status})`
             : ''
@@ -3604,11 +4133,11 @@ export async function courseBuildAiContext(
     (assignment) => !assignment.moduleId,
   )) {
     const submission = submissionsByAssignmentId.get(assignment.id);
+    const assignmentPrompt = preferences.useLessonContent
+      ? `; ${assignment.prompt.slice(0, 1200)}`
+      : '';
     lines.push(
-      `- ${context.dictionary.course.ai.assignment}: ${assignment.title}; ${assignment.prompt.slice(
-        0,
-        1200,
-      )}${
+      `- ${context.dictionary.course.ai.assignment}: ${assignment.title}${assignmentPrompt}${
         submission
           ? ` (${context.dictionary.course.fields.status}: ${submission.status})`
           : ''
@@ -3619,7 +4148,6 @@ export async function courseBuildAiContext(
   if (
     legacyContent.exams.length ||
     legacyContent.chapters.length ||
-    legacyContent.lessons.length ||
     legacyContent.concepts.length ||
     legacyContent.practiceQuestions.length ||
     legacyContent.studyNotes.length ||
@@ -3648,14 +4176,6 @@ export async function courseBuildAiContext(
     }
   }
 
-  for (const lesson of legacyContent.lessons) {
-    lines.push(
-      `- ${context.dictionary.lesson.list.menu}: ${lesson.title}${
-        lesson.content ? `; ${lesson.content.slice(0, 1200)}` : ''
-      }`,
-    );
-  }
-
   for (const concept of legacyContent.concepts) {
     lines.push(
       `- ${context.dictionary.concept.list.menu}: ${concept.conceptName}; ${concept.explanation.slice(
@@ -3665,7 +4185,9 @@ export async function courseBuildAiContext(
     );
   }
 
-  for (const question of legacyContent.practiceQuestions) {
+  for (const question of preferences.usePracticeResults
+    ? legacyContent.practiceQuestions
+    : []) {
     lines.push(
       `- ${context.dictionary.practiceQuestion.list.menu}: ${question.questionText.slice(
         0,
@@ -3704,7 +4226,6 @@ async function courseLegacyAiContent(courseId: string) {
   const [
     exams,
     chapters,
-    lessons,
     concepts,
     practiceQuestions,
     studyNotes,
@@ -3722,12 +4243,6 @@ async function courseLegacyAiContent(courseId: string) {
       select: { title: true, description: true, objectives: true },
       orderBy: [{ orderIndex: 'asc' }, { updatedAt: 'desc' }],
       take: 20,
-    }),
-    prisma.lesson.findMany({
-      where: { courseId, archivedAt: null },
-      select: { title: true, content: true },
-      orderBy: [{ lessonNumber: 'asc' }, { updatedAt: 'desc' }],
-      take: 30,
     }),
     prisma.concept.findMany({
       where: { courseId, archivedAt: null },
@@ -3764,7 +4279,6 @@ async function courseLegacyAiContent(courseId: string) {
   return {
     exams,
     chapters,
-    lessons,
     concepts,
     practiceQuestions,
     studyNotes,

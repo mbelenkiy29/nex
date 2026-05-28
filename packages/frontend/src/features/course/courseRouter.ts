@@ -66,14 +66,6 @@ export const courseDetailRoute = createRoute({
       },
     ],
   }),
-  beforeLoad: async ({ location }) => {
-    const { currentUser, currentMember } = useAuthStore.getState();
-    authGuardFrontend(
-      { currentUser, currentMember },
-      { course: ['read'] },
-      location.pathname,
-    );
-  },
 }).lazy(() =>
   import('./pages/CourseDetailPage').then((d) => d.courseDetailLazyRoute),
 );
@@ -125,6 +117,32 @@ export const courseCertificateRoute = createRoute({
 }).lazy(() =>
   import('./pages/CourseCertificatePage').then(
     (d) => d.courseCertificateLazyRoute,
+  ),
+);
+
+export const courseActivationRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/course/$id/activation',
+  head: () => ({
+    meta: [
+      {
+        title: buildPageTitle(
+          useAuthStore.getState().dictionary.course.activation.title,
+        ),
+      },
+    ],
+  }),
+  beforeLoad: async ({ location }) => {
+    const { currentUser, currentMember } = useAuthStore.getState();
+    authGuardFrontend(
+      { currentUser, currentMember },
+      { course: ['read'] },
+      location.pathname,
+    );
+  },
+}).lazy(() =>
+  import('./pages/CourseActivationPage').then(
+    (d) => d.courseActivationLazyRoute,
   ),
 );
 
@@ -377,6 +395,7 @@ export const courseBuilderPreviewRoute = createRoute({
 export const courseRouter = [
   courseCatalogRoute,
   courseCompareRoute,
+  courseActivationRoute,
   courseCertificateRoute,
   courseLearnRoute,
   courseDetailRoute,

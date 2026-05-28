@@ -40,9 +40,18 @@ const dashboardCourseTake = 24;
 const dashboardHomeworkTake = 8;
 const dashboardNotesTake = 5;
 const dashboardStudyPlanTake = 6;
+const masteryMapCourseTake = 24;
+const masteryMapTrendDays = 60;
 const defaultPracticeQuestionCount = 5;
 const defaultDiagnosticQuestionCount = 8;
 const learningOutcomesGeneralDomain = 'General';
+const masteryMapMilestoneThresholds = [
+  { key: 'baseline', threshold: 25 },
+  { key: 'momentum', threshold: 50 },
+  { key: 'ready', threshold: 75 },
+  { key: 'examReady', threshold: 90 },
+  { key: 'mastered', threshold: 100 },
+] as const;
 
 const studentCourseInclude = {
   modules: {
@@ -262,6 +271,167 @@ export async function studentExperienceDashboardController(
     },
     notes,
     studyPlan,
+  };
+}
+
+export async function studentExperienceMasteryMapController(
+  context: AppContext,
+) {
+  const currentUser = requireCurrentUser(context);
+  const enrollments = await prisma.courseEnrollment.findMany({
+    where: {
+      userId: currentUser.id,
+      status: 'active',
+      course: { status: 'published' },
+    },
+    select: { courseId: true },
+    orderBy: { enrolledAt: 'desc' },
+    take: masteryMapCourseTake,
+  });
+
+  const courseOverviews = await Promise.all(
+    enrollments.map((enrollment) =>
+      studentExperienceCourseOverviewPayload(enrollment.courseId, context),
+    ),
+  );
+  const courseIds = courseOverviews.map((overview) => overview.course.id);
+  const trendStart = addDays(startOfToday(), -masteryMapTrendDays);
+  const [snapshots, courses, certificates] = courseIds.length
+    ? await Promise.all([
+        prisma.$withRLS(
+          { organization: context.currentOrganization ?? undefined },
+          async (tx) =>
+            await tx.courseReadinessSnapshot.findMany({
+              where: {
+                userId: currentUser.id,
+                courseId: { in: courseIds },
+                capturedOn: { gte: trendStart },
+              },
+              orderBy: [{ capturedOn: 'asc' }, { capturedAt: 'asc' }],
+            }),
+        ),
+        prisma.course.findMany({
+          where: { id: { in: courseIds } },
+          select: {
+            id: true,
+            title: true,
+            accessType: true,
+            certificateEnabled: true,
+            modules: {
+              orderBy: { orderIndex: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                orderIndex: true,
+                lessons: {
+                  orderBy: { orderIndex: 'asc' },
+                  select: { id: true, title: true, orderIndex: true },
+                },
+              },
+            },
+            lessons: {
+              orderBy: { orderIndex: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                moduleId: true,
+                orderIndex: true,
+              },
+            },
+          },
+        }),
+        prisma.$withRLS(
+          { organization: context.currentOrganization ?? undefined },
+          async (tx) =>
+            await tx.courseCertificate.findMany({
+              where: { userId: currentUser.id, courseId: { in: courseIds } },
+              select: {
+                id: true,
+                courseId: true,
+                issuedAt: true,
+                revokedAt: true,
+                certificateNumber: true,
+                verificationCode: true,
+              },
+            }),
+        ),
+      ])
+    : [[], [], []];
+  const trend = masteryMapReadinessTrend(
+    snapshots,
+    courseOverviews.map((overview) => overview.readiness.score),
+  );
+  const weakSkills = masteryMapWeakSkills(courseOverviews);
+  const courseById = new Map(courses.map((course) => [course.id, course]));
+  const modules = masteryMapModules(courses, courseOverviews);
+  const certificatePayload = masteryMapCertificates({
+    courses: courseOverviews,
+    courseById,
+    certificates,
+  });
+  const streaks = masteryMapStreaks(courseOverviews);
+  const readinessScore = courseOverviews.length
+    ? Math.round(
+        courseOverviews.reduce(
+          (total, overview) => total + overview.readiness.score,
+          0,
+        ) / courseOverviews.length,
+      )
+    : 0;
+  const milestones = masteryMapMilestoneThresholds.map((milestone) => ({
+    ...milestone,
+    achieved: readinessScore >= milestone.threshold,
+  }));
+  const nextMilestone =
+    milestones.find((milestone) => !milestone.achieved) ||
+    milestones[milestones.length - 1];
+  const hasSubscription = Boolean(context.currentSubscription);
+  const paidCourseIds = courseOverviews
+    .filter((overview) =>
+      ['manual', 'paid', 'subscription'].includes(overview.course.accessType),
+    )
+    .map((overview) => overview.course.id);
+
+  return {
+    access: {
+      mode: hasSubscription
+        ? 'full'
+        : paidCourseIds.length
+          ? 'course'
+          : 'preview',
+      hasSubscription,
+      fullCrossCourse: hasSubscription,
+      premiumLocked: !hasSubscription,
+      paidCourseIds,
+    },
+    summary: {
+      enrolledCourses: courseOverviews.length,
+      readinessScore,
+      readinessDirection: trend.direction,
+      readinessDelta: trend.delta,
+      weakSkills: weakSkills.length,
+      unlockedModules: modules.unlockedCount,
+      totalModules: modules.totalCount,
+      certificatesEarned: certificatePayload.earnedCount,
+      certificatesAvailable: certificatePayload.availableCount,
+      currentStreak: streaks.currentStreak,
+      longestStreak: streaks.longestStreak,
+      nextMilestone,
+    },
+    readinessTrend: trend,
+    weakSkills,
+    modules,
+    certificates: certificatePayload,
+    streaks,
+    milestones,
+    courses: courseOverviews.map((overview) => ({
+      course: overview.course,
+      progress: overview.progress,
+      readiness: overview.readiness,
+      nextLesson: overview.nextLesson,
+      weakAreas: overview.practice.weakAreas,
+    })),
   };
 }
 
@@ -487,6 +657,7 @@ export async function studentExperiencePracticeCompleteController(
   });
 
   await studentExperienceTouchStreak(attempt.courseId, currentUser.id, context);
+  await studentExperienceReadinessSnapshotCapture(attempt.courseId, context);
 
   return {
     attempt: practiceAttemptPayload(updatedAttempt, true),
@@ -771,6 +942,7 @@ export async function studentExperienceAdaptivePlanGenerateController(
       newData: item,
     });
   }
+  await studentExperienceReadinessSnapshotCapture(courseId, context);
 
   return {
     enrollment,
@@ -1020,6 +1192,7 @@ async function studentExperienceSyncLessonComplete(
     currentUser.id,
     context,
   );
+  await studentExperienceReadinessSnapshotCapture(mutation.courseId, context);
 
   return { progress };
 }
@@ -1310,6 +1483,7 @@ export async function studentExperienceDiagnosticCompleteController(
     context,
   });
   await studentExperienceTouchStreak(courseId, currentUser.id, context);
+  await studentExperienceReadinessSnapshotCapture(courseId, context);
 
   return {
     attempt: diagnosticAttemptPayload(updatedAttempt, true),
@@ -1476,6 +1650,7 @@ export async function studentExperienceRemediationGenerateController(
       newData: item,
     });
   }
+  await studentExperienceReadinessSnapshotCapture(courseId, context);
 
   return {
     plan: remediationPlanPayload(plan),
@@ -1530,9 +1705,76 @@ export async function studentExperienceStudyPlanUpdateController(
 
   if (item.status === 'complete') {
     await studentExperienceTouchStreak(courseId, currentUser.id, context);
+    await studentExperienceReadinessSnapshotCapture(courseId, context);
   }
 
   return { item };
+}
+
+export async function studentExperienceReadinessSnapshotCapture(
+  courseId: string,
+  context: AppContext,
+) {
+  const currentUser = requireCurrentUser(context);
+  const overview = await studentExperienceCourseOverviewPayload(
+    courseId,
+    context,
+  );
+  const capturedOn = startOfToday();
+  const now = new Date();
+  const { oldData, snapshot } = await prisma.$withRLS(
+    { organization: context.currentOrganization ?? undefined },
+    async (tx) => {
+      const existing = await tx.courseReadinessSnapshot.findUnique({
+        where: {
+          courseId_userId_capturedOn: {
+            courseId,
+            userId: currentUser.id,
+            capturedOn,
+          },
+        },
+      });
+      const saved = await tx.courseReadinessSnapshot.upsert({
+        where: {
+          courseId_userId_capturedOn: {
+            courseId,
+            userId: currentUser.id,
+            capturedOn,
+          },
+        },
+        create: {
+          courseId,
+          userId: currentUser.id,
+          score: overview.readiness.score,
+          insufficientData: overview.readiness.insufficientData,
+          signals: overview.readiness
+            .signals as unknown as Prisma.InputJsonValue,
+          capturedOn,
+          capturedAt: now,
+        },
+        update: {
+          score: overview.readiness.score,
+          insufficientData: overview.readiness.insufficientData,
+          signals: overview.readiness
+            .signals as unknown as Prisma.InputJsonValue,
+          capturedAt: now,
+        },
+      });
+
+      return { oldData: existing, snapshot: saved };
+    },
+  );
+
+  await auditLogCreate({
+    entityId: snapshot.id,
+    entityName: 'CourseReadinessSnapshot',
+    operation: oldData ? auditLogOperations.update : auditLogOperations.create,
+    context,
+    oldData,
+    newData: snapshot,
+  });
+
+  return snapshot;
 }
 
 export async function studentExperienceStudyPlanDeleteController(
@@ -1791,6 +2033,263 @@ function coursePayload(course: StudentCourse) {
     accessType: course.accessType,
     priceCents: course.priceCents,
     currency: course.currency,
+  };
+}
+
+type StudentExperienceCourseOverviewPayload = Awaited<
+  ReturnType<typeof studentExperienceCourseOverviewPayload>
+>;
+
+type MasteryMapCourseRecord = {
+  id: string;
+  title: string;
+  accessType: string;
+  certificateEnabled: boolean;
+  modules: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    orderIndex: number;
+    lessons: Array<{ id: string; title: string; orderIndex: number }>;
+  }>;
+  lessons: Array<{
+    id: string;
+    title: string;
+    moduleId: string | null;
+    orderIndex: number;
+  }>;
+};
+
+type MasteryMapCertificateRow = {
+  id: string;
+  courseId: string;
+  issuedAt: Date;
+  revokedAt: Date | null;
+  certificateNumber: string;
+  verificationCode: string;
+};
+
+function masteryMapReadinessTrend(
+  snapshots: Array<{ score: number; capturedOn: Date }>,
+  currentScores: number[],
+) {
+  const dailyScores = new Map<string, number[]>();
+
+  for (const snapshot of snapshots) {
+    const key = toDateInputValue(snapshot.capturedOn);
+    dailyScores.set(key, [...(dailyScores.get(key) || []), snapshot.score]);
+  }
+
+  if (currentScores.length) {
+    dailyScores.set(toDateInputValue(startOfToday()), currentScores);
+  }
+
+  const points = Array.from(dailyScores.entries())
+    .map(([date, scores]) => ({
+      date,
+      score: average(scores) || 0,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const first = points[0]?.score ?? 0;
+  const last = points[points.length - 1]?.score ?? first;
+  const delta = points.length > 1 ? last - first : 0;
+  const direction =
+    points.length < 2
+      ? 'none'
+      : delta > 2
+        ? 'up'
+        : delta < -2
+          ? 'down'
+          : 'flat';
+
+  return { points, direction, delta };
+}
+
+function masteryMapWeakSkills(
+  courseOverviews: StudentExperienceCourseOverviewPayload[],
+) {
+  return courseOverviews
+    .flatMap((overview) =>
+      overview.learningOutcomes.mastery.domains.map((domain) => ({
+        courseId: overview.course.id,
+        courseTitle: overview.course.title,
+        domain: domain.domain,
+        scorePercent: domain.scorePercent,
+        confidence: domain.confidence,
+        evidenceCount: domain.evidenceCount,
+        recommendedAction: domain.recommendedAction,
+      })),
+    )
+    .filter(
+      (skill) =>
+        skill.scorePercent < 70 || skill.recommendedAction !== 'maintain',
+    )
+    .sort((a, b) => {
+      if (a.scorePercent !== b.scorePercent) {
+        return a.scorePercent - b.scorePercent;
+      }
+
+      return a.evidenceCount - b.evidenceCount;
+    })
+    .slice(0, 8);
+}
+
+function masteryMapModules(
+  courses: MasteryMapCourseRecord[],
+  courseOverviews: StudentExperienceCourseOverviewPayload[],
+) {
+  const overviewByCourseId = new Map(
+    courseOverviews.map((overview) => [overview.course.id, overview]),
+  );
+  const items = courses.flatMap((course) => {
+    const overview = overviewByCourseId.get(course.id);
+    const completedLessonIds = new Set(overview?.progress.completedLessonIds);
+    const modules = course.modules.map((module) => ({
+      id: module.id,
+      title: module.title,
+      description: module.description,
+      orderIndex: module.orderIndex,
+      lessons: module.lessons,
+    }));
+    const ungroupedLessons = course.lessons.filter(
+      (lesson) => !lesson.moduleId,
+    );
+
+    if (ungroupedLessons.length) {
+      modules.push({
+        id: `${course.id}:ungrouped`,
+        title: course.title,
+        description: null,
+        orderIndex: Number.MAX_SAFE_INTEGER,
+        lessons: ungroupedLessons,
+      });
+    }
+
+    let previousModuleComplete = true;
+    let currentModuleAssigned = false;
+
+    return modules
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((module) => {
+        const totalLessons = module.lessons.length;
+        const completedLessons = module.lessons.filter((lesson) =>
+          completedLessonIds.has(lesson.id),
+        ).length;
+        const percent = totalLessons
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0;
+        const isComplete =
+          totalLessons > 0 && completedLessons === totalLessons;
+        const hasProgress = completedLessons > 0;
+        const unlocked = previousModuleComplete || hasProgress;
+        const status = isComplete
+          ? 'complete'
+          : !unlocked
+            ? 'locked'
+            : !currentModuleAssigned
+              ? 'current'
+              : 'unlocked';
+
+        if (status === 'current') {
+          currentModuleAssigned = true;
+        }
+        if (totalLessons > 0) {
+          previousModuleComplete = isComplete;
+        }
+
+        return {
+          id: module.id,
+          courseId: course.id,
+          courseTitle: course.title,
+          title: module.title,
+          description: module.description,
+          completedLessons,
+          totalLessons,
+          percent,
+          status,
+        };
+      });
+  });
+
+  return {
+    unlockedCount: items.filter((item) => item.status !== 'locked').length,
+    totalCount: items.length,
+    items: items.slice(0, 20),
+  };
+}
+
+function masteryMapCertificates(input: {
+  courses: StudentExperienceCourseOverviewPayload[];
+  courseById: Map<string, MasteryMapCourseRecord>;
+  certificates: MasteryMapCertificateRow[];
+}) {
+  const certificateByCourseId = new Map(
+    input.certificates.map((certificate) => [
+      certificate.courseId,
+      certificate,
+    ]),
+  );
+  const items = input.courses.map((overview) => {
+    const course = input.courseById.get(overview.course.id);
+    const certificate = certificateByCourseId.get(overview.course.id);
+    const enabled = Boolean(course?.certificateEnabled);
+    const status = !enabled
+      ? 'unavailable'
+      : certificate?.revokedAt
+        ? 'revoked'
+        : certificate
+          ? 'earned'
+          : overview.progress.completedLessons > 0
+            ? 'inProgress'
+            : 'locked';
+
+    return {
+      courseId: overview.course.id,
+      courseTitle: overview.course.title,
+      enabled,
+      status,
+      percent: overview.progress.percent,
+      completedLessons: overview.progress.completedLessons,
+      totalLessons: overview.progress.totalLessons,
+      certificate: certificate
+        ? {
+            id: certificate.id,
+            issuedAt: certificate.issuedAt,
+            revokedAt: certificate.revokedAt,
+            certificateNumber: certificate.certificateNumber,
+            verificationCode: certificate.verificationCode,
+          }
+        : null,
+    };
+  });
+
+  return {
+    earnedCount: items.filter((item) => item.status === 'earned').length,
+    availableCount: items.filter((item) => item.enabled).length,
+    items,
+  };
+}
+
+function masteryMapStreaks(
+  courseOverviews: StudentExperienceCourseOverviewPayload[],
+) {
+  const courses = courseOverviews.map((overview) => ({
+    courseId: overview.course.id,
+    courseTitle: overview.course.title,
+    currentStreak: overview.learningOutcomes.streak.currentStreak,
+    longestStreak: overview.learningOutcomes.streak.longestStreak,
+    lastActivityDate: overview.learningOutcomes.streak.lastActivityDate,
+  }));
+
+  return {
+    currentStreak: courses.length
+      ? Math.max(...courses.map((course) => course.currentStreak))
+      : 0,
+    longestStreak: courses.length
+      ? Math.max(...courses.map((course) => course.longestStreak))
+      : 0,
+    activeCourses: courses.filter((course) => course.currentStreak > 0).length,
+    courses,
   };
 }
 

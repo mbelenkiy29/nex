@@ -42,6 +42,9 @@ const dictionary = {
     endDate: 'Fecha de fin',
     close: 'Cerrar',
     loading: 'Cargando',
+    backHome: 'Volver al inicio',
+    sidebar: 'Barra lateral',
+    sidebarDescription: 'Muestra la barra lateral móvil.',
     toggleSidebar: 'Mostrar/ocultar barra lateral',
     breadcrumb: 'ruta de navegación',
     more: 'Más',
@@ -302,23 +305,23 @@ const dictionary = {
       applicationPending:
         'Tu solicitud de creador está en revisión. Puedes actualizar los detalles mientras el equipo la evalúa.',
       applicationApproved:
-        'Tu perfil de creador está aprobado. La publicación de cursos controlada por administradores sigue activa en la Fase 1.',
+        'Tu perfil de creador está aprobado. Puedes crear cursos y enviarlos a revisión de NexExam.',
       applicationRejected:
         'Tu solicitud necesita cambios antes de aprobarse. Revisa las notas del administrador y vuelve a enviarla.',
       startApplication: 'Iniciar solicitud',
       editApplication: 'Actualizar solicitud',
       workspaceTitle: 'Espacio de cursos',
       workspaceBody:
-        'La creación de cursos para creadores está separada del aprendizaje de estudiantes. La publicación autoservicio se abrirá cuando el flujo de verificación sea estable.',
-      reviewTitle: 'Revisión administrativa',
+        'Usa el constructor de cursos para organizar currículo, lecciones, cuestionarios, exámenes de práctica y resultados antes de enviarlos a revisión.',
+      reviewTitle: 'Revisión de publicación',
       reviewBody:
-        'Los superadministradores de NexExam revisan solicitudes, calidad de cursos, inscripciones y pagos desde el panel de administración.',
-      deferredTitle: 'Límite de Fase 1',
+        'Los administradores de NexExam aprueban cursos enviados, gestionan la publicación en el catálogo y revisan inscripciones, pagos y ajustes de ingresos.',
+      deferredTitle: 'Ajustes de ingresos',
       deferredBody:
-        'La creación por arrastrar y soltar y los repartos automáticos de ingresos quedan diferidos mientras se publica el ciclo de inscripción.',
-      metricsTitle: 'Creator metrics',
+        'La participación en ingresos y los detalles de pago se configuran desde las herramientas administrativas de cada curso.',
+      metricsTitle: 'Métricas del creador',
       metricsBody:
-        'Track enrollments, completion, AI usage, ratings, and earnings across your courses.',
+        'Haz seguimiento de inscripciones, finalización, calificaciones y actividad de ingresos en tus cursos.',
     },
     welcome: 'Te damos la bienvenida, {0}',
     heroTitle: 'Continúa tu aprendizaje con IA',
@@ -398,6 +401,7 @@ const dictionary = {
       myCourses: 'Mis cursos',
       practice: 'Práctica',
       notesStudyPlan: 'Notas / Plan de estudio',
+      masteryMap: 'Mapa de dominio',
       aiTutor: 'AI Tutor',
       courseOverview: 'Resumen del curso',
     },
@@ -434,6 +438,26 @@ const dictionary = {
     homework: 'Tareas',
     notes: 'Notes',
     studyPlan: 'Plan de estudio',
+    nextUnlock: {
+      badge: 'Próximo desbloqueo',
+      activeBadge: 'Premium activo',
+      title: 'Desbloquea tu ciclo de aprendizaje con IA',
+      activeTitle: 'Tu ciclo de aprendizaje premium está listo',
+      body: 'Premium convierte tus cursos, práctica, notas y tutor IA en una ruta guiada.',
+      activeBody:
+        'Usa las herramientas IA desbloqueadas para pasar del avance de lecciones a una preparación medible.',
+      aiPlanTitle: 'Plan de estudio con IA',
+      aiPlanBody:
+        'Convierte áreas débiles y fechas límite en tareas diarias enfocadas.',
+      practiceTitle: 'Práctica premium',
+      practiceBody: 'Muestra más preguntas dirigidas y repaso estilo examen.',
+      certificateTitle: 'Ruta al certificado',
+      certificateBody:
+        'Sigue el trabajo que te acerca a una finalización verificada.',
+      subscriptionCta: 'Ver planes premium',
+      coursesCta: 'Explorar cursos',
+      aiTutorCta: 'Abrir tutor IA',
+    },
     mobile: {
       savedOffline:
         'Guardado sin conexión. Se sincronizará cuando vuelvas a estar en línea.',
@@ -573,6 +597,111 @@ const dictionary = {
         bestScore: 'Mejor puntaje',
         lastScore: 'Ultimo puntaje',
         openPlayer: 'Abrir simulacros',
+      },
+    },
+    masteryMap: {
+      badge: 'Mapa de dominio',
+      title: 'Protege tu progreso',
+      body: 'Sigue la preparacion, habilidades debiles, desbloqueos, rachas y certificados que muestran que tu aprendizaje crece.',
+      emptyBody:
+        'Inscribete en un curso para crear tu tendencia de preparacion, mapa de habilidades, desbloqueos, racha y ruta al certificado.',
+      browseCourses: 'Explorar cursos',
+      readinessScore: 'Puntaje de preparacion',
+      points: 'puntos',
+      openCta: 'Abrir mapa de dominio',
+      nextMilestone: 'Proximo hito de preparacion',
+      milestoneTarget: '{0} puntos de preparacion',
+      milestoneProgress: '{0}% de este hito protegido',
+      unlockedModulesValue: '{0} / {1}',
+      certificatesValue: '{0} / {1}',
+      streakValue: '{0} dia(s)',
+      milestonesTitle: 'Hitos de preparacion para examen',
+      milestonesBody:
+        'Cada hito hace visible el progreso antes del certificado final.',
+      milestoneLabels: {
+        baseline: 'Linea base mapeada',
+        momentum: 'Impulso construido',
+        ready: 'Listo para examen',
+        examReady: 'Preparacion final',
+        mastered: 'Dominio protegido',
+      },
+      metrics: {
+        weakSkills: 'Habilidades debiles',
+        weakSkillsHelper: 'Habilidades que pueden frenar la preparacion.',
+        unlockedModules: 'Modulos desbloqueados',
+        unlockedModulesHelper: 'Areas del curso abiertas por progreso.',
+        certificates: 'Certificados',
+        certificatesHelper: 'Rutas de prueba ganadas o en progreso.',
+        streak: 'Racha de estudio',
+        streakHelper: 'Mejor racha: {0} dia(s)',
+      },
+      trend: {
+        title: 'Tendencia de preparacion',
+        body: 'Capturas diarias muestran si el estudio protege o acelera el progreso.',
+        chartLabel: 'Grafico de tendencia de preparacion',
+        delta: '+{0}',
+        direction: {
+          up: 'Subiendo',
+          down: 'Necesita atencion',
+          flat: 'Estable',
+          none: 'Tendencia nueva',
+        },
+      },
+      premium: {
+        title: 'La economia completa de progreso se desbloquea con premium',
+        body: 'Premium conecta el mapa entre cursos, los siguientes pasos con IA y la practica profunda al progreso que estas construyendo.',
+        cta: 'Ver planes premium',
+      },
+      weakSkills: {
+        title: 'Habilidades debiles a proteger',
+        body: 'Enfocate en las habilidades que pueden frenar la preparacion antes de sumar material nuevo.',
+        empty:
+          'Aun no se detectan habilidades debiles. Completa practica o diagnosticos para revelarlas.',
+        practiceCta: 'Practicar',
+      },
+      modules: {
+        title: 'Modulos desbloqueados',
+        body: 'Ve que secciones estan abiertas, actuales, completas o esperando progreso previo.',
+        empty: 'Aun no hay modulos disponibles.',
+        lessons: '{0} de {1} lecciones',
+        status: {
+          complete: 'Completo',
+          current: 'Actual',
+          unlocked: 'Desbloqueado',
+          locked: 'Bloqueado',
+        },
+      },
+      streaks: {
+        title: 'Rachas que protegen progreso',
+        body: 'Las rachas muestran donde la actividad reciente mantiene el impulso.',
+        dayCount: '{0} dia(s)',
+        lastActivity: 'Ultima actividad {0}',
+        noActivity: 'Sin actividad aun',
+      },
+      certificates: {
+        title: 'Rutas de certificado',
+        body: 'Los certificados convierten el aprendizaje completado en prueba que los usuarios conservan.',
+        lessons: '{0} de {1} lecciones',
+        view: 'Ver',
+        status: {
+          earned: 'Ganado',
+          inProgress: 'En progreso',
+          locked: 'Bloqueado',
+          unavailable: 'No disponible',
+          revoked: 'Revocado',
+        },
+      },
+      preview: {
+        badge: 'Economia de progreso',
+        title: 'Mapa de dominio',
+        body: 'Muestra el progreso que los usuarios quieren proteger antes de pagar por mas aceleracion.',
+        readiness: 'Preparacion',
+        streak: 'Racha',
+        weakestSkill: 'Habilidad mas debil',
+        noWeakSkill: 'Sin habilidad debil aun',
+        nextMilestone: 'Proximo hito',
+        noMilestone: 'Sin hito aun',
+        cta: 'Abrir mapa',
       },
     },
     noCoursesTitle: 'Inscríbete en tu primer curso',
@@ -1178,6 +1307,18 @@ const dictionary = {
       confirmTitle: '¿Eliminar usuario?',
     },
 
+    disable: {
+      success: 'Usuario deshabilitado exitosamente',
+      confirmTitle: '¿Deshabilitar usuario?',
+      label: 'Deshabilitar',
+    },
+
+    restore: {
+      success: 'Usuario restaurado exitosamente',
+      confirmTitle: '¿Restaurar usuario?',
+      label: 'Restaurar',
+    },
+
     fields: {
       avatars: 'Avatar',
       fullName: 'Nombre completo',
@@ -1316,9 +1457,72 @@ const dictionary = {
     unknown: 'Desconocido',
     noPlansAvailable: 'No hay planes de suscripción disponibles.',
     current: 'Actual',
+    activation: {
+      title: 'Premium desbloqueado',
+      unlockingTitle: 'Desbloqueando tu plan premium',
+      unlockingBody:
+        'El pago está completo. NexExam está abriendo tus herramientas premium ahora.',
+      retryUnlock: 'Comprobar de nuevo',
+      unlockedPlan: 'Tu plan desbloqueado',
+      titleWithPlan: '{0} está activo',
+      body: 'Las herramientas de estudio premium ya están disponibles en tu espacio de aprendizaje.',
+      exploreCourses: 'Explorar cursos',
+      aiCoachTitle: 'Coach de IA',
+      aiCoachBody:
+        'Genera planes de estudio y recibe ayuda guiada cuando te atasques.',
+      readinessTitle: 'Información de preparación',
+      readinessBody:
+        'Sigue el progreso, las áreas débiles y las próximas acciones en un solo lugar.',
+      practiceTitle: 'Práctica más profunda',
+      practiceBody:
+        'Usa flujos de práctica premium para convertir puntos débiles en repaso enfocado.',
+      openTutor: 'Abrir tutor IA',
+      openPractice: 'Empezar práctica',
+      openMasteryMap: 'Abrir mapa de dominio',
+      openDashboard: 'Ir a mi aprendizaje',
+    },
     mobileUnavailableTitle: 'Suscripciones no disponibles',
     mobileUnavailable:
       'Las suscripciones no están disponibles en móvil. Por favor visite nuestro sitio web en un navegador de escritorio para gestionar su suscripción.',
+    value: {
+      eyebrow: 'Sistema de aprendizaje premium',
+      title: 'Suscríbete cuando quieras que NexExam guíe todo el recorrido.',
+      body: 'Compra un curso para un objetivo concreto o desbloquea la capa premium con planificación IA, progreso entre cursos y práctica más profunda.',
+      courseTitle: 'Comprar un curso',
+      courseBody:
+        'Ideal para una certificación, clase u objetivo guiado por un creador.',
+      subscriptionTitle: 'Suscribirse a premium',
+      subscriptionBody:
+        'Ideal si quieres coaching IA continuo, seguimiento de preparación y herramientas premium en varios cursos.',
+      includedTitle: 'Premium desbloquea',
+      included: [
+        'Coach de estudio IA y planes adaptativos',
+        'Información de preparación entre cursos',
+        'Práctica premium y repaso de áreas débiles',
+        'Contexto prioritario del tutor IA e historial de estudio guardado',
+      ],
+      comparisonTitle: 'Elige la ruta que coincide con tu objetivo',
+      comparisonRows: [
+        {
+          label: 'Valor principal',
+          course: 'Desbloquear un curso experto',
+          subscription:
+            'Desbloquear el sistema de aprendizaje alrededor de tus cursos',
+        },
+        {
+          label: 'Ideal para',
+          course: 'Un examen o habilidad específica',
+          subscription: 'Preparación continua y estudio guiado',
+        },
+        {
+          label: 'Sensación premium',
+          course: 'Currículo completo, ruta al certificado y tareas',
+          subscription:
+            'Coach IA, plan adaptativo, preparación y práctica más profunda',
+        },
+      ],
+      cardUnlockLabel: 'Desbloqueos incluidos',
+    },
 
     intervals: {
       day: 'Diario',
@@ -1326,6 +1530,20 @@ const dictionary = {
       month: 'Mensual',
       year: 'Anual',
     },
+    intervalUnits: {
+      day: 'dia',
+      week: 'semana',
+      month: 'mes',
+      year: 'ano',
+    },
+    intervalUnitsPlural: {
+      day: 'dias',
+      week: 'semanas',
+      month: 'meses',
+      year: 'anos',
+    },
+    priceInterval: '/{0}',
+    intervalCountLabel: '{0} {1}',
 
     errors: {
       disabled: 'Las suscripciones están deshabilitadas en esta plataforma',
@@ -1340,6 +1558,168 @@ const dictionary = {
         'Generar URL del portal de cliente Stripe donde los usuarios pueden gestionar su suscripción, actualizar métodos de pago, ver facturas y cancelar su suscripción. Requiere una suscripción activa.',
       plans:
         'Recuperar todos los planes de suscripción disponibles desde Stripe. Devuelve una lista de planes con información de precios, características, intervalos de facturación y estado de disponibilidad. Incluye planes activos y archivados.',
+    },
+  },
+  checkoutTrust: {
+    badge: 'Pago seguro con Stripe',
+    finalTotal: 'Total final mostrado antes de pagar: {0}',
+    subscriptionRenewal:
+      'Se renueva cada {0}. Puedes administrar o cancelar antes de la próxima renovación.',
+    courseOneTime:
+      'Compra única del curso. El acceso se desbloquea cuando el pago se confirma.',
+    courseBundleOneTime:
+      'Compra única del paquete. Los cursos incluidos se desbloquean cuando el pago se confirma.',
+    aiCreditOneTime:
+      'Compra única de créditos de IA. Los créditos se agregan cuando el pago se confirma.',
+    courseRefund: 'La política de reembolso se revisa antes del pago.',
+    oneOnOneOneTime:
+      'Pago único de reserva. Tu sesión se confirma cuando el pago se confirma.',
+    oneOnOneHold:
+      'Tu horario queda reservado por 30 minutos mientras completas el pago.',
+    couponReview:
+      'Cupón ingresado. Stripe mostrará el total con descuento antes de pagar.',
+    paymentMethods:
+      'Las tarjetas, billeteras y métodos de pago locales aparecen cuando están disponibles para tu ubicación.',
+    noSurpriseFees:
+      'Sin cargos sorpresa de NexExam. Los impuestos o cargos requeridos se muestran antes del pago.',
+    secureAfterPayment: 'Pagado de forma segura con Stripe',
+    checkoutCancelled:
+      'El pago se canceló. No se completó ningún pago y no cambió ningún acceso.',
+    sessionPaymentSuccess: 'Pago completo. Tu sesión se está confirmando.',
+    stripeCustomText: {
+      subscriptionSubmit:
+        'Pago seguro de suscripción con Stripe. Los términos de renovación y el total final se muestran antes de suscribirte.',
+      courseSubmit:
+        'Pago único seguro con Stripe. El total final se muestra antes de pagar.',
+      courseBundleSubmit:
+        'Pago seguro de paquete con Stripe. El total final se muestra antes de pagar.',
+      aiCreditPackSubmit:
+        'Pago seguro de créditos de IA con Stripe. El total final se muestra antes de pagar.',
+      oneOnOneSessionSubmit:
+        'Pago seguro de reserva con Stripe. Tu horario queda reservado mientras se completa el pago.',
+      afterSubmit:
+        'NexExam desbloquea el acceso solo después de que Stripe confirma el pago.',
+    },
+  },
+  pricing: {
+    recommended: 'Recomendado',
+    savingsBadge: 'Ahorra {0}%',
+    oneTime: 'Pago único',
+    perMonth: 'por mes',
+    perYear: 'por año',
+    choosePackage: 'Elegir paquete',
+    buyCredits: 'Comprar créditos',
+    buyBundle: 'Comprar paquete',
+    addAiCredits: 'Agregar créditos de IA',
+    aiTokensIncluded: '{0} tokens de IA incluidos',
+    aiCreditShelfTitle: 'Paquetes de créditos de IA',
+    aiCreditShelfBody:
+      'Para un uso más intensivo del tutor de IA y planes de estudio, agrega capacidad de tokens sin cambiar tu plan.',
+    aiCreditPurchaseSuccess:
+      'Créditos de IA comprados. Tu capacidad adicional de IA ya está disponible.',
+    bundlePurchaseSuccess:
+      'Paquete comprado. Los cursos incluidos se están desbloqueando.',
+    coursePurchaseDescription:
+      'Un pago desbloquea este curso, práctica, prompts del tutor de IA y ruta de certificado.',
+    lifetimeAccessName: 'Acceso de por vida: {0}',
+    lifetimeAccessDescription:
+      'Acceso de por vida a un curso seleccionado sin renovación.',
+    benefits: {
+      coursePurchase: [
+        'Lecciones del curso y prácticas',
+        'Prompts iniciales del tutor de IA',
+        'Ruta de certificado',
+      ],
+      lifetime: [
+        'Acceso de por vida para este curso seleccionado',
+        'Actualizaciones futuras del curso incluidas',
+        'Sin fecha de renovación',
+      ],
+      bundle: [
+        'Todos los cursos incluidos',
+        'Un pago para toda la ruta',
+        'Certificados para cursos elegibles',
+      ],
+      aiCredits: [
+        'Capacidad adicional para el tutor de IA',
+        'Funciona con planes de estudio y explicaciones',
+        'Los créditos no usados permanecen en tu cuenta',
+      ],
+    },
+  },
+  contextualPaywall: {
+    badges: {
+      personalized_onboarding_result: 'Plan personal listo',
+      diagnostic_result: 'Diagnóstico completo',
+      preview_lesson_complete: 'Vista previa completa',
+      ai_full_plan: 'Plan completo de IA',
+      locked_certificate: 'Ruta de certificado',
+      locked_practice_exam: 'Examen de práctica',
+    },
+    titles: {
+      personalized_onboarding_result:
+        'Convierte tu objetivo en una ruta desbloqueada',
+      diagnostic_result: 'Convierte este resultado en un plan enfocado',
+      preview_lesson_complete: 'Sigue aprendiendo con el curso completo',
+      ai_full_plan: 'Desbloquea el plan de estudio completo de IA',
+      locked_certificate: 'Acelera esta ruta de certificado',
+      locked_practice_exam: 'Desbloquea preparación de examen más profunda',
+    },
+    bodies: {
+      personalized_onboarding_result:
+        'Tu plan muestra el ritmo inicial. El acceso pagado desbloquea currículo completo, guía adaptativa, práctica profunda y ruta de certificado ligada a ese objetivo.',
+      diagnostic_result:
+        'Premium convierte tu puntaje diagnóstico en prioridades de habilidades débiles, enfoque de práctica y checkpoints de preparación.',
+      preview_lesson_complete:
+        'La vista previa mostró el punto de partida. Desbloquea las lecciones restantes, práctica, prompts del tutor y ruta de certificado.',
+      ai_full_plan:
+        'Un plan completo usa tu preparación, habilidades débiles, progreso de lecciones e historial de práctica para guiar los próximos pasos.',
+      locked_certificate:
+        'Premium mantiene esta ruta de certificado conectada con preparación, recordatorios y guía de IA mientras el progreso desbloquea el certificado.',
+      locked_practice_exam:
+        'Premium agrega simulación de examen, señales de preparación y seguimiento de IA para que la práctica sea una ruta medible.',
+    },
+    bullets: {
+      personalized_onboarding_result: [
+        'Hitos conectados con tu calendario',
+        'Cursos recomendados según tu objetivo',
+        'Guía de IA y práctica profunda después del desbloqueo',
+      ],
+      diagnostic_result: [
+        'Habilidades débiles priorizadas desde tus respuestas',
+        'Práctica recomendada ligada a preparación',
+        'Coaching de IA para la próxima sesión de estudio',
+      ],
+      preview_lesson_complete: [
+        'Currículo completo y lecciones bloqueadas',
+        'Exámenes de práctica y actividades de tarea',
+        'Contexto del tutor de IA y ruta de certificado',
+      ],
+      ai_full_plan: [
+        'Tareas de estudio creadas desde el progreso del curso',
+        'Áreas débiles e historial de práctica incluidos',
+        'Razonamiento transparente de IA y controles de privacidad',
+      ],
+      locked_certificate: [
+        'Hitos del certificado siempre visibles',
+        'Preparación y rachas conectadas al progreso',
+        'Guía de IA para saber qué completar después',
+      ],
+      locked_practice_exam: [
+        'Flujo realista de simulación de examen',
+        'Señales de preparación después de intentos',
+        'Seguimiento de IA enfocado en áreas débiles',
+      ],
+    },
+    cta: {
+      subscription: 'Desbloquear Premium',
+      course: 'Desbloquear curso',
+      aiCredits: 'Agregar créditos de IA',
+      viewPlans: 'Ver planes',
+      checkoutPending: 'Preparando checkout...',
+    },
+    errors: {
+      checkoutUnavailable: 'El checkout no está disponible para este paquete.',
     },
   },
   exam: {
@@ -1438,15 +1818,8 @@ const dictionary = {
     },
 
     hints: {
-      name: 'Exam name (e.g., FINRA SIE)',
-      code: 'Short exam code (e.g., SIE, SERIES7)',
-      description: '',
-      iconUrl: '',
-      isActive: '',
-      chapters: '',
-      concepts: '',
-      examTypes: '',
-      documentUploads: '',
+      name: 'Nombre del examen (p. ej., FINRA SIE)',
+      code: 'Código corto del examen (p. ej., SIE, SERIES7)',
     },
 
     mcpDescription: {
@@ -1546,7 +1919,7 @@ const dictionary = {
       title: 'Title',
       chapterNumber: 'Chapter Number',
       description: 'Description',
-      aiTutorPrompt: 'AI Tutor Prompt',
+      aiTutorPrompt: 'Prompt de AI Tutor',
       xpReward: 'XP Reward',
       orderIndex: 'Order Index',
       workflowStatus: 'Workflow Status',
@@ -1567,21 +1940,10 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
-      chapterNumber: '',
-      description: '',
-      aiTutorPrompt: 'System prompt for the chapter AI tutor',
-      xpReward: '',
-      orderIndex: '',
-      workflowStatus: '',
-      isPublished: '',
-      version: '',
-      objectives: 'Learning objectives for this chapter',
-      exam: '',
-      lessons: '',
-      practiceQuestions: '',
-      studyNotes: '',
+      aiTutorPrompt: 'Prompt del sistema para el tutor de IA del capítulo',
+      objectives: 'Objetivos de aprendizaje de este capítulo',
     },
+
     enumerators: {
       workflowStatus: {
         draft: 'Draft',
@@ -1704,16 +2066,9 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
-      lessonNumber: '',
-      content: 'Lesson body (Markdown supported)',
-      estimatedMinutes: '',
-      xpReward: '',
-      workflowStatus: '',
-      isPublished: '',
-      chapter: '',
-      studyNotes: '',
+      content: 'Contenido de la lección (Markdown compatible)',
     },
+
     enumerators: {
       workflowStatus: {
         draft: 'Draft',
@@ -1822,7 +2177,7 @@ const dictionary = {
 
     fields: {
       questionText: 'Question Text',
-      correctAnswerIndex: 'Correct Answer Index',
+      correctAnswerIndex: 'Índice de la respuesta correcta',
       answerOptions: 'Answer Options',
       explanation: 'Explanation',
       difficulty: 'Difficulty',
@@ -1841,18 +2196,12 @@ const dictionary = {
     },
 
     hints: {
-      questionText: '',
-      correctAnswerIndex: 'Zero-based index of the correct option',
+      correctAnswerIndex: 'Índice basado en cero de la opción correcta',
       answerOptions:
-        'Enter one option per line. Student practice uses only questions with answer options.',
-      explanation: 'Why the correct answer is correct',
-      difficulty: '',
-      category: '',
-      isActive: '',
-      tags: '',
-      chapter: '',
-      concepts: '',
+        'Escribe una opción por línea. La práctica del estudiante solo usa preguntas con opciones de respuesta.',
+      explanation: 'Por qué la respuesta correcta es correcta',
     },
+
     enumerators: {
       difficulty: {
         easy: 'Easy',
@@ -1978,32 +2327,8 @@ const dictionary = {
     },
 
     hints: {
-      conceptName: '',
-      conceptCode: 'Stable identifier (slug-like)',
-      conceptDescription: '',
-      explanation: 'Full explanation (Markdown)',
-      examDomain: '',
-      difficulty: '',
-      examWeight: '',
-      typicalMistakes: '',
-      examTips: '',
-      isActive: '',
-      exam: '',
-      practiceQuestions: '',
-    },
-    enumerators: {
-      difficulty: {
-        beginner: 'Beginner',
-        intermediate: 'Intermediate',
-        advanced: 'Advanced',
-        expert: 'Expert',
-      },
-      examWeight: {
-        low: 'Low',
-        medium: 'Medium',
-        high: 'High',
-        critical: 'Critical',
-      },
+      conceptCode: 'Identificador estable (tipo slug)',
+      explanation: 'Explicación completa (Markdown)',
     },
 
     mcpDescription: {
@@ -2105,11 +2430,11 @@ const dictionary = {
       description: 'Description',
       type: 'Type',
       questionCount: 'Question Count',
-      timeLimitMinutes: 'Time Limit (Minutes)',
+      timeLimitMinutes: 'Límite de tiempo (minutos)',
       passingScore: 'Passing Score',
       maxAttempts: 'Max Attempts',
       shuffleQuestions: 'Shuffle Questions',
-      showAnswersImmediately: 'Show Answers Immediately',
+      showAnswersImmediately: 'Mostrar respuestas de inmediato',
       isActive: 'Active',
       course: 'Course',
       exam: 'Exam',
@@ -2123,19 +2448,10 @@ const dictionary = {
     },
 
     hints: {
-      name: 'e.g., Full Mock, Quick Quiz, Domain Drill',
-      description: '',
-      type: '',
-      questionCount: '',
-      timeLimitMinutes: '',
-      passingScore: 'Percentage required to pass',
-      maxAttempts: '',
-      shuffleQuestions: '',
-      showAnswersImmediately: '',
-      isActive: '',
-      exam: '',
-      examInstances: '',
+      name: 'p. ej., Simulacro completo, Quiz rápido, Práctica por dominio',
+      passingScore: 'Porcentaje requerido para aprobar',
     },
+
     enumerators: {
       type: {
         mock: 'Mock',
@@ -2246,7 +2562,7 @@ const dictionary = {
       passed: 'Passed',
       startedAt: 'Started At',
       completedAt: 'Completed At',
-      timeSpentSeconds: 'Time Spent (Seconds)',
+      timeSpentSeconds: 'Tiempo usado (segundos)',
       course: 'Course',
       examType: 'Exam Type',
       student: 'Member (User)',
@@ -2256,26 +2572,6 @@ const dictionary = {
       createdAt: 'Creado el',
       updatedAt: 'Actualizado el',
       archivedAt: 'Archivado el',
-    },
-
-    hints: {
-      status: '',
-      score: '',
-      passed: '',
-      startedAt: '',
-      completedAt: '',
-      timeSpentSeconds: '',
-      examType: '',
-      student: '',
-    },
-    enumerators: {
-      status: {
-        started: 'Started',
-        in_progress: 'In Progress',
-        completed: 'Completed',
-        abandoned: 'Abandoned',
-        expired: 'Expired',
-      },
     },
 
     mcpDescription: {
@@ -2389,26 +2685,6 @@ const dictionary = {
       archivedAt: 'Archivado el',
     },
 
-    hints: {
-      title: '',
-      goalType: '',
-      targetValue: '',
-      currentValue: '',
-      xpReward: '',
-      goalDate: '',
-      completedAt: '',
-      owner: '',
-    },
-    enumerators: {
-      goalType: {
-        questions_answered: 'Questions Answered',
-        study_minutes: 'Study Minutes',
-        lessons_completed: 'Lessons Completed',
-        chapters_mastered: 'Chapters Mastered',
-        streak_day: 'Streak Day',
-      },
-    },
-
     mcpDescription: {
       list: 'Recuperar lista paginada de daily goals con opciones de filtrado avanzadas. Soporta filtrado por varios campos y entidades relacionadas. Devuelve detalles de daily goals incluyendo todas las relaciones y metadatos.',
       get: 'Recuperar información detallada sobre un daily goal específico por su ID único. Devuelve perfil completo del daily goal incluyendo todas las relaciones, adjuntos y metadatos de auditoría.',
@@ -2434,73 +2710,76 @@ const dictionary = {
     list: {
       menu: 'Study Notes',
       title: 'Study Notes',
-      noResults: 'No study notes found.',
+      noResults: 'No se encontraron notas de estudio.',
       empty:
-        "You haven't created any study notes yet. Get started by creating your first study note.",
+        'Aún no has creado notas de estudio. Comienza creando tu primera nota.',
     },
 
     importer: {
-      title: 'Import Study Notes',
-      menu: 'Import Study Notes',
+      title: 'Importar notas de estudio',
+      menu: 'Importar notas de estudio',
     },
 
     export: {
-      success: 'Study Notes successfully exported',
+      success: 'Notas de estudio exportadas correctamente',
     },
 
     new: {
-      menu: 'New Study Note',
-      title: 'New Study Note',
-      success: 'Study Note successfully created',
+      menu: 'Nueva nota de estudio',
+      title: 'Nueva nota de estudio',
+      success: 'Nota de estudio creada correctamente',
     },
 
     view: {
-      title: 'View Study Note',
+      title: 'Ver nota de estudio',
     },
 
     edit: {
-      menu: 'Edit Study Note',
-      title: 'Edit Study Note',
-      success: 'Study Note successfully updated',
+      menu: 'Editar nota de estudio',
+      title: 'Editar nota de estudio',
+      success: 'Nota de estudio actualizada correctamente',
     },
 
     restore: {
-      success: 'Study Note successfully restored',
-      confirmTitle: 'Restore Study Note?',
+      success: 'Nota de estudio restaurada correctamente',
+      confirmTitle: '¿Restaurar nota de estudio?',
     },
 
     restoreMany: {
-      success: 'Study Note(s) successfully restored',
-      noSelection: 'You must select at least one study note to restore.',
-      confirmTitle: 'Restore Study Note(s)?',
+      success: 'Notas de estudio restauradas correctamente',
+      noSelection:
+        'Debes seleccionar al menos una nota de estudio para restaurar.',
+      confirmTitle: '¿Restaurar notas de estudio?',
       confirmDescription:
-        'Are you sure you want to restore the {0} selected study note(s)?',
+        '¿Seguro que quieres restaurar las {0} notas de estudio seleccionadas?',
     },
 
     archiveMany: {
-      success: 'Study Note(s) successfully archived',
-      noSelection: 'You must select at least one study note to archive.',
-      confirmTitle: 'Archive Study Note(s)?',
+      success: 'Notas de estudio archivadas correctamente',
+      noSelection:
+        'Debes seleccionar al menos una nota de estudio para archivar.',
+      confirmTitle: '¿Archivar notas de estudio?',
       confirmDescription:
-        'Are you sure you want to archive the {0} selected study note(s)?',
+        '¿Seguro que quieres archivar las {0} notas de estudio seleccionadas?',
     },
 
     archive: {
-      success: 'Study Note successfully archived',
-      confirmTitle: 'Archive Study Note?',
+      success: 'Nota de estudio archivada correctamente',
+      confirmTitle: '¿Archivar nota de estudio?',
     },
 
     deleteMany: {
-      success: 'Study Note(s) successfully deleted',
-      noSelection: 'You must select at least one study note to delete.',
-      confirmTitle: 'Delete Study Note(s)?',
+      success: 'Notas de estudio eliminadas correctamente',
+      noSelection:
+        'Debes seleccionar al menos una nota de estudio para eliminar.',
+      confirmTitle: '¿Eliminar notas de estudio?',
       confirmDescription:
-        'Are you sure you want to delete the {0} selected study note(s)?',
+        '¿Seguro que quieres eliminar las {0} notas de estudio seleccionadas?',
     },
 
     delete: {
-      success: 'Study Note successfully deleted',
-      confirmTitle: 'Delete Study Note?',
+      success: 'Nota de estudio eliminada correctamente',
+      confirmTitle: '¿Eliminar nota de estudio?',
     },
 
     fields: {
@@ -2521,31 +2800,24 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
-      content: 'Note body (Markdown supported)',
-      isFavorite: '',
-      tags: '',
-      course: '',
-      chapter: '',
-      lesson: '',
-      author: '',
+      content: 'Cuerpo de la nota (Markdown compatible)',
     },
 
     mcpDescription: {
-      list: 'Retrieve a paginated list of study notes with advanced filtering options. Supports filtering by various fields and related entities. Returns study note details including all relationships and metadata.',
-      get: 'Retrieve detailed information about a specific study note by their unique ID. Returns complete study note profile including all relationships, attachments, and audit metadata.',
+      list: 'Recupera una lista paginada de notas de estudio con filtros avanzados. Admite filtros por campos y entidades relacionadas. Devuelve detalles de las notas, relaciones y metadatos.',
+      get: 'Recupera información detallada de una nota de estudio por su ID único, incluidas relaciones, adjuntos y metadatos de auditoría.',
       create:
-        'Create a new study note record with comprehensive details. Supports all defined fields including relationships, file attachments, and custom properties.',
+        'Crea una nueva nota de estudio con sus campos, relaciones, adjuntos y propiedades personalizadas.',
       update:
-        'Update an existing study note record with new information. Allows modification of all study note fields including relationships and attachments. Automatically tracks the update in audit logs.',
+        'Actualiza una nota de estudio existente y registra automáticamente el cambio en los registros de auditoría.',
       delete:
-        'Permanently delete one or more study notes from the system. This action is irreversible. Accepts an array of study note IDs and removes all associated data.',
+        'Elimina permanentemente una o más notas de estudio. Esta acción no se puede deshacer.',
       archive:
-        'Archive one or more study notes to hide them from default views while preserving their data. Archived study notes can be restored later. Useful for inactive or historical records.',
+        'Archiva una o más notas de estudio para ocultarlas de las vistas predeterminadas sin eliminar sus datos.',
       restore:
-        'Restore previously archived study notes back to active status. Makes the study notes visible in default views again.',
+        'Restaura notas de estudio archivadas para que vuelvan a aparecer en las vistas predeterminadas.',
       autocomplete:
-        'Search and retrieve study note suggestions for autocomplete inputs. Returns a simplified list of study notes matching the search query, optimized for selection dropdowns and autocomplete fields.',
+        'Busca sugerencias de notas de estudio para campos de autocompletado y selectores.',
     },
   },
   documentUpload: {
@@ -2647,15 +2919,9 @@ const dictionary = {
     },
 
     hints: {
-      originalFilename: '',
-      status: '',
-      pageCount: '',
-      wordCount: '',
-      processingError: '',
-      sourceFiles: 'Upload curriculum source documents (max 50MB each)',
-      exam: '',
-      uploadedBy: '',
+      sourceFiles: 'Sube documentos fuente del currículo (máx. 50 MB cada uno)',
     },
+
     enumerators: {
       status: {
         uploaded: 'Uploaded',
@@ -2825,15 +3091,15 @@ const dictionary = {
     list: {
       menu: 'Courses',
       title: 'Course Catalog',
-      noResults: 'No courses found.',
-      empty: 'Published courses will appear here when they are ready.',
+      noResults: 'No se encontraron cursos.',
+      empty: 'Los cursos publicados aparecerán aquí cuando estén listos.',
       sortLabel: 'Sort',
       sortTrending: 'Trending',
       sortTopRated: 'Top rated',
       sortNewest: 'Newest',
       sortMostPopular: 'Most popular',
-      sortPriceAsc: 'Price (low to high)',
-      sortPriceDesc: 'Price (high to low)',
+      sortPriceAsc: 'Precio (menor a mayor)',
+      sortPriceDesc: 'Precio (mayor a menor)',
       sortDurationAsc: 'Shortest first',
       filterPriceLabel: 'Price',
       filterPriceAny: 'Any',
@@ -2845,12 +3111,63 @@ const dictionary = {
       filterRating45: '4.5+',
       verifiedOnly: 'Verified only',
       featured: 'Featured',
+      allCourses: 'Todos los cursos',
+      viewModeLabel: 'Vista del catálogo',
+      cardView: 'Tarjetas',
+      listView: 'Lista',
       page: 'Page',
+    },
+    freeSample: {
+      badge: 'Muestra gratis',
+      title: 'Consigue un logro real antes de pagar',
+      body: 'Previsualiza una lección real y luego toma un diagnóstico corto para que el desbloqueo se sienta como tu siguiente paso.',
+      loading: 'Preparando tu muestra gratis...',
+      previewLesson: 'Lección de vista previa',
+      startPreview: 'Iniciar vista previa',
+      completePreview: 'Completar vista previa',
+      previewComplete: 'Vista previa completa',
+      emptyPreview:
+        'Esta lección de vista previa está lista, pero el creador aún no agregó bloques de contenido.',
+      resourcesTitle: 'Recursos de vista previa',
+      diagnosticBadge: 'Chequeo inicial',
+      diagnosticTitle: 'Toma el diagnóstico corto',
+      diagnosticBody:
+        'Responde unas preguntas para ver dónde el curso completo puede ayudarte más rápido.',
+      signInTitle: 'Guarda tu resultado de muestra',
+      signInBody:
+        'Inicia sesión para tomar el diagnóstico y mantener la puntuación conectada a este curso.',
+      signInCta: 'Iniciar sesión para continuar',
+      noQuestions:
+        'Este curso aún no tiene preguntas diagnósticas respondibles.',
+      previewFirstTitle: 'Termina primero la vista previa',
+      previewFirstBody:
+        'Completa la lección de muestra para desbloquear tu resultado diagnóstico corto.',
+      questionCount: '{0} preguntas diagnósticas',
+      startDiagnostic: 'Iniciar diagnóstico',
+      answered: '{0} de {1} respondidas',
+      saveAnswer: 'Guardar respuesta',
+      readyToScoreTitle: 'Listo para calificar',
+      readyToScoreBody:
+        'Todas las preguntas de muestra están respondidas. Califica el diagnóstico para ver tu próximo desbloqueo.',
+      completeDiagnostic: 'Calificar diagnóstico',
+      resultTitle: 'Tu resultado inicial',
+      resultBody:
+        'Ya tienes un punto de partida. Desbloquea el curso completo para continuar con este impulso.',
+      scoreLabel: 'Puntuación',
+      weakDomains: 'Habilidades débiles',
+      noWeakDomains: 'No se detectó una habilidad débil en esta muestra corta.',
+      reviewAnswers: 'Revisión de respuestas',
+      correct: 'Correcta',
+      incorrect: 'Revisar',
+      errors: {
+        premiumOnly:
+          'Las muestras gratis solo están disponibles para cursos premium.',
+      },
     },
     marketplace: {
       savedDefaultName: 'Saved courses',
       duration: 'Duration',
-      noDuration: 'No duration set',
+      noDuration: 'Sin duración definida',
       durationHours: '{0} hr',
       durationBuckets: {
         short: 'Under 2 hours',
@@ -2860,23 +3177,92 @@ const dictionary = {
       learners: 'learners',
       creator: 'Creator',
       creatorProfile: 'Creator profile',
-      viewCreator: 'View creator profile',
+      viewCreator: 'Ver perfil del creador',
       couponCode: 'Coupon code',
-      couponPlaceholder: 'Enter a coupon code',
-      unsave: 'Remove saved course',
+      couponPlaceholder: 'Introduce un código de cupón',
+      unsave: 'Quitar curso guardado',
       compare: 'Compare',
-      compareLimit: 'You can compare up to 4 courses.',
+      compareLimit: 'Puedes comparar hasta 4 cursos.',
       compareSelected: '{0} selected',
-      compareHint: 'Compare price, outcomes, proof, and course structure.',
-      noCompareCourses: 'Select courses from the catalog to compare.',
+      compareHint:
+        'Compara precio, resultados, pruebas y estructura del curso.',
+      noCompareCourses: 'Selecciona cursos del catálogo para compararlos.',
       bundles: 'Course bundles',
       bundle: 'Bundle',
       coursesIncluded: 'courses included',
-      creatorStats: '{0} courses · {1} learners',
+      creatorStats: '{0} cursos · {1} estudiantes',
       creatorCourses: 'Published courses',
+      proof: {
+        badge: 'Prueba del curso',
+        title: 'Por qué los estudiantes pagan por este curso',
+        outcomeLabel: 'Resultado de muestra',
+        outcomeValue: 'Resultado claro',
+        outcomeFallback:
+          'Previsualiza la promesa del curso antes de desbloquear la ruta completa.',
+        completionLabel: 'Prueba de finalización',
+        completionRateValue: '{0}% de finalización',
+        completionRateHelper: '{0} de {1} estudiantes completaron este curso.',
+        learnerCountValue: '{0} estudiantes',
+        learnerCountHelper:
+          'El conteo de estudiantes se muestra hasta que haya suficientes finalizaciones.',
+        reviewsLabel: 'Reseñas verificadas',
+        reviewsValue: '{0} reseñas',
+        reviewsEmptyValue: 'Reseñas en progreso',
+        reviewsEmptyHelper:
+          'Las reseñas públicas aparecen después de que estudiantes inscritos compartan comentarios.',
+        previewLabel: 'Vista previa del currículo',
+        previewValue: '{0} vistas previas gratis',
+        previewHelper: '{0} lecciones visibles antes de comprar.',
+        creatorVerified: 'Verificado por NexExam',
+        creatorProfileFallback: 'Creador del curso',
+        credentials: 'Credenciales',
+        expertise: 'Especialidad',
+        refundTitle: 'Política de reembolso',
+        refundBadge: 'Política revisada',
+        previewCurriculumTitle: 'Previsualiza el currículo',
+        previewCurriculumBody:
+          '{0} lecciones de vista previa gratis y {1} lecciones disponibles después de comprar.',
+        certificatesIssued: '{0} certificados emitidos',
+        standaloneLessons: 'Lecciones adicionales',
+        freePreview: 'Vista previa gratis',
+        lockedAfterPurchase: 'Desbloquear después de comprar',
+        reviewsTitle: 'Reseñas de estudiantes verificados',
+        reviewsBody:
+          'Reseñas públicas de estudiantes inscritos o compradores de este curso.',
+        verifiedLearner: 'Estudiante verificado',
+        noReviewsTitle: 'Las reseñas aún se están formando',
+        noReviewsBody:
+          'Los comentarios de estudiantes verificados aparecerán aquí después de publicar una reseña pública.',
+      },
+      unlock: {
+        badge: 'Desbloquear',
+        title: 'Lo que desbloqueas',
+        paidTitle: 'Desbloquea la experiencia completa del curso',
+        subscriptionTitle: 'Incluido con acceso premium',
+        body: 'Previsualiza el resultado antes de pagar y luego desbloquea la ruta completa.',
+        paidBody:
+          'Tu compra desbloquea las lecciones, práctica, tareas y ruta de finalización de este curso.',
+        subscriptionBody:
+          'Premium mantiene este curso conectado con planificación IA, preparación y práctica continua.',
+        courseCardPaid:
+          'Desbloquea currículo completo, práctica y ruta al certificado',
+        courseCardSubscription:
+          'El acceso premium desbloquea la capa de estudio guiado',
+        courseCardFree: 'Empieza gratis y gana impulso',
+        previewLesson: 'Vista previa gratis',
+        lockedLesson: 'Bloqueado',
+        availableAfterPurchase: 'Disponible después de comprar',
+        previewAvailable: 'Vista previa disponible',
+        items: [
+          'Biblioteca completa de lecciones y recursos',
+          'Tareas, cuestionarios y exámenes de práctica',
+          'Contexto del tutor IA y coach de estudio del curso',
+          'Ruta al certificado y prueba de progreso',
+        ],
+      },
     },
     certificate: {
-      title: 'Certificate of Completion',
+      title: 'Certificado de finalización',
       view: 'View certificate',
       print: 'Print certificate',
       verified: 'Verified completion',
@@ -2886,12 +3272,44 @@ const dictionary = {
       issuedAt: 'Issued',
       number: 'Certificate number',
       verificationCode: 'Verification code',
-      verifyHint: 'Verify this certificate with code {0}.',
+      verifyHint: 'Verifica este certificado con el código {0}.',
     },
     detail: {
       title: 'Course Detail',
       enrolled: 'Enrolled',
       notEnrolled: 'Not enrolled',
+    },
+    activation: {
+      title: 'Curso desbloqueado',
+      loading: 'Preparando tu curso desbloqueado...',
+      unlockingTitle: 'Desbloqueando tu curso',
+      unlockingBody:
+        'El pago está completo. NexExam está abriendo {0} e inscribiéndote ahora.',
+      retryUnlock: 'Comprobar de nuevo',
+      viewCourse: 'Ver curso',
+      unlockedPlan: 'Tu plan desbloqueado',
+      startLesson: 'Empezar lección recomendada',
+      openPlayer: 'Abrir reproductor del curso',
+      whatUnlocked: 'Lo que se abrió',
+      aiTutor: 'Tutor IA',
+      included: 'Incluido',
+      recommendedLesson: 'Primera lección recomendada',
+      noLesson: 'Este curso aún no tiene una lección visible.',
+      practiceSet: 'Primer set de práctica',
+      practiceQuestions: '{0} preguntas de práctica listas',
+      startPractice: 'Empezar práctica',
+      practiceUnavailable: 'Práctica aún no disponible',
+      certificatePath: 'Ruta al certificado',
+      certificateProgress: '{0} de {1} lecciones completas',
+      certificateLocked: 'Completa el curso para desbloquear tu certificado.',
+      certificateUnavailable:
+        'Este curso no incluye actualmente un certificado.',
+      aiTutorStarter: 'Prompt inicial del tutor IA',
+      aiTutorPromptLesson:
+        'Acabo de desbloquear {0}. Ayúdame a empezar con {1} y dame un primer paso de estudio claro.',
+      aiTutorPromptCourse:
+        'Acabo de desbloquear {0}. Ayúdame a crear un primer paso de estudio claro.',
+      askTutor: 'Preguntar al tutor IA',
     },
     learn: {
       title: 'Reproductor del curso',
@@ -2947,12 +3365,12 @@ const dictionary = {
     admin: {
       menu: 'Course Builder',
       title: 'Course Builder',
-      description: 'Create, publish, and manage platform-wide courses.',
+      description: 'Crea, publica y administra cursos en toda la plataforma.',
       content: 'Course content',
       enrollments: 'Enrollments',
       reviewSubmission: 'Review submission',
       newCourse: 'New course',
-      linkedContent: 'Linked course content',
+      linkedContent: 'Contenido del curso vinculado',
     },
     fields: {
       title: 'Title',
@@ -2971,14 +3389,17 @@ const dictionary = {
       price: 'Price',
       priceCents: 'Price (cents)',
       currency: 'Currency',
-      stripePriceId: 'Stripe price ID',
-      subscriptionPlanKey: 'Subscription plan key',
-      creatorRevenueShareBps: 'Creator revenue share (bps)',
-      platformRevenueShare: 'Platform revenue share (bps)',
+      stripePriceId: 'ID de precio de Stripe',
+      lifetimeAccessEnabled: 'Acceso de por vida disponible',
+      lifetimePriceCents: 'Precio de por vida (centavos)',
+      lifetimeStripePriceId: 'ID de precio Stripe de por vida',
+      subscriptionPlanKey: 'Clave del plan de suscripción',
+      creatorRevenueShareBps: 'Participación del creador (bps)',
+      platformRevenueShare: 'Participación de la plataforma (bps)',
       nexVerified: 'Nex Verified',
-      creatorUserId: 'Creator user ID',
-      creatorMemberId: 'Creator member ID',
-      creatorOrganizationId: 'Creator organization ID',
+      creatorUserId: 'ID de usuario del creador',
+      creatorMemberId: 'ID de miembro del creador',
+      creatorOrganizationId: 'ID de organización del creador',
       modules: 'Modules',
       lessons: 'Lessons',
       assignments: 'Assignments',
@@ -2986,7 +3407,7 @@ const dictionary = {
       videoFiles: 'Video files',
       prompt: 'Prompt',
       dueDate: 'Due date',
-      dueDaysAfterEnroll: 'Due days after enrollment',
+      dueDaysAfterEnroll: 'Días de vencimiento tras la inscripción',
       rubric: 'Rubric',
       rubricDescription: 'Criterion guidance',
       allowResubmissions: 'Allow resubmissions',
@@ -3028,63 +3449,65 @@ const dictionary = {
     },
     success: {
       enrolled: 'Enrollment created.',
-      lessonCompleted: 'Lesson marked complete.',
+      lessonCompleted: 'Lección marcada como completada.',
       assignmentSubmitted: 'Homework submitted.',
       courseSaved: 'Course saved.',
-      courseUnsaved: 'Course removed from saved courses.',
+      courseUnsaved: 'Curso quitado de los guardados.',
       studentEnrolled: 'Student enrolled.',
       submissionReviewed: 'Submission reviewed.',
       quizSubmitted: 'Quiz submitted.',
-      ratingSaved: 'Course rating saved.',
-      purchased: 'Purchase complete — you are now enrolled.',
+      ratingSaved: 'Calificación del curso guardada.',
+      purchased: 'Compra completada: ya estás inscrito.',
     },
     notify: {
-      coursePurchaseConfirmedTitle: 'Course purchase confirmed',
+      coursePurchaseConfirmedTitle: 'Compra de curso confirmada',
       coursePurchaseConfirmedBody:
-        'You are now enrolled in {0}. Start learning anytime.',
+        'Ya estás inscrito en {0}. Puedes empezar a aprender cuando quieras.',
       courseRefundedTitle: 'Course refunded',
       courseRefundedBody:
-        'Your purchase of {0} has been refunded. Access has been removed.',
+        'Tu compra de {0} fue reembolsada. Se eliminó el acceso.',
     },
     errors: {
       manualEnrollmentOnly:
-        'This course requires manual, paid, or subscription access before enrollment.',
+        'Este curso requiere acceso manual, de pago o por suscripción antes de la inscripción.',
       invalidCourseLink:
-        'This course cannot be linked from the current organization.',
-      submissionRequired: 'Add text or files before submitting homework.',
-      submissionPendingReview:
-        'This homework is already submitted and waiting for review.',
-      submissionComplete: 'This homework has already been completed.',
-      resubmissionNotAllowed:
-        'Resubmissions are not allowed for this homework.',
+        'Este curso no puede vincularse desde la organización actual.',
+      submissionRequired: 'Agrega texto o archivos antes de enviar la tarea.',
+      submissionPendingReview: 'Esta tarea ya fue enviada y espera revisión.',
+      submissionComplete: 'Esta tarea ya se completó.',
+      resubmissionNotAllowed: 'No se permiten reenvíos para esta tarea.',
       maxAttemptsReached:
-        'You have reached the maximum number of attempts for this homework.',
+        'Alcanzaste el número máximo de intentos para esta tarea.',
       invalidRubricScore:
-        'Rubric scores must match the assignment criteria and point limits.',
+        'Las puntuaciones de la rúbrica deben coincidir con los criterios y límites de puntos.',
       invalidSubmissionReviewStatus:
-        'Choose complete or needs revision when reviewing homework.',
-      ratingRequiresEnrollment: 'Enroll in this course before rating it.',
-      reviewNotPending: 'This course is not awaiting review.',
+        'Elige completada o necesita revisión al evaluar la tarea.',
+      ratingRequiresEnrollment:
+        'Inscríbete en este curso antes de calificarlo.',
+      reviewNotPending: 'Este curso no está esperando revisión.',
       editLockedNotDraft:
-        'Return the course to draft before editing its content.',
-      submitNotDraft: 'Only a draft course can be submitted for review.',
+        'Devuelve el curso a borrador antes de editar su contenido.',
+      submitNotDraft: 'Solo un curso en borrador puede enviarse a revisión.',
       submitNeedsContent:
-        'Complete the publishing checklist (title, description, thumbnail, a module, 3+ lessons, an assessment, and a learning outcome) before submitting.',
-      cannotWithdraw: 'Only a course in review or published can be withdrawn.',
-      examAlreadySubmitted: 'This practice exam attempt was already submitted.',
+        'Completa la lista de publicación (título, descripción, miniatura, un módulo, más de 3 lecciones, una evaluación y resultados) antes de enviar.',
+      cannotWithdraw: 'Solo se puede retirar un curso en revisión o publicado.',
+      examAlreadySubmitted:
+        'Este intento de examen de práctica ya fue enviado.',
       categoryInUse:
-        'This category cannot be removed while courses are still assigned to it.',
+        'Esta categoría no puede eliminarse mientras haya cursos asignados.',
       coursePaymentNotConfigured:
-        'This course is not ready for purchase yet. Please try again later.',
-      alreadyEnrolled: 'You are already enrolled in this course.',
-      invalidCoupon: 'This coupon cannot be applied to this course.',
-      couponLimitReached: 'This coupon has already been used.',
+        'Este curso aún no está listo para compra. Inténtalo de nuevo más tarde.',
+      alreadyEnrolled: 'Ya estás inscrito en este curso.',
+      invalidCoupon: 'Este cupón no se puede aplicar a este curso.',
+      couponLimitReached: 'Este cupón ya fue usado.',
+      videoTranscriptNoVideo:
+        'Sube un video de la lección antes de solicitar una transcripción.',
     },
     ratings: {
       title: 'Course rating',
       summary: '{0} ({1})',
-      noRatings: 'No ratings yet',
-      commentPlaceholder: 'Share what helped or what could improve...',
+      noRatings: 'Aún no hay calificaciones',
+      commentPlaceholder: 'Comparte qué ayudó o qué podría mejorar...',
       save: 'Save rating',
       starLabel: '{0} star rating',
     },
@@ -3108,32 +3531,46 @@ const dictionary = {
       },
     },
     ai: {
-      outline: 'Course outline and study content:',
+      outline: 'Esquema del curso y contenido de estudio:',
       focusedLesson: 'Current lesson',
       completed: 'completed',
       assignment: 'Assignment',
-      linkedContent: 'Linked exam, practice, and study resources:',
+      linkedContent: 'Recursos vinculados de examen, práctica y estudio:',
+      videoTranscript: 'Transcripción del video',
+    },
+    videoTranscript: {
+      title: 'Transcripción del video',
+      statusLabel: 'Transcripción',
+      retry: 'Reintentar transcripción',
+      retryQueued: 'Reintento de transcripción en cola.',
+      status: {
+        notRequested: 'No se solicitó transcripción',
+        queued: 'Transcripción en cola',
+        processing: 'Transcripción en proceso',
+        ready: 'Transcripción lista',
+        failed: 'La transcripción falló',
+      },
     },
     studyAi: {
       actions: {
-        sectionTitle: 'AI study tools',
-        explainLesson: 'Explain this lesson',
-        summarizeLesson: 'Summarize this lesson',
-        quizMe: 'Quiz me on this module',
+        sectionTitle: 'Herramientas de estudio con IA',
+        explainLesson: 'Explicar esta lección',
+        summarizeLesson: 'Resumir esta lección',
+        quizMe: 'Hazme un quiz sobre este módulo',
         generatePractice: 'Practice questions',
       },
       result: {
         explainTitle: 'Lesson explained',
         summarizeTitle: 'Lesson summary',
         generating: 'Thinking…',
-        streamError: 'Something went wrong while generating. Please try again.',
+        streamError: 'Algo salió mal al generar. Inténtalo de nuevo.',
         retry: 'Try again',
       },
       quiz: {
         quizTitle: 'Quick quiz',
         practiceTitle: 'Practice questions',
-        generating: 'Building your questions…',
-        intro: 'Answer each question, then check your results.',
+        generating: 'Creando tus preguntas…',
+        intro: 'Responde cada pregunta y luego revisa tus resultados.',
         start: 'Start',
         submit: 'Check answers',
         next: 'Next',
@@ -3143,13 +3580,14 @@ const dictionary = {
         yourScore: 'You scored {0}%',
         correctCount: '{0} of {1} correct',
         passed: 'Great work!',
-        failed: 'Keep practicing — review the topics below.',
+        failed: 'Sigue practicando: revisa los temas siguientes.',
         domainBreakdown: 'By topic',
         correct: 'Correct',
         incorrect: 'Incorrect',
         noQuestions:
-          'No questions could be generated. Try a module with more lesson content.',
-        aiDisclaimer: 'AI-generated practice — not graded toward the course.',
+          'No se pudieron generar preguntas. Prueba un módulo con más contenido de lecciones.',
+        aiDisclaimer:
+          'Práctica generada por IA; no cuenta para la calificación del curso.',
       },
       coach: {
         title: 'Study coach',
@@ -3158,95 +3596,102 @@ const dictionary = {
         studyPlanTab: 'Study plan',
       },
       weakness: {
-        heading: 'Where you are losing marks',
+        heading: 'Dónde estás perdiendo puntos',
         empty:
-          'Take a quiz or practice exam and your weak topics will show here.',
+          'Haz un quiz o examen de práctica y aquí aparecerán tus temas débiles.',
         weakest: 'Weakest topic',
         scoreLabel: '{0}% ({1}/{2})',
       },
       whatNext: {
-        heading: 'What should I study next?',
+        heading: '¿Qué debería estudiar ahora?',
         generate: 'Get a recommendation',
         regenerate: 'Refresh recommendation',
-        generating: 'Thinking it through…',
+        generating: 'Pensándolo…',
         empty:
-          'Get an AI recommendation based on your progress and weak areas.',
+          'Obtén una recomendación de IA según tu progreso y áreas débiles.',
       },
       studyPlan: {
         heading: 'Study plan',
-        empty: 'No study plan yet. Generate one or add your own tasks.',
-        generate: 'Generate study plan',
+        empty:
+          'Aún no hay plan de estudio. Genera uno o agrega tus propias tareas.',
+        generate: 'Generar plan de estudio',
         regenerate: 'Regenerate plan',
-        generating: 'Building your plan…',
+        generating: 'Creando tu plan…',
         addItem: 'Add task',
-        addPlaceholder: 'New study task',
+        addPlaceholder: 'Nueva tarea de estudio',
         markDone: 'Mark done',
-        markTodo: 'Mark not done',
+        markTodo: 'Marcar como pendiente',
         deleteItem: 'Delete',
         aiBadge: 'AI',
         noDate: 'No date',
         remaining: '{0} of {1} done',
       },
       examDate: {
-        title: 'Target exam date',
-        set: 'Set exam date',
+        title: 'Fecha objetivo del examen',
+        set: 'Definir fecha del examen',
         edit: 'Edit',
         dateLabel: 'Exam date',
-        nameLabel: 'Exam name (optional)',
+        nameLabel: 'Nombre del examen (opcional)',
         namePlaceholder: 'e.g. SIE exam',
         save: 'Save',
-        none: 'No exam date set.',
-        daysRemaining: '{0} days until your exam',
-        examToday: 'Your exam is today — good luck!',
-        examPast: 'Your exam date has passed.',
+        none: 'No hay fecha de examen definida.',
+        daysRemaining: '{0} días para tu examen',
+        examToday: 'Tu examen es hoy. ¡Buena suerte!',
+        examPast: 'La fecha de tu examen ya pasó.',
       },
       errors: {
-        busy: 'Another AI study request is still running. Please wait for it to finish.',
+        busy: 'Otra solicitud de estudio con IA sigue en curso. Espera a que termine.',
         limitReached:
-          'The daily AI usage limit has been reached. It resets tomorrow.',
-        notConfigured: 'AI study features are not available right now.',
-        parseFailed: 'AI returned an unreadable response. Please try again.',
+          'Se alcanzó el límite diario de uso de IA. Se restablece mañana.',
+        notConfigured:
+          'Las herramientas de estudio con IA no están disponibles ahora.',
+        parseFailed:
+          'La IA devolvió una respuesta ilegible. Inténtalo de nuevo.',
         unexpectedQuizFormat:
-          'AI returned questions that could not be used. Try a module with more lesson content.',
-        moduleNoContentQuiz: 'This module has no lesson content to quiz yet.',
+          'La IA devolvió preguntas que no se pudieron usar. Prueba un módulo con más contenido.',
+        moduleNoContentQuiz:
+          'Este módulo aún no tiene contenido de lecciones para hacer un quiz.',
         moduleNoContentPractice:
-          'This module has no lesson content for practice questions yet.',
+          'Este módulo aún no tiene contenido de lecciones para preguntas de práctica.',
         enrollToSetExamDate:
-          'Enroll in the course before setting an exam date.',
+          'Inscríbete en el curso antes de definir una fecha de examen.',
         unexpectedResponse:
-          'AI returned an unexpected recommendation. Please try again.',
+          'La IA devolvió una recomendación inesperada. Inténtalo de nuevo.',
         unexpectedStudyPlan:
-          'AI returned an unexpected study plan. Please try again.',
+          'La IA devolvió un plan de estudio inesperado. Inténtalo de nuevo.',
         courseScopedRequired:
-          'This study tool can only be used from an active course.',
-        lessonRequired: 'Select a lesson before using this study tool.',
-        moduleRequired: 'Select a module before using this study tool.',
-        signInStudyPlan: 'Sign in to build a study plan.',
-        unknownStudyTool: 'Unknown study tool: {0}',
-        generic: 'Something went wrong. Please try again.',
+          'Esta herramienta de estudio solo se puede usar desde un curso activo.',
+        lessonRequired:
+          'Selecciona una lección antes de usar esta herramienta de estudio.',
+        moduleRequired:
+          'Selecciona un módulo antes de usar esta herramienta de estudio.',
+        signInStudyPlan: 'Inicia sesión para crear un plan de estudio.',
+        unknownStudyTool: 'Herramienta de estudio desconocida: {0}',
+        generic: 'Algo salió mal. Inténtalo de nuevo.',
       },
     },
     builder: {
       menu: 'My Courses',
       title: 'Course Builder',
-      description: 'Build, preview, and publish your own courses.',
+      description: 'Crea, previsualiza y publica tus propios cursos.',
       newCourse: 'New course',
-      emptyCourses: 'You have not created any courses yet.',
-      createFirst: 'Create your first course',
+      emptyCourses: 'Aún no has creado cursos.',
+      createFirst: 'Crea tu primer curso',
       continueBuilding: 'Continue building',
       updatedAt: 'Updated {0}',
       completionLabel: '{0}% ready',
       nextRecommended: 'Next: {0}',
       verifyRequired:
-        'Finish creator verification to build and publish courses.',
-      verifyCta: 'Go to creator verification',
-      loadError: 'This course could not be loaded.',
-      backToCourses: 'Back to my courses',
+        'Completa la verificación de creador para crear y publicar cursos.',
+      verifyCta: 'Ir a verificación de creador',
+      loadError: 'No se pudo cargar este curso.',
+      backToCourses: 'Volver a mis cursos',
       details: 'Course details',
-      detailsBody: 'The title, summary, and cover media students see first.',
+      detailsBody:
+        'El título, resumen y medios de portada que los estudiantes ven primero.',
       curriculum: 'Curriculum',
       curriculumBody:
-        'Add modules, then drag lessons, quizzes, and homework into order.',
+        'Agrega módulos y luego ordena lecciones, quizzes y tareas arrastrándolos.',
       moduleLabel: 'Module',
       lessonLabel: 'Lesson',
       quizLabel: 'Quiz',
@@ -3257,65 +3702,67 @@ const dictionary = {
       untitledLesson: 'Untitled lesson',
       untitledQuiz: 'Untitled quiz',
       untitledAssignment: 'Untitled homework',
-      noModules: 'No modules yet. Add your first module to get started.',
-      noItems: 'No lessons, quizzes, or homework in this module yet.',
-      noQuestions: 'No questions yet. Add your first question.',
+      noModules: 'Aún no hay módulos. Agrega tu primer módulo para empezar.',
+      noItems: 'Aún no hay lecciones, quizzes ni tareas en este módulo.',
+      noQuestions: 'Aún no hay preguntas. Agrega tu primera pregunta.',
       rubricCriterionLabel: 'Rubric criterion',
-      noRubricCriteria: 'No rubric criteria yet.',
+      noRubricCriteria: 'Aún no hay criterios de rúbrica.',
       submissionsTitle: 'Homework review',
       submissionsBody:
-        'Review student submissions, score rubric criteria, and send feedback.',
-      dragHint: 'Drag to reorder',
+        'Revisa entregas de estudiantes, puntúa criterios de rúbrica y envía comentarios.',
+      dragHint: 'Arrastra para reordenar',
       videoUpload: 'Upload video',
       videoEmbedHint:
-        'Or paste a YouTube or Vimeo link to embed instead of uploading.',
+        'O pega un enlace de YouTube o Vimeo para insertarlo en vez de subirlo.',
       resourcesHint:
-        'Attach worksheets, slides, or other files students can download.',
-      contentHint: 'Lesson text supports Markdown formatting.',
-      isPreviewLesson: 'Free preview lesson',
+        'Adjunta hojas de trabajo, diapositivas u otros archivos que los estudiantes puedan descargar.',
+      contentHint: 'El texto de la lección admite formato Markdown.',
+      isPreviewLesson: 'Lección de vista previa gratuita',
       correctOption: 'Correct answer',
       previewBanner:
-        'Student preview — this is how learners experience your course.',
-      backToBuilder: 'Back to builder',
-      statusDraft: 'Draft — only you can see this course.',
-      statusInReview: 'In review — an admin is reviewing this course.',
-      statusPublished: 'Published — students can enroll in this course.',
+        'Vista previa de estudiante: así viven el curso los estudiantes.',
+      backToBuilder: 'Volver al creador',
+      statusDraft: 'Borrador: solo tú puedes ver este curso.',
+      statusInReview:
+        'En revisión: un administrador está revisando este curso.',
+      statusPublished:
+        'Publicado: los estudiantes pueden inscribirse en este curso.',
       statusArchived: 'Archived.',
-      reviewNotesTitle: 'Changes requested by the reviewer',
-      submitConfirm: 'Submit this course for admin review?',
+      reviewNotesTitle: 'Cambios solicitados por el revisor',
+      submitConfirm: '¿Enviar este curso para revisión administrativa?',
       withdrawConfirm:
-        'Withdraw this course from review and return it to draft?',
+        '¿Retirar este curso de revisión y devolverlo a borrador?',
       unpublishConfirm:
-        'Unpublishing returns the course to draft and removes access for students already enrolled. Continue?',
-      unsavedChanges: 'You have unsaved changes.',
-      saveFirst: 'Save your changes before continuing.',
+        'Al despublicar, el curso vuelve a borrador y se quita el acceso a estudiantes inscritos. ¿Continuar?',
+      unsavedChanges: 'Tienes cambios sin guardar.',
+      saveFirst: 'Guarda tus cambios antes de continuar.',
       actions: {
         save: 'Save draft',
-        submitForReview: 'Submit for review',
-        withdraw: 'Withdraw from review',
+        submitForReview: 'Enviar a revisión',
+        withdraw: 'Retirar de revisión',
         unpublish: 'Unpublish',
-        preview: 'Preview as student',
+        preview: 'Vista previa como estudiante',
         edit: 'Edit course',
         addModule: 'Add module',
         addLesson: 'Add lesson',
         addQuiz: 'Add quiz',
         addAssignment: 'Add homework',
-        addRubricCriterion: 'Add rubric criterion',
+        addRubricCriterion: 'Agregar criterio de rúbrica',
         saveFeedback: 'Save feedback',
         addQuestion: 'Add question',
         addOption: 'Add option',
         remove: 'Remove',
-        addPracticeExam: 'Add practice exam',
-        addExamRule: 'Add domain rule',
+        addPracticeExam: 'Agregar examen de práctica',
+        addExamRule: 'Agregar regla de dominio',
         addOutcome: 'Add outcome',
         addRequirement: 'Add requirement',
-        addFlashcardSet: 'Add flashcard set',
+        addFlashcardSet: 'Agregar mazo de tarjetas',
         addFlashcard: 'Add card',
-        applyMiniTemplate: 'Apply mini-course template',
+        applyMiniTemplate: 'Aplicar plantilla de minicurso',
         create: 'Create course',
       },
       quizSettings: {
-        timeLimit: 'Time limit (min)',
+        timeLimit: 'Límite de tiempo (min)',
         maxAttempts: 'Max attempts',
         randomizeQuestions: 'Shuffle questions',
         randomizeAnswers: 'Shuffle answers',
@@ -3325,7 +3772,7 @@ const dictionary = {
       examSettings: {
         totalQuestions: 'Total questions',
         questionCount: 'Question count',
-        simulateRealExam: 'Simulate real exam',
+        simulateRealExam: 'Simular examen real',
       },
       difficulty: {
         easy: 'Easy',
@@ -3334,31 +3781,32 @@ const dictionary = {
       },
       practiceExams: 'Practice exams',
       practiceExamsBody:
-        'Build domain-weighted, timed practice exams from your question bank.',
-      noPracticeExams: 'No practice exams yet.',
+        'Crea exámenes de práctica cronometrados y ponderados por dominio desde tu banco de preguntas.',
+      noPracticeExams: 'Aún no hay exámenes de práctica.',
       practiceExamLabel: 'Practice exam',
       examRules: 'Domain rules',
       examRulesHint:
-        'Add a rule per exam domain to weight how questions are drawn.',
+        'Agrega una regla por dominio del examen para ponderar cómo se seleccionan las preguntas.',
       anyDifficulty: 'Any difficulty',
       questionType: {
         multipleChoice: 'Multiple choice',
         trueFalse: 'True / false',
-        multiSelect: 'Select all that apply',
+        multiSelect: 'Selecciona todas las que correspondan',
       },
       setup: {
         difficulty: 'Difficulty',
         language: 'Language',
-        certificateEnabled: 'Issue a completion certificate',
+        certificateEnabled: 'Emitir certificado de finalización',
         visibility: 'Visibility',
         audience: 'Intended audience',
-        audienceHint: 'One audience description per line.',
+        audienceHint: 'Una descripción de audiencia por línea.',
         promoVideo: 'Promo video',
         outcomes: 'Learning outcomes',
         outcomesBody:
-          'What students will be able to do after taking the course.',
+          'Lo que los estudiantes podrán hacer después de tomar el curso.',
         requirements: 'Requirements',
-        requirementsBody: 'What students should know or have before starting.',
+        requirementsBody:
+          'Lo que los estudiantes deberían saber o tener antes de empezar.',
         outcomePlaceholder: 'Learning outcome',
         requirementPlaceholder: 'Requirement',
       },
@@ -3368,24 +3816,25 @@ const dictionary = {
         public: 'Public',
       },
       flashcards: 'Flashcards',
-      flashcardsBody: 'Build flashcard sets students can study.',
-      noFlashcardSets: 'No flashcard sets yet.',
+      flashcardsBody:
+        'Crea mazos de tarjetas para que los estudiantes estudien.',
+      noFlashcardSets: 'Aún no hay mazos de tarjetas.',
       flashcardSetLabel: 'Flashcard set',
       flashcardFront: 'Front',
       flashcardBack: 'Back',
       flashcardHint: 'Hint (optional)',
-      noCards: 'No cards yet.',
-      lessonHidden: 'Hidden from students',
+      noCards: 'Aún no hay tarjetas.',
+      lessonHidden: 'Oculta para estudiantes',
       ai: {
         title: 'AI assistant',
-        body: 'Generate draft course content with AI — you review everything before it is added.',
-        promptPlaceholder: 'Describe the topic, exam, or outline…',
+        body: 'Genera borradores de contenido del curso con IA; tú revisas todo antes de agregarlo.',
+        promptPlaceholder: 'Describe el tema, examen o esquema…',
         generateOutline: 'Generate outline',
         generateQuiz: 'Generate quiz',
         generateFlashcards: 'Generate flashcards',
         generateLesson: 'Generate lesson',
         improveLesson: 'Improve lesson',
-        targetLessonLabel: 'Lesson to improve',
+        targetLessonLabel: 'Lección para mejorar',
         targetLessonPlaceholder: 'Select a lesson',
         generating: 'Generating…',
         queued: 'Queued',
@@ -3393,23 +3842,23 @@ const dictionary = {
         completed: 'Completed',
         failed: 'Failed',
         progressLabel: '{0}% complete',
-        addToCourse: 'Add to course',
+        addToCourse: 'Agregar al curso',
         discard: 'Discard',
         generated:
-          'AI produced a draft. Review it below, then add it to your course.',
+          'La IA produjo un borrador. Revísalo abajo y luego agrégalo a tu curso.',
         qualityTitle: 'Review checklist',
         qualityBody:
-          'AI checks source coverage, quiz quality, duplicates, and course structure before you accept the draft.',
-        noQualityIssues: 'No review issues found.',
-        sourcesTitle: 'Sources and basis',
-        sourceFallback: 'Course prompt or existing lesson material',
-        sourceNoteFallback: 'No note provided.',
+          'La IA verifica cobertura de fuentes, calidad de quizzes, duplicados y estructura antes de que aceptes el borrador.',
+        noQualityIssues: 'No se encontraron problemas de revisión.',
+        sourcesTitle: 'Fuentes y base',
+        sourceFallback: 'Prompt del curso o material de lecciones existente',
+        sourceNoteFallback: 'Sin nota proporcionada.',
         issueTarget: 'Target: {0}',
         draftNotice:
-          'AI content is added as an editable draft and is never auto-published.',
-        saveFirst: 'Save the course once before using the AI assistant.',
+          'El contenido de IA se agrega como borrador editable y nunca se publica automáticamente.',
+        saveFirst: 'Guarda el curso una vez antes de usar el asistente de IA.',
         notConfigured:
-          'AI generation is not configured yet (ANTHROPIC_API_KEY).',
+          'La generación con IA no está disponible en este momento.',
         merge: {
           flashcardsTitle: 'AI flashcards',
           moduleTitle: 'AI module',
@@ -3432,48 +3881,56 @@ const dictionary = {
         },
         qualityIssues: {
           missingSources:
-            'Add citations or source notes before accepting this draft.',
-          outlineEmpty: 'The outline did not include any modules.',
+            'Agrega citas o notas de fuente antes de aceptar este borrador.',
+          outlineEmpty: 'El esquema no incluyó módulos.',
           outlineThin:
-            'The outline may be too thin for a complete course experience.',
-          emptyTitle: 'A generated item is missing a title.',
+            'El esquema puede ser demasiado limitado para una experiencia completa.',
+          emptyTitle: 'Un elemento generado no tiene título.',
           questionInvalidCorrectCount:
-            'A question does not have exactly one correct answer.',
-          questionTooFewOptions: 'A question has fewer than three options.',
+            'Una pregunta no tiene exactamente una respuesta correcta.',
+          questionTooFewOptions: 'Una pregunta tiene menos de tres opciones.',
           questionMissingExplanation:
-            'A question is missing its answer explanation.',
-          questionMissingDomain: 'A question is missing its exam domain.',
+            'A una pregunta le falta la explicación de la respuesta.',
+          questionMissingDomain:
+            'A una pregunta le falta el dominio del examen.',
           duplicateQuestion:
-            'A generated question appears to duplicate an existing or generated question.',
+            'Una pregunta generada parece duplicar una pregunta existente o generada.',
           flashcardsThin:
-            'The flashcard set may need more cards before students use it.',
+            'El mazo de tarjetas puede necesitar más tarjetas antes de que los estudiantes lo usen.',
           lessonNoBlocks:
-            'The lesson draft did not include editable content blocks.',
+            'El borrador de lección no incluyó bloques de contenido editables.',
         },
         errors: {
-          notConfigured: 'AI generation is not configured yet.',
-          lessonRequired: 'Select a lesson to improve.',
-          queueFailed: 'AI generation could not be queued. Please try again.',
-          courseAiNotConfigured: 'AI generation is not configured yet.',
+          notConfigured:
+            'La generación con IA no está disponible en este momento.',
+          lessonRequired: 'Selecciona una lección para mejorar.',
+          queueFailed:
+            'No se pudo poner en cola la generación con IA. Inténtalo de nuevo.',
+          courseAiNotConfigured:
+            'La generación con IA no está disponible en este momento.',
           courseAiParseFailed:
-            'AI returned an unreadable draft. Please try again.',
-          courseAiGenerationFailed: 'AI generation failed. Please try again.',
+            'La IA devolvió un borrador ilegible. Inténtalo de nuevo.',
+          courseAiGenerationFailed:
+            'La generación con IA falló. Inténtalo de nuevo.',
           courseAiQueueFailed:
-            'AI generation could not be queued. Please try again.',
+            'No se pudo poner en cola la generación con IA. Inténtalo de nuevo.',
         },
       },
       blocks: {
         title: 'Content blocks',
-        body: 'Add rich, typed content blocks to the lesson.',
-        empty: 'No content blocks yet.',
+        body: 'Agrega bloques de contenido ricos y tipados a la lección.',
+        empty: 'Aún no hay bloques de contenido.',
         add: 'Add block',
         headingLevel: 'Heading level',
         textPlaceholder: 'Text…',
-        listHint: 'One item per line.',
+        listHint: 'Un elemento por línea.',
         calloutVariant: 'Style',
-        videoUrlPlaceholder: 'YouTube / Vimeo link',
+        videoUrlPlaceholder: 'Enlace de YouTube / Vimeo',
         selectQuiz: 'Select a quiz',
-        selectFlashcardSet: 'Select a flashcard set',
+        selectFlashcardSet: 'Selecciona un mazo de tarjetas',
+        embeddedQuiz: 'Cuestionario integrado',
+        embeddedFlashcards: 'Tarjetas integradas',
+        lessonVideoTitle: 'Video de la lección',
         types: {
           heading: 'Heading',
           paragraph: 'Paragraph',
@@ -3493,32 +3950,32 @@ const dictionary = {
         },
       },
       untitledCourse: 'Untitled course',
-      landingPage: 'Course landing page',
+      landingPage: 'Página de aterrizaje del curso',
       landingPageBody:
-        'The thumbnail, promo video, and audience students see before enrolling.',
+        'La miniatura, video promocional y audiencia que los estudiantes ven antes de inscribirse.',
       createBody:
-        'Give your course a working title — you can refine everything else later.',
+        'Dale a tu curso un título provisional; podrás ajustar todo lo demás después.',
       createFlow: {
-        title: 'Start with a course blueprint',
-        body: 'Pick a starter structure, review the outline, then continue refining it in the full builder.',
+        title: 'Comenzar con un esquema de curso',
+        body: 'Elige una estructura inicial, revisa el esquema y luego continúa refinándolo en el creador completo.',
         stepDetails: 'Course basics',
         stepDetailsBody:
-          'Set the working identity for the course. These details stay editable after creation.',
-        stepTemplate: 'Choose a starter template',
+          'Define la identidad de trabajo del curso. Estos detalles seguirán siendo editables después de crearlo.',
+        stepTemplate: 'Elegir plantilla inicial',
         stepTemplateBody:
-          'Templates create a useful first outline so you are never starting from an empty page.',
+          'Las plantillas crean un primer esquema útil para no empezar desde una página vacía.',
         stepReview: 'Outline preview',
         stepReviewBody:
-          'This draft will be saved immediately and can be edited section by section.',
-        examGoal: 'Exam or learning goal',
-        createWithTemplate: 'Create course blueprint',
+          'Este borrador se guardará de inmediato y podrá editarse sección por sección.',
+        examGoal: 'Examen u objetivo de aprendizaje',
+        createWithTemplate: 'Crear esquema de curso',
       },
       templates: {
         examPrep: {
           title: 'Exam prep',
           badge: 'Structured',
           description:
-            'Best for certification, placement, licensing, or final exam preparation.',
+            'Ideal para preparación de certificaciones, nivelación, licencias o exámenes finales.',
           outcomes: [
             'Understand the exam structure and scoring priorities.',
             'Practice core domains with targeted review.',
@@ -3571,7 +4028,7 @@ const dictionary = {
           title: 'Skill course',
           badge: 'Project-led',
           description:
-            'Best for teaching a practical skill with demonstrations, homework, and feedback.',
+            'Ideal para enseñar una habilidad práctica con demostraciones, tareas y comentarios.',
           outcomes: [
             'Apply the skill through guided practice.',
             'Complete a small project that proves competency.',
@@ -3617,10 +4074,10 @@ const dictionary = {
           ],
         },
         miniCourse: {
-          title: 'Quick mini-course',
+          title: 'Minicurso rápido',
           badge: 'Fast start',
           description:
-            'Best for a focused topic that students can complete in one short sitting.',
+            'Ideal para un tema enfocado que los estudiantes puedan completar en una sesión corta.',
           outcomes: [
             'Understand the topic quickly.',
             'Apply one focused technique or framework.',
@@ -3646,16 +4103,16 @@ const dictionary = {
         },
       },
       nextStep: {
-        title: 'Next best step',
-        ready: 'Ready for review',
+        title: 'Mejor siguiente paso',
+        ready: 'Listo para revisión',
         fix: 'Go there',
         review: 'Review course',
       },
       recovery: {
-        title: 'Restore unsaved draft?',
-        body: 'A newer builder draft was found. Restore it to continue from your latest edits, or keep the saved course version.',
+        title: '¿Restaurar borrador no guardado?',
+        body: 'Se encontró un borrador más reciente. Restáuralo para continuar desde tus últimos cambios o conserva la versión guardada.',
         restore: 'Restore draft',
-        discard: 'Keep server version',
+        discard: 'Conservar versión del servidor',
         later: 'Review later',
       },
       curriculumExpandAll: 'Expand all',
@@ -3670,7 +4127,7 @@ const dictionary = {
         practiceExams: 'Practice exams',
         flashcards: 'Flashcards',
         aiAssistant: 'AI assistant',
-        submit: 'Submit for review',
+        submit: 'Enviar a revisión',
       },
       autosave: {
         saving: 'Saving…',
@@ -3680,18 +4137,18 @@ const dictionary = {
       },
       checkpoints: {
         title: 'Version history',
-        body: 'Create manual restore points and recover recent builder drafts.',
+        body: 'Crea puntos de restauración manuales y recupera borradores recientes.',
         label: 'Checkpoint label',
-        labelPlaceholder: 'e.g. Before final quiz edits',
+        labelPlaceholder: 'p. ej., antes de editar el quiz final',
         create: 'Create checkpoint',
         restore: 'Restore',
         delete: 'Delete checkpoint',
-        empty: 'No checkpoints yet.',
+        empty: 'Aún no hay puntos de restauración.',
         loading: 'Loading checkpoints…',
         created: 'Checkpoint created.',
         restored: 'Checkpoint restored.',
         deleted: 'Checkpoint deleted.',
-        submitSnapshotLabel: 'Before submit for review',
+        submitSnapshotLabel: 'Antes de enviar a revisión',
         sources: {
           autosave: 'Autosave',
           manual: 'Manual',
@@ -3700,49 +4157,51 @@ const dictionary = {
         },
       },
       checklist: {
-        title: 'Submit for review',
+        title: 'Enviar a revisión',
         intro:
-          'Your course must meet these requirements before an admin can review it.',
+          'Tu curso debe cumplir estos requisitos antes de que un administrador lo revise.',
         required: 'Required',
         recommended: 'Recommended',
-        ready: 'Everything looks good — submit when you are ready.',
-        notReady: 'Complete the items above before submitting.',
+        ready: 'Todo se ve bien; envía cuando estés listo.',
+        notReady: 'Completa los elementos anteriores antes de enviar.',
         fix: 'Fix',
-        titleItem: 'Add a course title',
-        descriptionItem: 'Write a course description',
-        thumbnailItem: 'Upload a course thumbnail',
-        moduleItem: 'Add at least one module',
-        lessonsItem: 'Add at least three lessons',
-        assessmentItem: 'Add at least one quiz or practice exam',
-        outcomeItem: 'Add at least one learning outcome',
-        audienceItem: 'Describe who this course is for',
-        requirementItem: 'Add course requirements',
-        lessonContentItem: 'Add content, blocks, or media to a lesson',
-        flashcardRecommendedItem: 'Add flashcards for review practice',
+        titleItem: 'Agregar título del curso',
+        descriptionItem: 'Escribir descripción del curso',
+        thumbnailItem: 'Subir miniatura del curso',
+        moduleItem: 'Agregar al menos un módulo',
+        lessonsItem: 'Agregar al menos tres lecciones',
+        assessmentItem: 'Agregar al menos un quiz o examen de práctica',
+        outcomeItem: 'Agregar al menos un resultado de aprendizaje',
+        audienceItem: 'Describir para quién es este curso',
+        requirementItem: 'Agregar requisitos del curso',
+        lessonContentItem: 'Agregar contenido, bloques o medios a una lección',
+        previewLessonRecommendedItem:
+          'Marca una lección como vista previa gratis antes de publicar cursos pagados',
+        flashcardRecommendedItem: 'Agregar tarjetas para práctica de repaso',
       },
       success: {
         created: 'Course created.',
         saved: 'Draft saved.',
-        submitted: 'Course submitted for review.',
-        withdrawn: 'Course returned to draft.',
+        submitted: 'Curso enviado a revisión.',
+        withdrawn: 'Curso devuelto a borrador.',
       },
     },
     quiz: {
       heading: 'Quiz',
       passingScore: 'Passing score',
-      noPassingScore: 'No passing score required.',
+      noPassingScore: 'No se requiere puntuación mínima.',
       yourScore: 'Your score',
       lastScore: 'Last attempt',
       passed: 'Passed',
-      failed: 'Not passed yet',
+      failed: 'Aún no aprobado',
       correct: 'Correct',
       incorrect: 'Incorrect',
       explanation: 'Explanation',
-      selectAll: 'Select all that apply.',
-      selectOne: 'Select one answer.',
-      answerAll: 'Answer every question before submitting.',
+      selectAll: 'Selecciona todas las que correspondan.',
+      selectOne: 'Selecciona una respuesta.',
+      answerAll: 'Responde todas las preguntas antes de enviar.',
       points: 'points',
-      empty: 'This quiz has no questions yet.',
+      empty: 'Este quiz aún no tiene preguntas.',
       submit: 'Submit answers',
     },
     practiceExam: {
@@ -3754,8 +4213,8 @@ const dictionary = {
       passed: 'Passed',
       failed: 'Not passed',
       domainBreakdown: 'Domain breakdown',
-      empty: 'This exam has no questions available yet.',
-      answerAll: 'Answer every question before submitting.',
+      empty: 'Este examen aún no tiene preguntas disponibles.',
+      answerAll: 'Responde todas las preguntas antes de enviar.',
     },
     flashcards: {
       heading: 'Flashcards',
@@ -3764,24 +4223,24 @@ const dictionary = {
       previous: 'Previous',
       cardLabel: 'Card',
       showHint: 'Show hint',
-      empty: 'This set has no cards yet.',
+      empty: 'Este mazo aún no tiene tarjetas.',
     },
     review: {
       menu: 'Course Reviews',
-      title: 'Courses awaiting review',
-      empty: 'No courses are awaiting review.',
+      title: 'Cursos pendientes de revisión',
+      empty: 'No hay cursos pendientes de revisión.',
       pending: 'Awaiting review',
-      submittedAt: 'Submitted for review',
+      submittedAt: 'Enviado a revisión',
       decision: 'Review decision',
-      notesLabel: 'Notes for the creator',
+      notesLabel: 'Notas para el creador',
       notesHint:
-        'Required when requesting changes — this is shared with the creator.',
-      approveBody: 'Approving publishes the course to the catalog immediately.',
+        'Obligatorio al solicitar cambios; se comparte con el creador.',
+      approveBody: 'Aprobar publica el curso en el catálogo de inmediato.',
       approve: 'Approve & publish',
       requestChanges: 'Request changes',
       filterAll: 'All courses',
       filterPending: 'Awaiting review',
-      success: 'Course review saved.',
+      success: 'Revisión del curso guardada.',
     },
   },
 
@@ -3955,12 +4414,11 @@ const dictionary = {
       '¡Hola! Puedo ayudarle con exams, chapters, lessons, practice questions, concepts, exam types, exam attempts, daily goals, study notes, document uploads, miembros, registros de auditoría, suscripciones y más. ¿Qué le gustaría saber?',
     clearConversation: 'Limpiar conversación',
     inputHint: 'Presione Enter para enviar, Shift+Enter para nueva línea',
-    courseContextHeader: 'Course context available to the tutor:',
+    courseContextHeader: 'Contexto del curso disponible para el tutor:',
     courseVideoTranscriptNotice:
-      'Uploaded videos are available as files only; no audio transcript is available in Phase 1.',
-    courseScopedSystemPrompt: `The user is asking inside a specific course. Use this course context when helpful, but do not claim to know video audio that is not present in the written context:
-
-{0}`,
+      'Las transcripciones de videos subidos se incluyen cuando termina el procesamiento.',
+    courseScopedSystemPrompt:
+      'El usuario pregunta dentro de un curso específico. Usa este contexto del curso cuando sea útil. Usa transcripciones de video cuando estén disponibles.',
     systemPrompt: `Eres un chat IA para {0}. Tienes acceso a varias herramientas para ayudar a los usuarios a gestionar sus datos incluyendo exams, chapters, lessons, practice questions, concepts, exam types, exam attempts, daily goals, study notes, document uploads, miembros, registros de auditoría, suscripciones e información de usuario.
 
 IMPORTANTE: Responde siempre en {1}. El idioma de la interfaz del usuario es {1}, por lo que todas tus respuestas deben estar en {1}.
@@ -4271,10 +4729,10 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     title: 'Platform Admin',
     menu: 'Platform Admin',
     hero: {
-      badge: 'Super admin controls',
-      title: 'Monitor NexExam operations',
+      badge: 'Controles de superadministrador',
+      title: 'Monitorear operaciones de NexExam',
       description:
-        'Manage students, account creation links, student-facing promotions, and manual creator payouts across every organization.',
+        'Administra estudiantes, enlaces de creación de cuenta, promociones para estudiantes y pagos manuales a creadores en todas las organizaciones.',
     },
     stats: {
       users: 'Users',
@@ -4289,12 +4747,12 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       unreadNotifications: 'Unread notifications',
     },
     metrics: {
-      title: 'Metrics command center',
+      title: 'Centro de mando de métricas',
       description:
-        'Track growth, learning outcomes, revenue, refunds, AI usage, and course quality.',
+        'Haz seguimiento de crecimiento, resultados de aprendizaje, ingresos, reembolsos, uso de IA y calidad de cursos.',
       range: 'Range',
       loading: 'Loading metrics...',
-      empty: 'No course metrics available yet.',
+      empty: 'Aún no hay métricas de cursos disponibles.',
       ranges: {
         '7d': 'Last 7 days',
         '30d': 'Last 30 days',
@@ -4314,13 +4772,41 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       courseRatings: 'Course ratings',
       topCourses: 'Top courses',
       topCoursesBody:
-        'Compare enrollment, learning progress, quiz results, ratings, and revenue.',
+        'Compara inscripción, progreso, resultados de quizzes, calificaciones e ingresos.',
       course: 'Course',
       enrollments: 'Enrollments',
       homework: 'Homework',
       quiz: 'Quiz',
       rating: 'Rating',
       revenue: 'Revenue',
+      funnelTitle: 'Embudo de monetización',
+      funnelDescription:
+        'Mide cómo el interés en cursos se convierte en checkout, acceso pagado y primer valor desbloqueado.',
+      funnelEmpty: 'Aún no hay actividad de embudo disponible.',
+      viewToCheckout: 'Vista a checkout',
+      checkoutToPaid: 'Checkout a pago',
+      paidToFirstValue: 'Pago a primer valor',
+      funnelEvents: '{0} eventos',
+      fromPrevious: '{0} desde el paso anterior',
+      courseViews: 'Vistas',
+      paywallSeen: 'Muro de pago',
+      checkoutStarted: 'Checkout',
+      paid: 'Pagado',
+      firstValue: 'Primer valor',
+      paidRate: 'Tasa de pago',
+      funnelSteps: {
+        course_view: 'Vista del curso',
+        preview_start: 'Vista previa',
+        value_sample_started: 'Muestra iniciada',
+        value_sample_completed: 'Muestra completa',
+        sample_diagnostic_started: 'Diagnóstico iniciado',
+        sample_diagnostic_completed: 'Diagnóstico completo',
+        paywall_seen: 'Muro visto',
+        cta_click: 'Clic en CTA',
+        checkout_started: 'Checkout',
+        paid: 'Pagado',
+        first_value_after_payment: 'Primer valor',
+      },
     },
     dashboard: {
       shortcut: 'Cmd K',
@@ -4329,15 +4815,15 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       daily: 'Daily',
       noValue: '$0',
       loading: 'Loading users...',
-      emptyUsers: 'No users match these filters.',
-      showingUsers: 'Showing {0} of {1} users',
+      emptyUsers: 'Ningún usuario coincide con estos filtros.',
+      showingUsers: 'Mostrando {0} de {1} usuarios',
       platformWide: 'Platform-wide',
       manualPlan: 'Manual',
     },
     students: {
       title: 'Student accounts',
       description:
-        'Search users across organizations and manage their memberships.',
+        'Busca usuarios en todas las organizaciones y administra sus membresías.',
     },
     invitation: {
       title: 'Enlace de creación de cuenta',
@@ -4347,43 +4833,44 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       emailBody: `<p>Hola,</p><p>Te invitaron a unirte a {0} en NexExam.</p><p>Usa este enlace seguro para crear tu cuenta:</p><p><a href="{1}">{1}</a></p><p>Gracias,</p><p>El equipo de NexExam</p>`,
     },
     promotions: {
-      title: 'Promotions and toasts',
+      title: 'Promociones y avisos',
       description:
-        'Publish toast notifications, banners, and discount messages for students.',
+        'Publica notificaciones toast, banners y mensajes de descuento para estudiantes.',
     },
     payouts: {
       title: 'Creator payouts',
       description:
-        'Track manual payout records for course creators before marking them paid.',
+        'Haz seguimiento de pagos manuales a creadores antes de marcarlos como pagados.',
       unassigned: 'Unassigned creator',
       totalMtd: 'Total payouts',
       pendingAmount: 'Pending amount',
       successfulPayouts: 'Successful payouts',
       cancelledPayouts: 'Cancelled payouts',
       trend: 'Payout trend',
-      pendingQueue: 'Pending payouts queue',
+      pendingQueue: 'Cola de pagos pendientes',
       createTitle: 'Create payout',
       createDescription:
-        'Add a manual payout record and track it through completion.',
+        'Agrega un registro de pago manual y haz seguimiento hasta completarlo.',
     },
     roles: {
-      title: 'Roles and permissions',
-      description: 'Monitor platform access control.',
-      adminDescription: 'Manage organization settings and users',
-      memberDescription: 'Use the learning workspace',
+      title: 'Roles y permisos',
+      description: 'Monitorea el control de acceso de la plataforma.',
+      adminDescription:
+        'Administrar configuración y usuarios de la organización',
+      memberDescription: 'Usar el espacio de aprendizaje',
     },
     activity: {
       title: 'Recent activity',
-      description: 'Track important admin actions.',
+      description: 'Haz seguimiento de acciones administrativas importantes.',
       system: 'System',
       auditLine: '{0} on {1}',
     },
     risk: {
-      title: 'Fraud and risk overview',
-      description: 'Flagged accounts and payout risks.',
+      title: 'Resumen de fraude y riesgo',
+      description: 'Cuentas marcadas y riesgos de pagos.',
       disabledMembers: 'Disabled members',
       pendingPayouts: 'Pending payouts',
-      cancelledAmount: 'Cancelled payout amount',
+      cancelledAmount: 'Importe de pagos cancelados',
     },
     activePromotion: {
       open: 'Open',
@@ -4396,7 +4883,7 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       memberships: 'memberships',
       kind: 'Type',
       audience: 'Audience',
-      creatorUserId: 'Creator user ID',
+      creatorUserId: 'ID de usuario del creador',
       amount: 'Amount',
       accessStatus: 'Access status',
       description: 'Description',
@@ -4415,14 +4902,14 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     },
     placeholders: {
       organization: 'Select organization',
-      email: 'student@example.com',
-      globalSearch: 'Search users, creators, payouts, notifications...',
-      searchStudents: 'Search students by name or email...',
+      email: 'estudiante@example.com',
+      globalSearch: 'Buscar usuarios, creadores, pagos, notificaciones...',
+      searchStudents: 'Buscar estudiantes por nombre o correo...',
       title: 'Promotion title',
       message: 'Promotion message',
-      ctaLabel: 'Call to action label',
-      ctaHref: 'Call to action link',
-      creatorUserId: 'Paste creator user ID',
+      ctaLabel: 'Etiqueta de llamada a la acción',
+      ctaHref: 'Enlace de llamada a la acción',
+      creatorUserId: 'Pega el ID de usuario del creador',
       description: 'Payout note',
     },
     actions: {
@@ -4444,15 +4931,15 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       edit: 'Edit',
       viewAll: 'View all',
       viewPayouts: 'View payouts',
-      backToDashboard: 'Back to dashboard',
+      backToDashboard: 'Volver al panel',
     },
     success: {
-      invitationSent: 'Invitation sent successfully',
-      promotionCreated: 'Promotion created successfully',
-      payoutCreated: 'Payout created successfully',
+      invitationSent: 'Invitación enviada correctamente',
+      promotionCreated: 'Promoción creada correctamente',
+      payoutCreated: 'Pago creado correctamente',
     },
     errors: {
-      inviteExists: 'A pending invitation already exists for this email.',
+      inviteExists: 'Ya existe una invitación pendiente para este correo.',
     },
     enumerators: {
       role: {
@@ -4513,28 +5000,32 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       },
     },
     accountDeletionRequestEmail: {
-      subject: `Confirm your account deletion`,
-      content: `<p>Hello {0},</p><p>You asked to delete your account. To confirm, click this link within 24 hours:</p><p><a href="{1}">{1}</a></p><p>Your account is scheduled to be permanently removed on <strong>{2}</strong> unless you cancel before then. You can cancel anytime from your Account Settings.</p><p>If you didn't request this, you can ignore this email — nothing will happen.</p>`,
+      subject: 'Confirma la eliminación de tu cuenta',
+      content:
+        '<p>Hola {0},</p><p>Solicitaste eliminar tu cuenta. Para confirmarlo, haz clic en este enlace dentro de 24 horas:</p><p><a href="{1}">{1}</a></p><p>Tu cuenta está programada para eliminarse permanentemente el <strong>{2}</strong>, a menos que canceles antes. Puedes cancelar desde Configuración de cuenta.</p><p>Si no solicitaste esto, ignora este correo; no ocurrirá nada.</p>',
     },
     accountDeletionConfirmedEmail: {
-      subject: `Your account is scheduled for deletion`,
-      content: `<p>Hello {0},</p><p>Your account deletion is confirmed. We will permanently remove your data on <strong>{1}</strong>. You can still cancel anytime before then from your Account Settings.</p>`,
+      subject: 'Tu cuenta está programada para eliminación',
+      content:
+        '<p>Hola {0},</p><p>La eliminación de tu cuenta está confirmada. Eliminaremos permanentemente tus datos el <strong>{1}</strong>. Todavía puedes cancelar desde Configuración de cuenta antes de esa fecha.</p>',
     },
     dataExportReadyEmail: {
-      subject: `Your data export is ready`,
-      content: `<p>Hello {0},</p><p>Your data export is ready to download.</p><p><a href="{1}">{1}</a></p><p>Download links expire after 15 minutes for security — visit your Account Settings anytime to request a fresh link.</p>`,
+      subject: 'Tu exportación de datos está lista',
+      content:
+        '<p>Hola {0},</p><p>Tu exportación de datos está lista para descargar.</p><p><a href="{1}">{1}</a></p><p>Los enlaces de descarga vencen después de 15 minutos por seguridad; visita Configuración de cuenta para solicitar un enlace nuevo.</p>',
     },
   },
   oneOnOneCall: {
     entryCard: {
-      title: '1:1 with your instructor',
-      description: 'Book a video call with your course instructor.',
+      title: '1:1 con tu instructor',
+      description: 'Reserva una videollamada con el instructor del curso.',
       actionOpen: 'Book a 1:1',
-      noAvailability: 'Your instructor has not opened any 1:1 sessions yet.',
+      noAvailability: 'Tu instructor aún no abrió sesiones 1:1.',
     },
     availability: {
       title: 'Availability',
-      description: 'Pick the weekly windows you can take 1:1 calls.',
+      description:
+        'Elige las ventanas semanales en las que puedes tomar llamadas 1:1.',
       timezoneLabel: 'Timezone',
       addWindow: 'Add window',
       removeWindow: 'Remove',
@@ -4543,7 +5034,8 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       endTime: 'End',
       save: 'Save availability',
       saved: 'Availability saved',
-      empty: 'No availability windows yet. Add one to start taking sessions.',
+      empty:
+        'Aún no hay ventanas de disponibilidad. Agrega una para empezar a tomar sesiones.',
       days: {
         sunday: 'Sunday',
         monday: 'Monday',
@@ -4556,23 +5048,32 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     },
     sessionType: {
       title: 'Session types',
-      description: 'Define what students can book.',
-      add: 'Add session type',
+      description: 'Define lo que los estudiantes pueden reservar.',
+      add: 'Agregar tipo de sesión',
       fields: {
         title: 'Title',
         description: 'Description (optional)',
         durationMinutes: 'Duration (minutes)',
-        isFree: 'Free session',
-        priceCents: 'Price (cents)',
-        currency: 'Currency',
+        isFree: 'Sesión gratuita',
+        priceAmount: 'Precio',
+        currency: 'Moneda',
         bufferMinutes: 'Buffer (minutes)',
-        minNoticeHours: 'Minimum notice (hours)',
+        minNoticeHours: 'Aviso mínimo (horas)',
       },
+      pricingModeLabel: 'Modo de precio',
+      freeMode: 'Gratis',
+      paidMode: 'De pago',
+      freeLabel: 'Gratis',
+      durationMinutesShort: '{0} min',
+      priceAmountPlaceholder: '25.00',
+      paidHelper:
+        'Los estudiantes pagan con Stripe antes de que se confirme la sesión.',
+      priceInvalid: 'Ingresa un precio entre US$0.50 y US$10,000.00.',
+      currencyInvalid: 'Ingresa un código de moneda de 3 letras.',
       save: 'Save',
+      cancel: 'Cancelar',
       disable: 'Disable',
-      empty: 'No session types yet.',
-      paidDisabledHint:
-        'Paid sessions are coming soon — only free sessions can be created right now.',
+      empty: 'Aún no hay tipos de sesión.',
     },
     booking: {
       title: 'Book a 1:1',
@@ -4581,99 +5082,127 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       pickTime: 'Pick a time',
       confirm: 'Confirm booking',
       submitting: 'Booking…',
-      noSessionTypes: 'Your instructor has not opened any 1:1 sessions yet.',
-      noSlots: 'No open slots in this range.',
-      success: 'Booked — see your session under your sessions list.',
+      noSessionTypes: 'Tu instructor aún no abrió sesiones 1:1.',
+      noSlots: 'No hay horarios disponibles en este rango.',
+      success: 'Reservado: revisa la sesión en tu lista de sesiones.',
+      close: 'Cerrar',
+      freeLabel: 'Gratis',
+      durationMinutesShort: '{0} min',
+      sessionTypeOptionLabel: '{0} ({1}, {2})',
+      paidBookingNotice:
+        'Las sesiones de pago redirigen a Stripe Checkout. Tu horario queda reservado hasta que se complete el pago.',
+      stripeProductName: '1:1 con {0}: {1}',
     },
     session: {
       title: 'Your 1:1 sessions',
       tabs: { upcoming: 'Upcoming', past: 'Past' },
       role: { student: 'As student', instructor: 'As instructor' },
-      emptyUpcoming: 'No upcoming sessions.',
-      emptyPast: 'No past sessions.',
+      emptyUpcoming: 'No hay sesiones próximas.',
+      emptyPast: 'No hay sesiones pasadas.',
       join: 'Join call',
-      joinHint: 'The join link unlocks 10 minutes before start.',
+      joinHint: 'El enlace se habilita 10 minutos antes de empezar.',
       cancel: 'Cancel session',
       statusLabel: 'Status',
       statuses: {
-        confirmed: 'Confirmed',
-        pendingPayment: 'Awaiting payment',
-        completed: 'Completed',
-        cancelledByStudent: 'Cancelled by student',
-        cancelledByInstructor: 'Cancelled by instructor',
-        noShow: 'No-show',
-        expired: 'Expired',
-        disputed: 'Disputed',
-        refunded: 'Refunded',
+        confirmed: 'Confirmada',
+        pendingPayment: 'Pago pendiente',
+        completed: 'Completada',
+        cancelledByStudent: 'Cancelada por estudiante',
+        cancelledByInstructor: 'Cancelada por instructor',
+        noShow: 'Ausencia',
+        expired: 'Vencida',
+        disputed: 'En disputa',
+        refunded: 'Reembolsada',
       },
     },
     notes: {
       title: 'Notes',
-      placeholder: 'Add a private or shared note…',
+      placeholder: 'Agrega una nota privada o compartida…',
       add: 'Add note',
-      shared: 'Share with the other party',
+      shared: 'Compartir con la otra persona',
       edit: 'Edit',
       delete: 'Delete',
-      empty: 'No notes yet.',
+      empty: 'Aún no hay notas.',
     },
     cancel: {
-      title: 'Cancel this session?',
+      title: '¿Cancelar esta sesión?',
       reasonLabel: 'Reason (optional)',
       confirm: 'Yes, cancel',
       keep: 'Keep session',
       lateCancelWarning:
-        'You are cancelling within 24 hours of the start — this counts as a late cancel.',
+        'Estás cancelando dentro de las 24 horas previas al inicio; cuenta como cancelación tardía.',
     },
     errors: {
-      noInstructor: 'This course has no instructor available for 1:1 sessions.',
-      cannotBookSelf: 'You cannot book a 1:1 with yourself.',
+      noInstructor:
+        'Este curso no tiene instructor disponible para sesiones 1:1.',
+      cannotBookSelf: 'No puedes reservar un 1:1 contigo mismo.',
       paidNotAvailable:
-        'Paid 1:1 sessions are not available yet — only free sessions can be booked or created.',
+        'Las sesiones 1:1 de pago requieren que el procesamiento de pagos de Stripe esté configurado.',
       slotUnavailable:
-        'That time is not in the instructor availability or violates the minimum-notice window.',
+        'Ese horario no está en la disponibilidad del instructor o incumple el aviso mínimo.',
       slotTaken:
-        'That slot was just booked by someone else. Please pick another time.',
+        'Ese horario acaba de ser reservado por otra persona. Elige otro.',
       rangeTooLarge:
-        'Slot range is too large — narrow the dates and try again.',
-      notCourseOwner: 'You do not own this course.',
-      cannotCancel: 'This session can no longer be cancelled.',
+        'El rango de horarios es demasiado grande; reduce las fechas e inténtalo de nuevo.',
+      notCourseOwner: 'No eres propietario de este curso.',
+      cannotCancel: 'Esta sesión ya no se puede cancelar.',
     },
     notify: {
       bookingConfirmedTitle: '1:1 session booked',
       bookingConfirmedStudentBody:
-        'Your 1:1 session for {0} is confirmed for {1}.',
-      bookingConfirmedInstructorBody: '{0} booked a 1:1 for {1} on {2}.',
+        'Tu sesión 1:1 de {0} está confirmada para {1}.',
+      bookingConfirmedInstructorBody: '{0} reservó un 1:1 para {1} el {2}.',
       cancelledTitle: '1:1 session cancelled',
-      cancelledByStudentBody: '{0} cancelled the 1:1 for {1} on {2}.',
-      cancelledByInstructorBody: '{0} cancelled your 1:1 for {1} on {2}.',
+      cancelledByStudentBody: '{0} canceló el 1:1 de {1} el {2}.',
+      cancelledByInstructorBody: '{0} canceló tu 1:1 de {1} el {2}.',
       reminderTitle: '1:1 session reminder',
-      reminderBody: 'Your 1:1 for {0} is starting soon — {1}.',
+      reminderBody: 'Tu 1:1 de {0} empieza pronto: {1}.',
       disputeOpenedTitle: '1:1 session disputed',
       disputeResolvedTitle: '1:1 dispute resolved',
     },
     dispute: {
-      open: 'Dispute this session',
-      reasonLabel: 'What went wrong?',
-      reasonPlaceholder: 'Describe the issue in detail.',
+      open: 'Disputar esta sesión',
+      reasonLabel: '¿Qué salió mal?',
+      reasonPlaceholder: 'Describe el problema en detalle.',
       submit: 'Open dispute',
-      alreadyDisputed: 'A dispute is already open for this session.',
+      alreadyDisputed: 'Ya hay una disputa abierta para esta sesión.',
       notEligible:
-        'Only paid sessions that have completed or been marked no-show can be disputed.',
-      outcomeRefund: 'A refund has been issued.',
-      outcomeNoRefund: 'The dispute was reviewed and no refund was issued.',
+        'Solo se pueden disputar sesiones pagadas completadas o marcadas como ausencia.',
+      outcomeRefund: 'Se emitió un reembolso.',
+      outcomeNoRefund: 'La disputa fue revisada y no se emitió reembolso.',
       admin: {
-        title: '1:1 dispute review',
-        list: 'Open disputes',
-        statusFilter: 'Filter by status',
-        detail: 'Dispute detail',
-        resolutionLabel: 'Resolution',
-        refund: 'Issue refund',
-        noRefund: 'No refund',
-        refundAmount: 'Refund amount (cents)',
-        notes: 'Resolution notes',
-        resolve: 'Resolve',
-        resolved: 'Resolved',
-        empty: 'No disputes match this filter.',
+        title: 'Revisión de disputa 1:1',
+        list: 'Disputas abiertas',
+        statusFilter: 'Filtrar por estado',
+        statuses: {
+          all: 'Todos',
+          open: 'Abierta',
+          underReview: 'En revisión',
+          resolvedRefund: 'Resuelta: reembolso',
+          resolvedNoRefund: 'Resuelta: sin reembolso',
+        },
+        detail: 'Detalle de la disputa',
+        sessionLabel: 'Sesión',
+        courseLabel: 'Curso',
+        studentLabel: 'Estudiante',
+        instructorLabel: 'Instructor',
+        scheduledLabel: 'Programada',
+        priceLabel: 'Precio',
+        paidAtLabel: 'Pagada el',
+        refundedLabel: 'Reembolsada',
+        refundedValue: '{0} el {1}',
+        statusLabel: 'Estado',
+        reasonLabel: 'Motivo',
+        resolutionLabel: 'Resolución',
+        refund: 'Emitir reembolso',
+        noRefund: 'Sin reembolso',
+        refundAmount: 'Importe del reembolso (centavos)',
+        notes: 'Notas de resolución',
+        resolve: 'Resolver',
+        resolved: 'Resuelta',
+        empty: 'Ninguna disputa coincide con este filtro.',
+        emptyValue: '—',
+        resolveError: 'No se pudo resolver la disputa.',
       },
     },
   },
@@ -4683,11 +5212,11 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       title: 'Earnings summary',
       totalEarned: 'Total paid',
       pending: 'Pending',
-      paidThisMonth: 'Paid this month',
+      paidThisMonth: 'Pagado este mes',
     },
     list: {
       title: 'Payouts',
-      empty: 'No payouts yet. Entries will appear here as soon as you earn.',
+      empty: 'Aún no hay pagos. Las entradas aparecerán aquí en cuanto ganes.',
       status: {
         pending: 'Pending',
         paid: 'Paid',
@@ -4697,24 +5226,25 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     payoutMethod: {
       title: 'Payout method',
       description:
-        'How would you like to be paid? Bank ACH details, Wise email, PayPal, etc. Plain text — admins read this when wiring your funds.',
+        '¿Cómo quieres recibir el pago? Datos ACH bancarios, correo de Wise, PayPal, etc. Texto sin formato; los administradores lo leen al transferir tus fondos.',
       edit: 'Edit',
       save: 'Save',
-      placeholder: 'e.g. ACH — Chase ****1234 — routing 021000021',
-      empty: 'No payout method set yet.',
+      placeholder: 'p. ej., ACH — Chase ****1234 — ruta 021000021',
+      empty: 'Aún no hay método de pago configurado.',
     },
     notify: {
-      payoutPaidTitle: 'Your payout was sent',
-      payoutPaidBody: 'Your payout of {0} {1} has been marked as paid.',
-      payoutCancelledTitle: 'Your payout was cancelled',
-      payoutCancelledBody: 'Your payout of {0} {1} has been cancelled.',
+      payoutPaidTitle: 'Tu pago fue enviado',
+      payoutPaidBody: 'Tu pago de {0} {1} fue marcado como pagado.',
+      payoutCancelledTitle: 'Tu pago fue cancelado',
+      payoutCancelledBody: 'Tu pago de {0} {1} fue cancelado.',
     },
   },
   adminCourseCategories: {
     title: 'Course categories',
     description:
-      'Curated taxonomy that powers the marketplace chip row and the creator builder dropdown.',
-    empty: 'No categories yet. Add one to start curating the marketplace.',
+      'Taxonomía curada que impulsa la fila de chips del marketplace y el desplegable del creador de cursos.',
+    empty:
+      'Aún no hay categorías. Agrega una para empezar a curar el marketplace.',
     columns: {
       name: 'Name',
       slug: 'Slug',
@@ -4725,7 +5255,7 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     fields: {
       name: 'Name',
       description: 'Description',
-      iconName: 'Icon (Lucide key, e.g. LuBookOpen)',
+      iconName: 'Icono (clave de Lucide, p. ej., LuBookOpen)',
       displayOrder: 'Display order',
       isActive: 'Active',
     },
@@ -4739,11 +5269,11 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     },
     confirm: {
       disable:
-        'Disable this category? Courses linked to it will keep their assignment but the category will not appear in the marketplace.',
-      enable: 'Make this category visible again in the marketplace?',
+        '¿Desactivar esta categoría? Los cursos vinculados conservarán su asignación, pero la categoría no aparecerá en el marketplace.',
+      enable: '¿Volver a mostrar esta categoría en el marketplace?',
     },
     errors: {
-      statusRequired: 'Choose enable or disable.',
+      statusRequired: 'Elige activar o desactivar.',
     },
   },
   adminCoursePurchases: {
@@ -4782,15 +5312,145 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
     },
   },
   studentOnboarding: {
-    title: 'Elige tus primeros cursos',
-    body: 'Elige cualquier curso gratuito para inscribirte ahora. Puedes explorar el marketplace completo en cualquier momento; los cursos pagados se abren desde la página del curso.',
+    badge: 'Onboarding personalizado',
+    title: 'Crea tu ruta de examen',
+    body: 'Responde cinco preguntas rápidas para que NexExam convierta precios y recomendaciones en un plan ligado a tu objetivo.',
     skip: 'Omitir por ahora',
     continue: 'Continuar al panel',
     enrollLabel: 'Inscribirse',
     enrolledLabel: 'Inscrito',
     viewLabel: 'Ver curso',
+    generatePlan: 'Generar mi plan',
+    editAnswers: 'Editar respuestas',
     emptyMessage:
-      'Estamos preparando una nueva tanda de cursos. Entra cuando esté lista.',
+      'Estamos preparando una nueva tanda de cursos. Tu plan puede empezar con diagnóstico y ritmo de estudio.',
+    fields: {
+      examGoal: 'Examen u objetivo de aprendizaje',
+      timeline: 'Calendario',
+      currentLevel: 'Nivel actual',
+      studyTime: 'Tiempo semanal de estudio',
+      targetScore: 'Puntaje objetivo',
+    },
+    placeholders: {
+      examGoal: 'Final de Álgebra 1, SAT Math, examen de enfermería...',
+      targetScore: '90%, 700+, aprobar al primer intento...',
+    },
+    timeline: {
+      two_weeks: '2 semanas',
+      one_month: '1 mes',
+      two_months: '2 meses',
+      three_months: '3 meses',
+      six_months: '6 meses',
+      not_sure: 'No estoy seguro',
+    },
+    timelineBody: {
+      two_weeks: 'Plan sprint',
+      one_month: 'Mes enfocado',
+      two_months: 'Avance constante',
+      three_months: 'Preparación profunda',
+      six_months: 'Ruta larga',
+      not_sure: 'Inicio flexible',
+    },
+    currentLevel: {
+      new: 'Nuevo en esto',
+      some_background: 'Algo de base',
+      practicing: 'Ya practico',
+      almost_ready: 'Casi listo',
+    },
+    currentLevelBody: {
+      new: 'Empieza con fundamentos y primeras victorias.',
+      some_background: 'Detecta vacíos y crea un ritmo repetible.',
+      practicing: 'Prioriza áreas débiles y práctica tipo examen.',
+      almost_ready: 'Refina tiempo, precisión y repaso final.',
+    },
+    studyTime: {
+      '120': 'Ligero',
+      '240': 'Constante',
+      '420': 'Comprometido',
+      '600': 'Intensivo',
+      '900': 'Inmersivo',
+    },
+    duration: {
+      minutes: '{0} min',
+      hours: '{0} h',
+      hoursMinutes: '{0} h {1} min',
+    },
+    unlockPreview: {
+      badge: 'Vista de desbloqueo',
+      title: 'Pagar debe sentirse como abrir el siguiente paso',
+      body: 'El plan mostrará qué puedes hacer ahora y qué aparece cuando te suscribes o compras un curso.',
+      items: [
+        'Un ritmo de estudio según tu tiempo disponible',
+        'Cursos recomendados ligados a tu objetivo',
+        'Una separación clara entre valor gratis y desbloqueos pagados',
+      ],
+    },
+    plan: {
+      title: 'Tu plan personal está listo',
+      body: 'Revisa el ritmo, los hitos y los cursos antes de elegir qué desbloquear.',
+      readyBadge: 'Plan generado',
+      personalTitle: 'Plan para {0}',
+      summary:
+        'Calendario de {0} hacia {1}, con una primera acción elegida por tu nivel y cursos disponibles.',
+      sessionRhythm: '{0} sesiones/semana de {1}',
+      today: 'Hoy',
+      days: 'Día {0}',
+      milestonesTitle: 'Ruta de hitos',
+      metrics: {
+        timeline: 'Calendario',
+        weeklyTime: 'Tiempo semanal',
+        rhythm: 'Ritmo de estudio',
+        targetScore: 'Objetivo',
+      },
+      milestones: {
+        baseline: {
+          title: 'Línea base',
+          body: 'Empieza con diagnóstico o primera lección para tener una señal real.',
+        },
+        firstWin: {
+          title: 'Primera victoria',
+          body: 'Completa una lección o práctica enfocada para crear impulso.',
+        },
+        practiceRhythm: {
+          title: 'Ritmo de práctica',
+          body: 'Repite práctica de habilidades débiles cada semana.',
+        },
+        examReadiness: {
+          title: 'Chequeo de preparación',
+          body: 'Usa señales de preparación para decidir qué repasar antes del examen.',
+        },
+        finalReview: {
+          title: 'Repaso final',
+          body: 'Protege tus temas fuertes y ajusta los puntos débiles restantes.',
+        },
+      },
+    },
+    courses: {
+      title: 'Cursos recomendados',
+      body: 'Ordenados según tu objetivo, nivel y calendario.',
+      browseAll: 'Ver todos los cursos',
+    },
+    unlocks: {
+      title: 'Qué se abre',
+      includedTitle: 'Incluido ahora',
+      paidTitle: 'Desbloqueado con acceso pagado',
+      includedItems: [
+        'Objetivo y calendario guardados',
+        'Primer curso o vista previa recomendada',
+        'Una ruta simple de hitos',
+      ],
+      items: {
+        fullCurriculum: 'Currículo completo y recursos del curso',
+        adaptivePlan: 'Plan adaptativo que cambia con tu progreso',
+        aiTutor: 'Prompts de tutor IA ligados a lecciones y práctica',
+        practiceExams: 'Exámenes de práctica y chequeos de preparación',
+        certificatePath: 'Ruta de certificado y prueba de finalización',
+      },
+    },
+    errors: {
+      noRecommendations:
+        'Aún no hay recomendaciones de cursos. Inténtalo cuando haya cursos publicados.',
+    },
   },
   aiTutor: {
     title: 'AI Tutor',
@@ -4832,8 +5492,16 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       placeholder: 'Mensaje para AI Tutor',
       sendAriaLabel: 'Enviar mensaje',
       stopAriaLabel: 'Detener generación',
-      attachComingSoon: 'Adjuntos próximamente',
       disclaimer: 'AI Tutor puede equivocarse. Verifica las respuestas clave.',
+    },
+    attachments: {
+      add: 'Adjuntar archivos',
+      remove: 'Quitar adjunto',
+      tooMany: 'Adjunta hasta 5 archivos por mensaje.',
+      tooLarge: 'Cada adjunto debe tener 10 MB o menos.',
+      unsupported: 'Adjunta archivos PDF, DOCX, TXT, Markdown, CSV o JSON.',
+      invalid: 'Este adjunto no está disponible para esta conversación.',
+      uploadFailed: 'No se pudo subir el adjunto. Inténtalo de nuevo.',
     },
     thread: {
       thinking: 'Pensando…',
@@ -4889,6 +5557,112 @@ Recuerda: Estás operando dentro de {0} y solo puedes acceder a datos de esta or
       networkError:
         'No se pudo conectar con AI Tutor. Revisa tu conexión y vuelve a intentar.',
       dismiss: 'Descartar',
+    },
+  },
+
+  aiTrust: {
+    title: 'Transparencia de IA',
+    openControls: 'Controles de privacidad de IA',
+    settingsTitle: 'Controles de privacidad de IA',
+    settingsDescription:
+      'Elige que senales de estudio puede usar NexExam en futuras respuestas de IA.',
+    saved: 'Controles de privacidad de IA guardados.',
+    saving: 'Guardando...',
+    controls: {
+      lessonContent: {
+        label: 'Contenido de lecciones',
+        description:
+          'Usar texto, transcripciones y tareas de lecciones para explicaciones, cuestionarios y planes.',
+      },
+      lessonProgress: {
+        label: 'Progreso de lecciones',
+        description:
+          'Usar lecciones completadas y pendientes para personalizar recomendaciones.',
+      },
+      practiceResults: {
+        label: 'Resultados de practica',
+        description:
+          'Usar calificaciones de cuestionarios y practica para detectar temas debiles.',
+      },
+      chatHistory: {
+        label: 'Historial del chat',
+        description:
+          'Usar mensajes anteriores de la misma conversacion con el Tutor IA.',
+      },
+      attachments: {
+        label: 'Archivos adjuntos',
+        description: 'Usar archivos cargados al responder tu mensaje actual.',
+      },
+    },
+    panel: {
+      trigger: 'Por que esto?',
+      title: 'Capa de confianza de IA',
+      why: 'Por que se genero',
+      influencedBy: 'Influenciado por',
+      confidence: 'Confianza',
+      limitations: 'Limitaciones',
+      privacy: 'Privacidad',
+      used: 'Usado',
+      omitted: 'No usado',
+      unavailable: 'Sin datos aun',
+      generated: 'Generado',
+      model: 'Modelo',
+      noSignals: 'No hay detalles de confianza de IA disponibles.',
+      privacyNote:
+        'Los controles de privacidad afectan futuras generaciones de IA.',
+    },
+    confidence: {
+      high: 'Evidencia alta',
+      medium: 'Evidencia parcial',
+      low: 'Evidencia limitada',
+    },
+    sources: {
+      studentPrompt: 'Tu mensaje',
+      courseOutline: 'Estructura del curso',
+      lessonContent: 'Contenido de lecciones',
+      lessonProgress: 'Progreso de lecciones',
+      practiceResults: 'Resultados de practica',
+      examDate: 'Fecha del examen',
+      chatHistory: 'Historial del chat',
+      attachments: 'Archivos adjuntos',
+    },
+    reasons: {
+      studyPlan:
+        'Este plan se genero para priorizar temas debiles, lecciones pendientes y tu calendario de examen.',
+      nextStep:
+        'Esta recomendacion se genero a partir de tu progreso y temas debiles.',
+      lessonExplain:
+        'Esta explicacion se genero con el contexto de la leccion seleccionada.',
+      lessonSummary:
+        'Este resumen se genero con el contexto de la leccion seleccionada.',
+      quiz: 'Este cuestionario se genero a partir de las lecciones del modulo seleccionado.',
+      practice:
+        'Esta practica se genero a partir de las lecciones del modulo seleccionado.',
+      aiTutor:
+        'Esta respuesta se genero a partir de tu mensaje y el contexto de estudio habilitado.',
+    },
+    limitations: {
+      general:
+        'La IA puede equivocarse. Verifica las respuestas importantes con el material del curso.',
+      noPracticeData:
+        'No habia resultados de cuestionarios o practica disponibles.',
+      noLessonProgress:
+        'No habia historial de lecciones completadas disponible.',
+      noLessonContent:
+        'La leccion seleccionada tiene poco o ningun contenido legible.',
+      lessonContentOff:
+        'No se uso contenido de lecciones porque lo desactivaste.',
+      lessonProgressOff:
+        'No se uso progreso de lecciones porque lo desactivaste.',
+      practiceOff:
+        'No se usaron resultados de practica porque los desactivaste.',
+      historyOff: 'No se uso el historial del chat porque lo desactivaste.',
+      attachmentsOff: 'No se usaron archivos adjuntos porque los desactivaste.',
+      verifyAnswers:
+        'Revisa las preguntas y explicaciones generadas antes de depender de ellas.',
+    },
+    units: {
+      days: 'dias',
     },
   },
 

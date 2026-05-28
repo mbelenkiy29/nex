@@ -42,6 +42,9 @@ const dictionary = {
     endDate: 'End date',
     close: 'Close',
     loading: 'Loading',
+    backHome: 'Back home',
+    sidebar: 'Sidebar',
+    sidebarDescription: 'Displays the mobile sidebar.',
     toggleSidebar: 'Toggle Sidebar',
     breadcrumb: 'breadcrumb',
     more: 'More',
@@ -300,23 +303,23 @@ const dictionary = {
       applicationPending:
         'Your creator application is under review. You can update details while the team evaluates it.',
       applicationApproved:
-        'Your creator profile is approved. Admin-controlled course publishing remains active for Phase 1.',
+        'Your creator profile is approved. You can build courses and submit them for NexExam review.',
       applicationRejected:
         'Your application needs changes before approval. Review admin notes and resubmit your profile.',
       startApplication: 'Start application',
       editApplication: 'Update application',
       workspaceTitle: 'Course workspace',
       workspaceBody:
-        'Creator course building is separated from student learning. Self-serve publishing opens after verification workflows are stable.',
-      reviewTitle: 'Admin review',
+        'Use the creator builder to organize curriculum, lessons, quizzes, practice exams, and outcomes before submitting for review.',
+      reviewTitle: 'Publishing review',
       reviewBody:
-        'NexExam super admins review applications, course quality, enrollments, and payouts from the admin dashboard.',
-      deferredTitle: 'Phase 1 boundary',
+        'NexExam admins approve submitted courses, manage catalog publishing, and review enrollment, payout, and revenue settings.',
+      deferredTitle: 'Revenue settings',
       deferredBody:
-        'Drag-and-drop course creation and automated revenue splits stay deferred while the enrollment loop ships.',
+        'Revenue share and payout details are configured through admin tools for each course.',
       metricsTitle: 'Creator metrics',
       metricsBody:
-        'Track enrollments, completion, AI usage, ratings, and earnings across your courses.',
+        'Track enrollments, completion, ratings, and earnings activity across your courses.',
     },
     welcome: 'Welcome back, {0}',
     heroTitle: 'Continue your learning journey with AI',
@@ -396,6 +399,7 @@ const dictionary = {
       myCourses: 'My Courses',
       practice: 'Practice',
       notesStudyPlan: 'Notes / Study Plan',
+      masteryMap: 'Mastery Map',
       aiTutor: 'AI Tutor',
       courseOverview: 'Course Overview',
     },
@@ -432,6 +436,25 @@ const dictionary = {
     homework: 'Homework',
     notes: 'Notes',
     studyPlan: 'Study plan',
+    nextUnlock: {
+      badge: 'Next unlock',
+      activeBadge: 'Premium active',
+      title: 'Unlock your AI learning loop',
+      activeTitle: 'Your premium learning loop is ready',
+      body: 'Premium turns your courses, practice, notes, and AI tutor into one guided path.',
+      activeBody:
+        'Use the unlocked AI tools to keep moving from lesson progress to measurable readiness.',
+      aiPlanTitle: 'AI study plan',
+      aiPlanBody: 'Turn weak areas and deadlines into focused daily tasks.',
+      practiceTitle: 'Premium practice',
+      practiceBody: 'Reveal more targeted questions and exam-style review.',
+      certificateTitle: 'Certificate path',
+      certificateBody:
+        'Track the work that moves you toward verified completion.',
+      subscriptionCta: 'View premium plans',
+      coursesCta: 'Browse courses',
+      aiTutorCta: 'Open AI Tutor',
+    },
     mobile: {
       savedOffline: 'Saved offline. It will sync when you are back online.',
       syncFailed: 'Sync failed',
@@ -567,6 +590,111 @@ const dictionary = {
         bestScore: 'Best score',
         lastScore: 'Last score',
         openPlayer: 'Open mock exams',
+      },
+    },
+    masteryMap: {
+      badge: 'Mastery Map',
+      title: 'Protect your progress',
+      body: 'Track the readiness, weak skills, unlocks, streaks, and certificates that show your learning is compounding.',
+      emptyBody:
+        'Enroll in a course to start building your readiness trend, skill map, module unlocks, streak, and certificate path.',
+      browseCourses: 'Browse courses',
+      readinessScore: 'Readiness score',
+      points: 'points',
+      openCta: 'Open Mastery Map',
+      nextMilestone: 'Next readiness milestone',
+      milestoneTarget: '{0} readiness points',
+      milestoneProgress: '{0}% of this milestone protected',
+      unlockedModulesValue: '{0} / {1}',
+      certificatesValue: '{0} / {1}',
+      streakValue: '{0} day(s)',
+      milestonesTitle: 'Exam readiness milestones',
+      milestonesBody:
+        'Each milestone makes progress visible before the final certificate.',
+      milestoneLabels: {
+        baseline: 'Baseline mapped',
+        momentum: 'Momentum built',
+        ready: 'Exam ready',
+        examReady: 'Final readiness',
+        mastered: 'Mastery protected',
+      },
+      metrics: {
+        weakSkills: 'Weak skills',
+        weakSkillsHelper: 'Skills most likely to slow readiness.',
+        unlockedModules: 'Unlocked modules',
+        unlockedModulesHelper: 'Curriculum areas opened by progress.',
+        certificates: 'Certificates',
+        certificatesHelper: 'Proof paths earned or in progress.',
+        streak: 'Study streak',
+        streakHelper: 'Best streak: {0} day(s)',
+      },
+      trend: {
+        title: 'Readiness score trend',
+        body: 'Daily snapshots show whether study time is protecting or accelerating progress.',
+        chartLabel: 'Readiness trend chart',
+        delta: '+{0}',
+        direction: {
+          up: 'Trending up',
+          down: 'Needs attention',
+          flat: 'Holding steady',
+          none: 'New trend',
+        },
+      },
+      premium: {
+        title: 'Full progress economy unlocks with premium',
+        body: 'Premium keeps the cross-course map, AI next steps, and deeper practice tied to the progress you are building.',
+        cta: 'View premium plans',
+      },
+      weakSkills: {
+        title: 'Weak skills to protect',
+        body: 'Focus on the skills that can hold back readiness before adding more new material.',
+        empty:
+          'No weak skills detected yet. Complete practice or diagnostics to reveal them.',
+        practiceCta: 'Practice',
+      },
+      modules: {
+        title: 'Unlocked modules',
+        body: 'See which course sections are open, current, complete, or waiting for prior progress.',
+        empty: 'No modules are available yet.',
+        lessons: '{0} of {1} lessons',
+        status: {
+          complete: 'Complete',
+          current: 'Current',
+          unlocked: 'Unlocked',
+          locked: 'Locked',
+        },
+      },
+      streaks: {
+        title: 'Progress protection streaks',
+        body: 'Streaks show where recent activity is keeping momentum alive.',
+        dayCount: '{0} day(s)',
+        lastActivity: 'Last activity {0}',
+        noActivity: 'No activity yet',
+      },
+      certificates: {
+        title: 'Certificate paths',
+        body: 'Certificates turn completed learning into proof users can keep.',
+        lessons: '{0} of {1} lessons',
+        view: 'View',
+        status: {
+          earned: 'Earned',
+          inProgress: 'In progress',
+          locked: 'Locked',
+          unavailable: 'Unavailable',
+          revoked: 'Revoked',
+        },
+      },
+      preview: {
+        badge: 'Progress economy',
+        title: 'Mastery Map',
+        body: 'See the progress users want to protect before they pay for more acceleration.',
+        readiness: 'Readiness',
+        streak: 'Streak',
+        weakestSkill: 'Weakest skill',
+        noWeakSkill: 'No weak skill yet',
+        nextMilestone: 'Next milestone',
+        noMilestone: 'No milestone yet',
+        cta: 'Open map',
       },
     },
     noCoursesTitle: 'Enroll in your first course',
@@ -1164,6 +1292,18 @@ const dictionary = {
       confirmTitle: 'Delete User?',
     },
 
+    disable: {
+      success: 'User successfully disabled',
+      confirmTitle: 'Disable User?',
+      label: 'Disable',
+    },
+
+    restore: {
+      success: 'User successfully restored',
+      confirmTitle: 'Restore User?',
+      label: 'Restore',
+    },
+
     fields: {
       avatars: 'Avatar',
       fullName: 'Full Name',
@@ -1299,9 +1439,70 @@ const dictionary = {
     unknown: 'Unknown',
     noPlansAvailable: 'No subscription plans available.',
     current: 'Current',
+    activation: {
+      title: 'Premium unlocked',
+      unlockingTitle: 'Unlocking your premium plan',
+      unlockingBody:
+        'Payment is complete. NexExam is opening your premium tools now.',
+      retryUnlock: 'Check again',
+      unlockedPlan: 'Your unlocked plan',
+      titleWithPlan: '{0} is active',
+      body: 'Premium study tools are now available across your learning workspace.',
+      exploreCourses: 'Explore courses',
+      aiCoachTitle: 'AI coach',
+      aiCoachBody:
+        'Generate study plans and get guided help when you get stuck.',
+      readinessTitle: 'Readiness insights',
+      readinessBody:
+        'Track progress, weak areas, and next actions in one place.',
+      practiceTitle: 'Deeper practice',
+      practiceBody:
+        'Use premium practice workflows to turn weak spots into focused review.',
+      openTutor: 'Open AI tutor',
+      openPractice: 'Start practice',
+      openMasteryMap: 'Open Mastery Map',
+      openDashboard: 'Go to my learning',
+    },
     mobileUnavailableTitle: 'Subscriptions Unavailable',
     mobileUnavailable:
       'Subscriptions are not available on mobile. Please visit our website on a desktop browser to manage your subscription.',
+    value: {
+      eyebrow: 'Premium learning system',
+      title: 'Subscribe when you want NexExam to guide the entire journey.',
+      body: 'Buy one course for a specific outcome, or unlock the premium layer for AI planning, cross-course progress, and deeper practice.',
+      courseTitle: 'Buy a course',
+      courseBody: 'Best for one certification, class, or creator-led outcome.',
+      subscriptionTitle: 'Subscribe to premium',
+      subscriptionBody:
+        'Best when you want ongoing AI coaching, readiness tracking, and premium study tools across courses.',
+      includedTitle: 'Premium unlocks',
+      included: [
+        'AI study coach and adaptive study plans',
+        'Readiness insights across courses',
+        'Premium practice and weak-area review',
+        'Priority AI tutor context and saved study history',
+      ],
+      comparisonTitle: 'Choose the path that matches your goal',
+      comparisonRows: [
+        {
+          label: 'Primary value',
+          course: 'Unlock one expert-led course',
+          subscription: 'Unlock the learning system around your courses',
+        },
+        {
+          label: 'Best for',
+          course: 'A specific exam or skill',
+          subscription: 'Ongoing exam prep and guided study',
+        },
+        {
+          label: 'Premium feeling',
+          course: 'Full curriculum, certificate path, and assignments',
+          subscription:
+            'AI coach, adaptive plan, readiness, and deeper practice',
+        },
+      ],
+      cardUnlockLabel: 'Included unlocks',
+    },
 
     intervals: {
       day: 'Daily',
@@ -1309,6 +1510,20 @@ const dictionary = {
       month: 'Monthly',
       year: 'Yearly',
     },
+    intervalUnits: {
+      day: 'day',
+      week: 'week',
+      month: 'month',
+      year: 'year',
+    },
+    intervalUnitsPlural: {
+      day: 'days',
+      week: 'weeks',
+      month: 'months',
+      year: 'years',
+    },
+    priceInterval: '/{0}',
+    intervalCountLabel: '{0} {1}',
 
     errors: {
       disabled: 'Subscriptions are disabled in this platform',
@@ -1323,6 +1538,165 @@ const dictionary = {
         'Generate a Stripe customer portal URL where users can manage their subscription, update payment methods, view invoices, and cancel their subscription. Requires an active subscription.',
       plans:
         'Retrieve all available subscription plans from Stripe. Returns a list of plans with pricing information, features, billing intervals, and availability status. Includes both active and archived plans.',
+    },
+  },
+  checkoutTrust: {
+    badge: 'Secure Stripe Checkout',
+    finalTotal: 'Final total shown before payment: {0}',
+    subscriptionRenewal:
+      'Renews every {0}. Manage or cancel anytime before the next renewal.',
+    courseOneTime:
+      'One-time course purchase. Access unlocks after payment succeeds.',
+    courseBundleOneTime:
+      'One-time bundle purchase. Included courses unlock after payment succeeds.',
+    aiCreditOneTime:
+      'One-time AI credit purchase. Credits are added after payment succeeds.',
+    courseRefund: 'Refund policy is reviewed before checkout.',
+    oneOnOneOneTime:
+      'One-time booking payment. Your session confirms after payment succeeds.',
+    oneOnOneHold: 'Your slot is held for 30 minutes while checkout completes.',
+    couponReview:
+      'Coupon entered. Stripe will show the discounted total before you pay.',
+    paymentMethods:
+      'Cards, wallets, and local payment methods appear when available for your location.',
+    noSurpriseFees:
+      'No NexExam surprise fees. Taxes or required fees are shown before payment.',
+    secureAfterPayment: 'Paid securely with Stripe',
+    checkoutCancelled:
+      'Checkout was cancelled. No payment was completed and no access changed.',
+    sessionPaymentSuccess: 'Payment complete. Your session is being confirmed.',
+    stripeCustomText: {
+      subscriptionSubmit:
+        'Secure subscription checkout with Stripe. Renewal terms and the final total are shown before you subscribe.',
+      courseSubmit:
+        'Secure one-time checkout with Stripe. The final total is shown before you pay.',
+      courseBundleSubmit:
+        'Secure bundle checkout with Stripe. The final total is shown before you pay.',
+      aiCreditPackSubmit:
+        'Secure AI credit checkout with Stripe. The final total is shown before you pay.',
+      oneOnOneSessionSubmit:
+        'Secure booking checkout with Stripe. Your slot is held while payment completes.',
+      afterSubmit: 'NexExam unlocks access only after Stripe confirms payment.',
+    },
+  },
+  pricing: {
+    recommended: 'Recommended',
+    savingsBadge: 'Save {0}%',
+    oneTime: 'One time',
+    perMonth: 'per month',
+    perYear: 'per year',
+    choosePackage: 'Choose package',
+    buyCredits: 'Buy credits',
+    buyBundle: 'Buy bundle',
+    addAiCredits: 'Add AI credits',
+    aiTokensIncluded: '{0} AI tokens included',
+    aiCreditShelfTitle: 'AI credit packs',
+    aiCreditShelfBody:
+      'For heavier AI tutor and study-plan usage, add extra token capacity without changing your plan.',
+    aiCreditPurchaseSuccess:
+      'AI credits purchased. Your extra AI capacity is now available.',
+    bundlePurchaseSuccess:
+      'Bundle purchased. Included courses are being unlocked.',
+    coursePurchaseDescription:
+      'One payment unlocks this course, practice, AI tutor prompts, and certificate path.',
+    lifetimeAccessName: 'Lifetime access: {0}',
+    lifetimeAccessDescription:
+      'Selected-course lifetime access with no renewal.',
+    benefits: {
+      coursePurchase: [
+        'Course lessons and practice sets',
+        'AI tutor starter prompts',
+        'Certificate path',
+      ],
+      lifetime: [
+        'Lifetime access for this selected course',
+        'Future course updates included',
+        'No renewal date',
+      ],
+      bundle: [
+        'All included courses',
+        'One checkout for the full path',
+        'Certificates for eligible courses',
+      ],
+      aiCredits: [
+        'Extra AI tutor capacity',
+        'Works with study plans and explanations',
+        'Unused credits remain in your account',
+      ],
+    },
+  },
+  contextualPaywall: {
+    badges: {
+      personalized_onboarding_result: 'Personal plan ready',
+      diagnostic_result: 'Diagnostic complete',
+      preview_lesson_complete: 'Preview complete',
+      ai_full_plan: 'Full AI plan',
+      locked_certificate: 'Certificate path',
+      locked_practice_exam: 'Practice exam',
+    },
+    titles: {
+      personalized_onboarding_result: 'Turn your goal into an unlocked path',
+      diagnostic_result: 'Turn this result into a focused plan',
+      preview_lesson_complete: 'Keep learning with the full course',
+      ai_full_plan: 'Unlock the complete AI study plan',
+      locked_certificate: 'Accelerate this certificate path',
+      locked_practice_exam: 'Unlock deeper exam preparation',
+    },
+    bodies: {
+      personalized_onboarding_result:
+        'Your plan shows the starting rhythm. Paid access unlocks the full curriculum, adaptive guidance, practice depth, and certificate path tied to that goal.',
+      diagnostic_result:
+        'Premium turns your diagnostic score into weak-skill priorities, practice focus, and readiness checkpoints.',
+      preview_lesson_complete:
+        'The preview showed the starting point. Unlock the remaining lessons, practice, tutor prompts, and certificate path.',
+      ai_full_plan:
+        'A complete plan uses your readiness, weak skills, lesson progress, and practice history to guide the next steps.',
+      locked_certificate:
+        'Premium keeps this certificate path connected to readiness, reminders, and AI guidance while progress unlocks the certificate itself.',
+      locked_practice_exam:
+        'Premium adds exam simulation, readiness signals, and AI follow-up so practice feels like a measurable path.',
+    },
+    bullets: {
+      personalized_onboarding_result: [
+        'Plan milestones connected to your timeline',
+        'Recommended courses matched to your goal',
+        'AI guidance and practice depth after unlock',
+      ],
+      diagnostic_result: [
+        'Weak skills prioritized from your answers',
+        'Recommended practice tied to readiness',
+        'AI coaching for the next study session',
+      ],
+      preview_lesson_complete: [
+        'Full curriculum and locked lessons',
+        'Practice exams and homework activities',
+        'AI tutor context and certificate path',
+      ],
+      ai_full_plan: [
+        'Study tasks built from course progress',
+        'Weak areas and practice history included',
+        'Transparent AI reasoning and privacy controls',
+      ],
+      locked_certificate: [
+        'Certificate milestones kept visible',
+        'Readiness and streaks connected to progress',
+        'AI guidance for what to complete next',
+      ],
+      locked_practice_exam: [
+        'Realistic exam simulation workflow',
+        'Readiness signals after attempts',
+        'Focused AI follow-up for weak areas',
+      ],
+    },
+    cta: {
+      subscription: 'Unlock Premium',
+      course: 'Unlock course',
+      aiCredits: 'Add AI credits',
+      viewPlans: 'View plans',
+      checkoutPending: 'Preparing checkout...',
+    },
+    errors: {
+      checkoutUnavailable: 'Checkout is unavailable for this package.',
     },
   },
   exam: {
@@ -1424,13 +1798,6 @@ const dictionary = {
     hints: {
       name: 'Exam name (e.g., FINRA SIE)',
       code: 'Short exam code (e.g., SIE, SERIES7)',
-      description: '',
-      iconUrl: '',
-      isActive: '',
-      chapters: '',
-      concepts: '',
-      examTypes: '',
-      documentUploads: '',
     },
 
     mcpDescription: {
@@ -1552,21 +1919,10 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
-      chapterNumber: '',
-      description: '',
       aiTutorPrompt: 'System prompt for the chapter AI tutor',
-      xpReward: '',
-      orderIndex: '',
-      workflowStatus: '',
-      isPublished: '',
-      version: '',
       objectives: 'Learning objectives for this chapter',
-      exam: '',
-      lessons: '',
-      practiceQuestions: '',
-      studyNotes: '',
     },
+
     enumerators: {
       workflowStatus: {
         draft: 'Draft',
@@ -1690,16 +2046,9 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
-      lessonNumber: '',
       content: 'Lesson body (Markdown supported)',
-      estimatedMinutes: '',
-      xpReward: '',
-      workflowStatus: '',
-      isPublished: '',
-      chapter: '',
-      studyNotes: '',
     },
+
     enumerators: {
       workflowStatus: {
         draft: 'Draft',
@@ -1824,18 +2173,12 @@ const dictionary = {
     },
 
     hints: {
-      questionText: '',
       correctAnswerIndex: 'Zero-based index of the correct option',
       answerOptions:
         'Enter one option per line. Student practice uses only questions with answer options.',
       explanation: 'Why the correct answer is correct',
-      difficulty: '',
-      category: '',
-      isActive: '',
-      tags: '',
-      chapter: '',
-      concepts: '',
     },
+
     enumerators: {
       difficulty: {
         easy: 'Easy',
@@ -1962,32 +2305,8 @@ const dictionary = {
     },
 
     hints: {
-      conceptName: '',
       conceptCode: 'Stable identifier (slug-like)',
-      conceptDescription: '',
       explanation: 'Full explanation (Markdown)',
-      examDomain: '',
-      difficulty: '',
-      examWeight: '',
-      typicalMistakes: '',
-      examTips: '',
-      isActive: '',
-      exam: '',
-      practiceQuestions: '',
-    },
-    enumerators: {
-      difficulty: {
-        beginner: 'Beginner',
-        intermediate: 'Intermediate',
-        advanced: 'Advanced',
-        expert: 'Expert',
-      },
-      examWeight: {
-        low: 'Low',
-        medium: 'Medium',
-        high: 'High',
-        critical: 'Critical',
-      },
     },
 
     mcpDescription: {
@@ -2108,18 +2427,9 @@ const dictionary = {
 
     hints: {
       name: 'e.g., Full Mock, Quick Quiz, Domain Drill',
-      description: '',
-      type: '',
-      questionCount: '',
-      timeLimitMinutes: '',
       passingScore: 'Percentage required to pass',
-      maxAttempts: '',
-      shuffleQuestions: '',
-      showAnswersImmediately: '',
-      isActive: '',
-      exam: '',
-      examInstances: '',
     },
+
     enumerators: {
       type: {
         mock: 'Mock',
@@ -2242,26 +2552,6 @@ const dictionary = {
       archivedAt: 'Archived at',
     },
 
-    hints: {
-      status: '',
-      score: '',
-      passed: '',
-      startedAt: '',
-      completedAt: '',
-      timeSpentSeconds: '',
-      examType: '',
-      student: '',
-    },
-    enumerators: {
-      status: {
-        started: 'Started',
-        in_progress: 'In Progress',
-        completed: 'Completed',
-        abandoned: 'Abandoned',
-        expired: 'Expired',
-      },
-    },
-
     mcpDescription: {
       list: 'Retrieve a paginated list of exam attempts with advanced filtering options. Supports filtering by various fields and related entities. Returns exam attempt details including all relationships and metadata.',
       get: 'Retrieve detailed information about a specific exam attempt by their unique ID. Returns complete exam attempt profile including all relationships, attachments, and audit metadata.',
@@ -2371,26 +2661,6 @@ const dictionary = {
       createdAt: 'Created at',
       updatedAt: 'Updated at',
       archivedAt: 'Archived at',
-    },
-
-    hints: {
-      title: '',
-      goalType: '',
-      targetValue: '',
-      currentValue: '',
-      xpReward: '',
-      goalDate: '',
-      completedAt: '',
-      owner: '',
-    },
-    enumerators: {
-      goalType: {
-        questions_answered: 'Questions Answered',
-        study_minutes: 'Study Minutes',
-        lessons_completed: 'Lessons Completed',
-        chapters_mastered: 'Chapters Mastered',
-        streak_day: 'Streak Day',
-      },
     },
 
     mcpDescription: {
@@ -2505,14 +2775,7 @@ const dictionary = {
     },
 
     hints: {
-      title: '',
       content: 'Note body (Markdown supported)',
-      isFavorite: '',
-      tags: '',
-      course: '',
-      chapter: '',
-      lesson: '',
-      author: '',
     },
 
     mcpDescription: {
@@ -2628,15 +2891,9 @@ const dictionary = {
     },
 
     hints: {
-      originalFilename: '',
-      status: '',
-      pageCount: '',
-      wordCount: '',
-      processingError: '',
       sourceFiles: 'Upload curriculum source documents (max 50MB each)',
-      exam: '',
-      uploadedBy: '',
     },
+
     enumerators: {
       status: {
         uploaded: 'Uploaded',
@@ -2824,7 +3081,57 @@ const dictionary = {
       filterRating45: '4.5+',
       verifiedOnly: 'Verified only',
       featured: 'Featured',
+      allCourses: 'All courses',
+      viewModeLabel: 'Catalog view',
+      cardView: 'Cards',
+      listView: 'List',
       page: 'Page',
+    },
+    freeSample: {
+      badge: 'Free sample',
+      title: 'Get one real win before you pay',
+      body: 'Preview a real lesson, then take a short diagnostic so the unlock feels like your next step.',
+      loading: 'Preparing your free sample...',
+      previewLesson: 'Preview lesson',
+      startPreview: 'Start preview lesson',
+      completePreview: 'Complete preview',
+      previewComplete: 'Preview complete',
+      emptyPreview:
+        'This preview lesson is ready, but the creator has not added lesson blocks yet.',
+      resourcesTitle: 'Preview resources',
+      diagnosticBadge: 'Baseline check',
+      diagnosticTitle: 'Take the short diagnostic',
+      diagnosticBody:
+        'Answer a few questions to see where the full course can move you fastest.',
+      signInTitle: 'Save your sample result',
+      signInBody:
+        'Sign in to take the diagnostic and keep the score connected to this course.',
+      signInCta: 'Sign in to continue',
+      noQuestions:
+        'This course does not have answerable diagnostic questions yet.',
+      previewFirstTitle: 'Finish the preview first',
+      previewFirstBody:
+        'Complete the sample lesson to unlock your short diagnostic result.',
+      questionCount: '{0} diagnostic questions',
+      startDiagnostic: 'Start diagnostic',
+      answered: '{0} of {1} answered',
+      saveAnswer: 'Save answer',
+      readyToScoreTitle: 'Ready to score',
+      readyToScoreBody:
+        'All sample questions are answered. Score the diagnostic to see your next unlock.',
+      completeDiagnostic: 'Score diagnostic',
+      resultTitle: 'Your baseline result',
+      resultBody:
+        'You now have a starting point. Unlock the full course to continue from this momentum.',
+      scoreLabel: 'Score',
+      weakDomains: 'Weak skills',
+      noWeakDomains: 'No weak skill detected in this short sample.',
+      reviewAnswers: 'Answer review',
+      correct: 'Correct',
+      incorrect: 'Review',
+      errors: {
+        premiumOnly: 'Free samples are available for premium courses only.',
+      },
     },
     marketplace: {
       savedDefaultName: 'Saved courses',
@@ -2853,6 +3160,73 @@ const dictionary = {
       coursesIncluded: 'courses included',
       creatorStats: '{0} courses · {1} learners',
       creatorCourses: 'Published courses',
+      proof: {
+        badge: 'Course proof',
+        title: 'Why learners pay for this course',
+        outcomeLabel: 'Sample outcome',
+        outcomeValue: 'Clear result',
+        outcomeFallback:
+          'Preview the course promise before unlocking the full learning path.',
+        completionLabel: 'Completion proof',
+        completionRateValue: '{0}% completion',
+        completionRateHelper: '{0} of {1} learners completed this course.',
+        learnerCountValue: '{0} learners',
+        learnerCountHelper:
+          'Learner count is shown until enough completions are available.',
+        reviewsLabel: 'Verified reviews',
+        reviewsValue: '{0} reviews',
+        reviewsEmptyValue: 'Reviews building',
+        reviewsEmptyHelper:
+          'Public learner reviews appear after enrolled students share feedback.',
+        previewLabel: 'Preview curriculum',
+        previewValue: '{0} free previews',
+        previewHelper: '{0} lessons visible before purchase.',
+        creatorVerified: 'NexExam verified',
+        creatorProfileFallback: 'Course creator',
+        credentials: 'Credentials',
+        expertise: 'Expertise',
+        refundTitle: 'Refund policy',
+        refundBadge: 'Reviewed policy',
+        previewCurriculumTitle: 'Preview the curriculum',
+        previewCurriculumBody:
+          '{0} free preview lessons and {1} lessons available after purchase.',
+        certificatesIssued: '{0} certificates issued',
+        standaloneLessons: 'Additional lessons',
+        freePreview: 'Free preview',
+        lockedAfterPurchase: 'Unlock after purchase',
+        reviewsTitle: 'Verified learner reviews',
+        reviewsBody:
+          'Public reviews from learners who enrolled or purchased this course.',
+        verifiedLearner: 'Verified learner',
+        noReviewsTitle: 'Reviews are still building',
+        noReviewsBody:
+          'Verified learner feedback appears here after students publish a public review.',
+      },
+      unlock: {
+        badge: 'Unlock',
+        title: 'What you unlock',
+        paidTitle: 'Unlock the full course experience',
+        subscriptionTitle: 'Included with premium access',
+        body: 'Preview the outcome before you pay, then unlock the complete learning path.',
+        paidBody:
+          'Your purchase unlocks the lessons, practice, homework, and completion path for this course.',
+        subscriptionBody:
+          'Premium access keeps this course connected to AI planning, readiness, and ongoing practice.',
+        courseCardPaid:
+          'Unlock full curriculum, practice, and certificate path',
+        courseCardSubscription: 'Premium access unlocks the guided study layer',
+        courseCardFree: 'Start free and build momentum',
+        previewLesson: 'Free preview',
+        lockedLesson: 'Locked',
+        availableAfterPurchase: 'Available after purchase',
+        previewAvailable: 'Preview available',
+        items: [
+          'Full lesson library and course resources',
+          'Homework, quizzes, and practice exams',
+          'Course AI tutor and study coach context',
+          'Certificate path and progress proof',
+        ],
+      },
     },
     certificate: {
       title: 'Certificate of Completion',
@@ -2871,6 +3245,38 @@ const dictionary = {
       title: 'Course Detail',
       enrolled: 'Enrolled',
       notEnrolled: 'Not enrolled',
+    },
+    activation: {
+      title: 'Course unlocked',
+      loading: 'Preparing your unlocked course...',
+      unlockingTitle: 'Unlocking your course',
+      unlockingBody:
+        'Payment is complete. NexExam is opening {0} and enrolling you now.',
+      retryUnlock: 'Check again',
+      viewCourse: 'View course',
+      unlockedPlan: 'Your unlocked plan',
+      startLesson: 'Start recommended lesson',
+      openPlayer: 'Open course player',
+      whatUnlocked: 'What opened',
+      aiTutor: 'AI tutor',
+      included: 'Included',
+      recommendedLesson: 'First recommended lesson',
+      noLesson: 'This course does not have a visible lesson yet.',
+      practiceSet: 'First practice set',
+      practiceQuestions: '{0} practice questions ready',
+      startPractice: 'Start practice',
+      practiceUnavailable: 'Practice not available yet',
+      certificatePath: 'Certificate path',
+      certificateProgress: '{0} of {1} lessons complete',
+      certificateLocked: 'Complete the course to unlock your certificate.',
+      certificateUnavailable:
+        'This course does not currently include a certificate.',
+      aiTutorStarter: 'AI tutor starter prompt',
+      aiTutorPromptLesson:
+        'I just unlocked {0}. Help me start with {1} and give me a clear first study step.',
+      aiTutorPromptCourse:
+        'I just unlocked {0}. Help me build a clear first study step.',
+      askTutor: 'Ask AI tutor',
     },
     learn: {
       title: 'Course Player',
@@ -2948,6 +3354,9 @@ const dictionary = {
       priceCents: 'Price (cents)',
       currency: 'Currency',
       stripePriceId: 'Stripe price ID',
+      lifetimeAccessEnabled: 'Lifetime access available',
+      lifetimePriceCents: 'Lifetime price (cents)',
+      lifetimeStripePriceId: 'Lifetime Stripe price ID',
       subscriptionPlanKey: 'Subscription plan key',
       creatorRevenueShareBps: 'Creator revenue share (bps)',
       platformRevenueShare: 'Platform revenue share (bps)',
@@ -3055,6 +3464,8 @@ const dictionary = {
       alreadyEnrolled: 'You are already enrolled in this course.',
       invalidCoupon: 'This coupon cannot be applied to this course.',
       couponLimitReached: 'This coupon has already been used.',
+      videoTranscriptNoVideo:
+        'Upload a lesson video before requesting a transcript.',
     },
     enumerators: {
       status: {
@@ -3089,6 +3500,20 @@ const dictionary = {
       completed: 'completed',
       assignment: 'Assignment',
       linkedContent: 'Linked exam, practice, and study resources:',
+      videoTranscript: 'Video transcript',
+    },
+    videoTranscript: {
+      title: 'Video transcript',
+      statusLabel: 'Transcript',
+      retry: 'Retry transcript',
+      retryQueued: 'Transcript retry queued.',
+      status: {
+        notRequested: 'No transcript requested',
+        queued: 'Transcript queued',
+        processing: 'Transcript processing',
+        ready: 'Transcript ready',
+        failed: 'Transcript failed',
+      },
     },
     studyAi: {
       actions: {
@@ -3180,7 +3605,7 @@ const dictionary = {
         busy: 'Another AI study request is still running. Please wait for it to finish.',
         limitReached:
           'The daily AI usage limit has been reached. It resets tomorrow.',
-        notConfigured: 'AI study features are not available right now.',
+        notConfigured: 'AI study tools are unavailable right now.',
         parseFailed: 'AI returned an unreadable response. Please try again.',
         unexpectedQuizFormat:
           'AI returned questions that could not be used. Try a module with more lesson content.',
@@ -3384,8 +3809,7 @@ const dictionary = {
         draftNotice:
           'AI content is added as an editable draft and is never auto-published.',
         saveFirst: 'Save the course once before using the AI assistant.',
-        notConfigured:
-          'AI generation is not configured yet (ANTHROPIC_API_KEY).',
+        notConfigured: 'AI generation is unavailable right now.',
         merge: {
           flashcardsTitle: 'AI flashcards',
           moduleTitle: 'AI module',
@@ -3427,10 +3851,10 @@ const dictionary = {
             'The lesson draft did not include editable content blocks.',
         },
         errors: {
-          notConfigured: 'AI generation is not configured yet.',
+          notConfigured: 'AI generation is unavailable right now.',
           lessonRequired: 'Select a lesson to improve.',
           queueFailed: 'AI generation could not be queued. Please try again.',
-          courseAiNotConfigured: 'AI generation is not configured yet.',
+          courseAiNotConfigured: 'AI generation is unavailable right now.',
           courseAiParseFailed:
             'AI returned an unreadable draft. Please try again.',
           courseAiGenerationFailed: 'AI generation failed. Please try again.',
@@ -3450,6 +3874,9 @@ const dictionary = {
         videoUrlPlaceholder: 'YouTube / Vimeo link',
         selectQuiz: 'Select a quiz',
         selectFlashcardSet: 'Select a flashcard set',
+        embeddedQuiz: 'Embedded quiz',
+        embeddedFlashcards: 'Embedded flashcards',
+        lessonVideoTitle: 'Lesson video',
         types: {
           heading: 'Heading',
           paragraph: 'Paragraph',
@@ -3694,6 +4121,8 @@ const dictionary = {
         audienceItem: 'Describe who this course is for',
         requirementItem: 'Add course requirements',
         lessonContentItem: 'Add content, blocks, or media to a lesson',
+        previewLessonRecommendedItem:
+          'Mark one lesson as a free preview before publishing paid courses',
         flashcardRecommendedItem: 'Add flashcards for review practice',
       },
       success: {
@@ -3932,8 +4361,8 @@ const dictionary = {
     inputHint: 'Press Enter to send, Shift+Enter for new line',
     courseContextHeader: 'Course context available to the tutor:',
     courseVideoTranscriptNotice:
-      'Uploaded videos are available as files only; no audio transcript is available in Phase 1.',
-    courseScopedSystemPrompt: `The user is asking inside a specific course. Use this course context when helpful, but do not claim to know video audio that is not present in the written context:
+      'Uploaded-video transcripts are included when processing is complete.',
+    courseScopedSystemPrompt: `The user is asking inside a specific course. Use this course context when helpful. Use video transcripts when present, but do not infer video audio that is not included in the written context:
 
 {0}`,
     systemPrompt: `You are an AI chat assistant for {0}. You have access to various tools to help users manage their data including exams, chapters, lessons, practice questions, concepts, exam types, exam attempts, daily goals, study notes, document uploads, members, audit logs, subscriptions, and user information.
@@ -4296,6 +4725,34 @@ Remember: You are operating within {0} and can only access data from this organi
       quiz: 'Quiz',
       rating: 'Rating',
       revenue: 'Revenue',
+      funnelTitle: 'Monetization funnel',
+      funnelDescription:
+        'Measure how course interest turns into checkout, paid access, and first unlocked value.',
+      funnelEmpty: 'No funnel activity available yet.',
+      viewToCheckout: 'View to checkout',
+      checkoutToPaid: 'Checkout to paid',
+      paidToFirstValue: 'Paid to first value',
+      funnelEvents: '{0} events',
+      fromPrevious: '{0} from previous',
+      courseViews: 'Views',
+      paywallSeen: 'Paywall',
+      checkoutStarted: 'Checkout',
+      paid: 'Paid',
+      firstValue: 'First value',
+      paidRate: 'Paid rate',
+      funnelSteps: {
+        course_view: 'Course view',
+        preview_start: 'Preview',
+        value_sample_started: 'Sample started',
+        value_sample_completed: 'Sample complete',
+        sample_diagnostic_started: 'Diagnostic started',
+        sample_diagnostic_completed: 'Diagnostic complete',
+        paywall_seen: 'Paywall seen',
+        cta_click: 'CTA click',
+        checkout_started: 'Checkout',
+        paid: 'Paid',
+        first_value_after_payment: 'First value',
+      },
     },
     dashboard: {
       shortcut: 'Cmd K',
@@ -4538,16 +4995,25 @@ Remember: You are operating within {0} and can only access data from this organi
         description: 'Description (optional)',
         durationMinutes: 'Duration (minutes)',
         isFree: 'Free session',
-        priceCents: 'Price (cents)',
+        priceAmount: 'Price',
         currency: 'Currency',
         bufferMinutes: 'Buffer (minutes)',
         minNoticeHours: 'Minimum notice (hours)',
       },
+      pricingModeLabel: 'Pricing mode',
+      freeMode: 'Free',
+      paidMode: 'Paid',
+      freeLabel: 'Free',
+      durationMinutesShort: '{0} min',
+      priceAmountPlaceholder: '25.00',
+      paidHelper:
+        'Students pay through Stripe before the session is confirmed.',
+      priceInvalid: 'Enter a price between $0.50 and $10,000.00.',
+      currencyInvalid: 'Enter a 3-letter currency code.',
       save: 'Save',
+      cancel: 'Cancel',
       disable: 'Disable',
       empty: 'No session types yet.',
-      paidDisabledHint:
-        'Paid sessions are coming soon — only free sessions can be created right now.',
     },
     booking: {
       title: 'Book a 1:1',
@@ -4559,6 +5025,13 @@ Remember: You are operating within {0} and can only access data from this organi
       noSessionTypes: 'Your instructor has not opened any 1:1 sessions yet.',
       noSlots: 'No open slots in this range.',
       success: 'Booked — see your session under your sessions list.',
+      close: 'Close',
+      freeLabel: 'Free',
+      durationMinutesShort: '{0} min',
+      sessionTypeOptionLabel: '{0} ({1}, {2})',
+      paidBookingNotice:
+        'Paid sessions redirect to Stripe Checkout. Your slot is held until payment completes.',
+      stripeProductName: '1:1 with {0}: {1}',
     },
     session: {
       title: 'Your 1:1 sessions',
@@ -4603,7 +5076,7 @@ Remember: You are operating within {0} and can only access data from this organi
       noInstructor: 'This course has no instructor available for 1:1 sessions.',
       cannotBookSelf: 'You cannot book a 1:1 with yourself.',
       paidNotAvailable:
-        'Paid 1:1 sessions are not available yet — only free sessions can be booked or created.',
+        'Paid 1:1 sessions require Stripe payment processing to be configured.',
       slotUnavailable:
         'That time is not in the instructor availability or violates the minimum-notice window.',
       slotTaken:
@@ -4640,7 +5113,25 @@ Remember: You are operating within {0} and can only access data from this organi
         title: '1:1 dispute review',
         list: 'Open disputes',
         statusFilter: 'Filter by status',
+        statuses: {
+          all: 'All',
+          open: 'Open',
+          underReview: 'Under review',
+          resolvedRefund: 'Resolved: refund',
+          resolvedNoRefund: 'Resolved: no refund',
+        },
         detail: 'Dispute detail',
+        sessionLabel: 'Session',
+        courseLabel: 'Course',
+        studentLabel: 'Student',
+        instructorLabel: 'Instructor',
+        scheduledLabel: 'Scheduled',
+        priceLabel: 'Price',
+        paidAtLabel: 'Paid at',
+        refundedLabel: 'Refunded',
+        refundedValue: '{0} on {1}',
+        statusLabel: 'Status',
+        reasonLabel: 'Reason',
         resolutionLabel: 'Resolution',
         refund: 'Issue refund',
         noRefund: 'No refund',
@@ -4649,6 +5140,8 @@ Remember: You are operating within {0} and can only access data from this organi
         resolve: 'Resolve',
         resolved: 'Resolved',
         empty: 'No disputes match this filter.',
+        emptyValue: '—',
+        resolveError: 'Could not resolve the dispute.',
       },
     },
   },
@@ -4757,15 +5250,145 @@ Remember: You are operating within {0} and can only access data from this organi
     },
   },
   studentOnboarding: {
-    title: 'Pick your first courses',
-    body: 'Choose any free courses to enroll in now. You can browse the full marketplace anytime — paid courses live on the course page.',
+    badge: 'Personalized onboarding',
+    title: 'Build your exam path',
+    body: 'Answer five quick questions so NexExam can turn pricing and course recommendations into a plan tied to your goal.',
     skip: 'Skip for now',
     continue: 'Continue to dashboard',
     enrollLabel: 'Enroll',
     enrolledLabel: 'Enrolled',
     viewLabel: 'View course',
+    generatePlan: 'Generate my plan',
+    editAnswers: 'Edit answers',
     emptyMessage:
-      "We're prepping a fresh batch of courses. Jump in when ready.",
+      "We're prepping a fresh batch of courses. Your plan can still start from diagnostics and study rhythm.",
+    fields: {
+      examGoal: 'Exam or learning goal',
+      timeline: 'Timeline',
+      currentLevel: 'Current level',
+      studyTime: 'Weekly study time',
+      targetScore: 'Target score',
+    },
+    placeholders: {
+      examGoal: 'Algebra 1 final, SAT Math, nursing entrance exam...',
+      targetScore: '90%, 700+, pass on first attempt...',
+    },
+    timeline: {
+      two_weeks: '2 weeks',
+      one_month: '1 month',
+      two_months: '2 months',
+      three_months: '3 months',
+      six_months: '6 months',
+      not_sure: 'Not sure',
+    },
+    timelineBody: {
+      two_weeks: 'Sprint plan',
+      one_month: 'Focused month',
+      two_months: 'Steady build',
+      three_months: 'Deep prep',
+      six_months: 'Long runway',
+      not_sure: 'Flexible start',
+    },
+    currentLevel: {
+      new: 'New to this',
+      some_background: 'Some background',
+      practicing: 'Already practicing',
+      almost_ready: 'Almost ready',
+    },
+    currentLevelBody: {
+      new: 'Start with foundations and confidence wins.',
+      some_background: 'Find gaps and build a repeatable rhythm.',
+      practicing: 'Prioritize weak areas and exam-style practice.',
+      almost_ready: 'Refine timing, accuracy, and final review.',
+    },
+    studyTime: {
+      '120': 'Light',
+      '240': 'Steady',
+      '420': 'Committed',
+      '600': 'Intensive',
+      '900': 'Immersive',
+    },
+    duration: {
+      minutes: '{0} min',
+      hours: '{0} hr',
+      hoursMinutes: '{0} hr {1} min',
+    },
+    unlockPreview: {
+      badge: 'Unlock preview',
+      title: 'Payment should feel like opening the next step',
+      body: 'The plan will show what you can do now and what becomes available when you subscribe or buy a course.',
+      items: [
+        'A study rhythm matched to your available time',
+        'Course recommendations tied to your goal',
+        'A clear split between free value and paid unlocks',
+      ],
+    },
+    plan: {
+      title: 'Your personal plan is ready',
+      body: 'Review the rhythm, milestones, and course matches before choosing what to unlock.',
+      readyBadge: 'Plan generated',
+      personalTitle: '{0} plan',
+      summary:
+        '{0} timeline toward {1}, with a first action chosen from your current level and available courses.',
+      sessionRhythm: '{0} sessions/week at {1}',
+      today: 'Today',
+      days: 'Day {0}',
+      milestonesTitle: 'Milestone path',
+      metrics: {
+        timeline: 'Timeline',
+        weeklyTime: 'Weekly time',
+        rhythm: 'Study rhythm',
+        targetScore: 'Target',
+      },
+      milestones: {
+        baseline: {
+          title: 'Baseline',
+          body: 'Start with a diagnostic or first lesson so the plan has a real signal.',
+        },
+        firstWin: {
+          title: 'First win',
+          body: 'Complete one focused lesson or practice set to build momentum.',
+        },
+        practiceRhythm: {
+          title: 'Practice rhythm',
+          body: 'Repeat weak-skill practice on a predictable weekly cadence.',
+        },
+        examReadiness: {
+          title: 'Readiness check',
+          body: 'Use readiness signals to decide what needs review before test day.',
+        },
+        finalReview: {
+          title: 'Final review',
+          body: 'Protect your strongest topics and tighten remaining weak spots.',
+        },
+      },
+    },
+    courses: {
+      title: 'Recommended course matches',
+      body: 'These are ranked from your goal, level, and timeline.',
+      browseAll: 'Browse all courses',
+    },
+    unlocks: {
+      title: 'What opens up',
+      includedTitle: 'Included now',
+      paidTitle: 'Unlocked with paid access',
+      includedItems: [
+        'Saved goal and timeline',
+        'Recommended first course or preview',
+        'A simple milestone path',
+      ],
+      items: {
+        fullCurriculum: 'Full curriculum and course resources',
+        adaptivePlan: 'Adaptive plan that updates with progress',
+        aiTutor: 'AI tutor prompts tied to lessons and practice',
+        practiceExams: 'Practice exams and deeper readiness checks',
+        certificatePath: 'Certificate path and completion proof',
+      },
+    },
+    errors: {
+      noRecommendations:
+        'No course recommendations are available yet. Try again after courses are published.',
+    },
   },
   aiTutor: {
     title: 'AI Tutor',
@@ -4805,8 +5428,16 @@ Remember: You are operating within {0} and can only access data from this organi
       placeholder: 'Message AI Tutor',
       sendAriaLabel: 'Send message',
       stopAriaLabel: 'Stop generating',
-      attachComingSoon: 'Attachments coming soon',
       disclaimer: 'AI Tutor can make mistakes. Verify key answers.',
+    },
+    attachments: {
+      add: 'Attach files',
+      remove: 'Remove attachment',
+      tooMany: 'Attach up to 5 files per message.',
+      tooLarge: 'Each attachment must be 10 MB or smaller.',
+      unsupported: 'Attach PDF, DOCX, TXT, Markdown, CSV, or JSON files.',
+      invalid: 'This attachment is not available for this conversation.',
+      uploadFailed: 'Attachment upload failed. Please try again.',
     },
     thread: {
       thinking: 'Thinking…',
@@ -4861,6 +5492,106 @@ Remember: You are operating within {0} and can only access data from this organi
         'Another AI Tutor request is in flight. Wait a moment and try again.',
       networkError: "Couldn't reach AI Tutor. Check your connection and retry.",
       dismiss: 'Dismiss',
+    },
+  },
+
+  aiTrust: {
+    title: 'AI transparency',
+    openControls: 'AI privacy controls',
+    settingsTitle: 'AI privacy controls',
+    settingsDescription:
+      'Choose which study signals NexExam can use for future AI responses.',
+    saved: 'AI privacy controls saved.',
+    saving: 'Saving...',
+    controls: {
+      lessonContent: {
+        label: 'Lesson content',
+        description:
+          'Use lesson text, transcripts, and assignments for explanations, quizzes, and plans.',
+      },
+      lessonProgress: {
+        label: 'Lesson progress',
+        description:
+          'Use completed and unfinished lessons to personalize recommendations.',
+      },
+      practiceResults: {
+        label: 'Practice results',
+        description: 'Use quiz and practice scores to identify weak topics.',
+      },
+      chatHistory: {
+        label: 'Chat history',
+        description: 'Use prior messages in the same AI Tutor conversation.',
+      },
+      attachments: {
+        label: 'Attachments',
+        description: 'Use uploaded files when answering your current message.',
+      },
+    },
+    panel: {
+      trigger: 'Why this?',
+      title: 'AI trust layer',
+      why: 'Why generated',
+      influencedBy: 'Influenced by',
+      confidence: 'Confidence',
+      limitations: 'Limitations',
+      privacy: 'Privacy',
+      used: 'Used',
+      omitted: 'Not used',
+      unavailable: 'No data yet',
+      generated: 'Generated',
+      model: 'Model',
+      noSignals: 'No AI trust details available.',
+      privacyNote: 'Privacy controls affect future AI generations.',
+    },
+    confidence: {
+      high: 'High evidence',
+      medium: 'Partial evidence',
+      low: 'Limited evidence',
+    },
+    sources: {
+      studentPrompt: 'Your prompt',
+      courseOutline: 'Course outline',
+      lessonContent: 'Lesson content',
+      lessonProgress: 'Lesson progress',
+      practiceResults: 'Practice results',
+      examDate: 'Exam date',
+      chatHistory: 'Chat history',
+      attachments: 'Attachments',
+    },
+    reasons: {
+      studyPlan:
+        'This plan was generated to prioritize weak topics, unfinished lessons, and your exam timeline.',
+      nextStep:
+        'This recommendation was generated from your course progress and weak topics.',
+      lessonExplain:
+        'This explanation was generated from the selected lesson context.',
+      lessonSummary:
+        'This summary was generated from the selected lesson context.',
+      quiz: 'This quiz was generated from the selected module lessons.',
+      practice:
+        'This practice set was generated from the selected module lessons.',
+      aiTutor:
+        'This response was generated from your prompt and the enabled study context.',
+    },
+    limitations: {
+      general:
+        'AI can make mistakes. Verify important answers with course material.',
+      noPracticeData: 'No quiz or practice results were available.',
+      noLessonProgress: 'No completed lesson history was available.',
+      noLessonContent: 'The selected lesson has little or no readable content.',
+      lessonContentOff:
+        'Lesson content was not used because you turned it off.',
+      lessonProgressOff:
+        'Lesson progress was not used because you turned it off.',
+      practiceOff:
+        'Practice results were not used because you turned them off.',
+      historyOff: 'Chat history was not used because you turned it off.',
+      attachmentsOff: 'Attachments were not used because you turned them off.',
+      verifyAnswers:
+        'Generated questions and explanations should be reviewed before relying on them.',
+    },
+    units: {
+      days: 'days',
     },
   },
 

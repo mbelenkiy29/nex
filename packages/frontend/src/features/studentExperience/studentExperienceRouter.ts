@@ -37,7 +37,9 @@ export const studentMyCoursesRoute = createRoute({
   }),
   beforeLoad: async ({ location }) => studentBeforeLoad(location.pathname),
 }).lazy(() =>
-  import('./pages/StudentDashboardPage').then((d) => d.studentMyCoursesLazyRoute),
+  import('./pages/StudentDashboardPage').then(
+    (d) => d.studentMyCoursesLazyRoute,
+  ),
 );
 
 export const studentPracticeHomeRoute = createRoute({
@@ -74,7 +76,28 @@ export const studentNotesHomeRoute = createRoute({
   }),
   beforeLoad: async ({ location }) => studentBeforeLoad(location.pathname),
 }).lazy(() =>
-  import('./pages/StudentDashboardPage').then((d) => d.studentNotesHomeLazyRoute),
+  import('./pages/StudentDashboardPage').then(
+    (d) => d.studentNotesHomeLazyRoute,
+  ),
+);
+
+export const studentMasteryMapRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/student/mastery-map',
+  head: () => ({
+    meta: [
+      {
+        title: buildPageTitle(
+          useAuthStore.getState().dictionary.studentExperience.menu.masteryMap,
+        ),
+      },
+    ],
+  }),
+  beforeLoad: async ({ location }) => studentBeforeLoad(location.pathname),
+}).lazy(() =>
+  import('./pages/StudentMasteryMapPage').then(
+    (d) => d.studentMasteryMapLazyRoute,
+  ),
 );
 
 export const studentCourseOverviewRoute = createRoute({
@@ -120,6 +143,7 @@ export const studentExperienceRouter = [
   studentMyCoursesRoute,
   studentPracticeHomeRoute,
   studentNotesHomeRoute,
+  studentMasteryMapRoute,
   studentCoursePracticeRoute,
   studentCourseOverviewRoute,
 ];

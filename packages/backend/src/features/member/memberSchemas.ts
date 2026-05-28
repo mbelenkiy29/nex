@@ -3,6 +3,7 @@ import { toLower } from 'lodash-es';
 import { z } from 'zod';
 import { dateTimeOptionalSchema } from '../../shared/schemas/dateTimeSchema';
 import { importerInputSchema } from '../../shared/schemas/importerSchemas';
+import { numberSchema } from '../../shared/schemas/numberSchema';
 import { orderBySchema } from '../../shared/schemas/orderBySchema';
 import { fileUploadedSchema } from '../file/fileSchemas';
 import { rolesIds } from '../permissions';
@@ -58,6 +59,99 @@ export const profileOnboardFormSchema = z.object({
   avatars: z.array(fileUploadedSchema),
   isNotificationsEnabled: z.boolean().optional(),
 });
+
+export const studentOnboardingTimelineValues = [
+  'two_weeks',
+  'one_month',
+  'two_months',
+  'three_months',
+  'six_months',
+  'not_sure',
+] as const;
+
+export const studentOnboardingCurrentLevelValues = [
+  'new',
+  'some_background',
+  'practicing',
+  'almost_ready',
+] as const;
+
+export const studentOnboardingMilestoneValues = [
+  'baseline',
+  'firstWin',
+  'practiceRhythm',
+  'examReadiness',
+  'finalReview',
+] as const;
+
+export const studentOnboardingUnlockValues = [
+  'fullCurriculum',
+  'adaptivePlan',
+  'aiTutor',
+  'practiceExams',
+  'certificatePath',
+] as const;
+
+export const studentOnboardingFirstActionValues = [
+  'takeDiagnostic',
+  'previewLesson',
+  'enrollFreeCourse',
+  'viewPaidCourse',
+] as const;
+
+export const studentOnboardingProfileInputSchema = z.object({
+  examGoal: z.string().trim().min(1).max(200),
+  timeline: z.enum(studentOnboardingTimelineValues),
+  currentLevel: z.enum(studentOnboardingCurrentLevelValues),
+  studyMinutesPerWeek: numberSchema.pipe(z.number().int().min(30).max(3000)),
+  targetScore: z.string().trim().min(1).max(80),
+});
+
+export const studentOnboardingGeneratedPlanSchema = z.object({
+  version: z.literal(1),
+  generatedAt: z.string(),
+  timeline: z.enum(studentOnboardingTimelineValues),
+  currentLevel: z.enum(studentOnboardingCurrentLevelValues),
+  weeklyStudyMinutes: z.number().int().min(30).max(3000),
+  weeklySessions: z.number().int().min(1).max(14),
+  sessionMinutes: z.number().int().min(15).max(240),
+  totalWeeks: z.number().int().min(1).max(52),
+  readinessLift: z.enum(['foundation', 'accelerate', 'refine']),
+  firstAction: z.enum(studentOnboardingFirstActionValues),
+  milestones: z.array(
+    z.object({
+      key: z.enum(studentOnboardingMilestoneValues),
+      dueInDays: z.number().int().min(0).max(365),
+    }),
+  ),
+  unlocks: z.array(z.enum(studentOnboardingUnlockValues)),
+});
+
+export const studentOnboardingProfileOutputSchema = z.object({
+  id: z.string().uuid(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  examGoal: z.string(),
+  timeline: z.enum(studentOnboardingTimelineValues),
+  currentLevel: z.enum(studentOnboardingCurrentLevelValues),
+  studyMinutesPerWeek: z.number(),
+  targetScore: z.string(),
+  generatedPlan: studentOnboardingGeneratedPlanSchema.nullable(),
+  recommendedCourseIds: z.array(z.string()),
+  completedAt: z.string().nullable(),
+});
+
+export type StudentOnboardingProfileInput = z.output<
+  typeof studentOnboardingProfileInputSchema
+>;
+
+export type StudentOnboardingGeneratedPlan = z.output<
+  typeof studentOnboardingGeneratedPlanSchema
+>;
+
+export type StudentOnboardingProfileOutput = z.output<
+  typeof studentOnboardingProfileOutputSchema
+>;
 
 export const memberImportFileSchema = z
   .object({

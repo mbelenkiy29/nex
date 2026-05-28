@@ -1,5 +1,9 @@
 import { prisma } from '../../prisma';
 import { env } from '../../env';
+import {
+  aiCreditBalance,
+  aiCreditDebitPurchasedTokens,
+} from '../aiCredit/aiCreditService';
 
 export const TOKEN_LIMITS = {
   USER: Number(env.CHATBOT_DAILY_TOKEN_LIMIT_USER) || 50000,
@@ -35,10 +39,26 @@ export async function trackTokenUsage(
 ): Promise<void> {
   const date = getTodayDate();
   const totalTokens = inputTokens + outputTokens;
+  let debitPurchasedTokens = 0;
 
   await prisma.$withRLS(
     { organization: { id: organizationId } },
     async (tx) => {
+      const existing = await tx.chatbotUsage.findUnique({
+        where: {
+          userId_date: {
+            userId,
+            date,
+          },
+        },
+        select: { totalTokens: true },
+      });
+      const previousTotal = existing?.totalTokens || 0;
+      const nextTotal = previousTotal + totalTokens;
+      debitPurchasedTokens =
+        Math.max(0, nextTotal - TOKEN_LIMITS.USER) -
+        Math.max(0, previousTotal - TOKEN_LIMITS.USER);
+
       await tx.chatbotUsage.upsert({
         where: {
           userId_date: {
@@ -68,6 +88,13 @@ export async function trackTokenUsage(
       });
     },
   );
+
+  await aiCreditDebitPurchasedTokens({
+    userId,
+    organizationId,
+    tokenAmount: debitPurchasedTokens,
+    source: 'aiUsage',
+  });
 }
 
 /**
@@ -144,18 +171,20 @@ export async function checkAllLimits(
 ): Promise<LimitCheckResult> {
   const today = getTodayDate();
 
-  const [userUsage, orgUsage, globalUsage] = await Promise.all([
+  const [userUsage, orgUsage, globalUsage, creditBalance] = await Promise.all([
     getUserDailyUsage(userId, organizationId, today),
     getOrganizationDailyUsage(organizationId, today),
     getGlobalDailyUsage(today),
+    aiCreditBalance(userId),
   ]);
+  const userLimit = TOKEN_LIMITS.USER + creditBalance;
 
-  if (userUsage >= TOKEN_LIMITS.USER) {
+  if (userUsage >= userLimit) {
     return {
       allowed: false,
       limitType: 'user',
       current: userUsage,
-      limit: TOKEN_LIMITS.USER,
+      limit: userLimit,
     };
   }
 
@@ -189,22 +218,28 @@ export async function getRemainingTokens(
   organizationId: string,
 ): Promise<{
   user: { current: number; limit: number; remaining: number };
+  aiCredits: { balance: number };
   organization: { current: number; limit: number; remaining: number };
   global: { current: number; limit: number; remaining: number };
 }> {
   const today = getTodayDate();
 
-  const [userUsage, orgUsage, globalUsage] = await Promise.all([
+  const [userUsage, orgUsage, globalUsage, creditBalance] = await Promise.all([
     getUserDailyUsage(userId, organizationId, today),
     getOrganizationDailyUsage(organizationId, today),
     getGlobalDailyUsage(today),
+    aiCreditBalance(userId),
   ]);
+  const userLimit = TOKEN_LIMITS.USER + creditBalance;
 
   return {
     user: {
       current: userUsage,
-      limit: TOKEN_LIMITS.USER,
-      remaining: Math.max(0, TOKEN_LIMITS.USER - userUsage),
+      limit: userLimit,
+      remaining: Math.max(0, userLimit - userUsage),
+    },
+    aiCredits: {
+      balance: creditBalance,
     },
     organization: {
       current: orgUsage,

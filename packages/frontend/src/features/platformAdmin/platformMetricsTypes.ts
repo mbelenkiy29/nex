@@ -5,6 +5,19 @@ export type PlatformMetricsTrendPoint = {
   value: number;
 };
 
+export type PlatformMetricsFunnelEventName =
+  | 'course_view'
+  | 'preview_start'
+  | 'value_sample_started'
+  | 'value_sample_completed'
+  | 'sample_diagnostic_started'
+  | 'sample_diagnostic_completed'
+  | 'paywall_seen'
+  | 'cta_click'
+  | 'checkout_started'
+  | 'paid'
+  | 'first_value_after_payment';
+
 export type PlatformMetrics = {
   range: PlatformMetricsRange;
   startDate: string;
@@ -42,6 +55,33 @@ export type PlatformMetrics = {
     homeworkCompletions: PlatformMetricsTrendPoint[];
     aiTokens: PlatformMetricsTrendPoint[];
     revenueCents: PlatformMetricsTrendPoint[];
+  };
+  funnel: {
+    steps: Array<{
+      eventName: PlatformMetricsFunnelEventName;
+      count: number;
+      users: number;
+      conversionFromPrevious: number;
+      conversionFromStart: number;
+    }>;
+    summary: {
+      checkoutStartRate: number;
+      paidConversionRate: number;
+      firstValueRate: number;
+      paidUsers: number;
+      firstValueUsers: number;
+    };
+    topCourses: Array<{
+      courseId: string;
+      title: string;
+      courseViews: number;
+      paywallSeen: number;
+      checkoutStarted: number;
+      paid: number;
+      firstValueAfterPayment: number;
+      paidConversionRate: number;
+      firstValueRate: number;
+    }>;
   };
   topCourses: Array<{
     courseId: string;

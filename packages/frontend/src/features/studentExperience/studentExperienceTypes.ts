@@ -401,6 +401,116 @@ export type StudentCourseOverviewResponse = {
   learningOutcomes: StudentLearningOutcomes;
 };
 
+export type StudentMasteryMapResponse = {
+  access: {
+    mode: 'full' | 'course' | 'preview' | string;
+    hasSubscription: boolean;
+    fullCrossCourse: boolean;
+    premiumLocked: boolean;
+    paidCourseIds: string[];
+  };
+  summary: {
+    enrolledCourses: number;
+    readinessScore: number;
+    readinessDirection: 'up' | 'down' | 'flat' | 'none' | string;
+    readinessDelta: number;
+    weakSkills: number;
+    unlockedModules: number;
+    totalModules: number;
+    certificatesEarned: number;
+    certificatesAvailable: number;
+    currentStreak: number;
+    longestStreak: number;
+    nextMilestone: StudentMasteryMapMilestone;
+  };
+  readinessTrend: {
+    points: Array<{ date: string; score: number }>;
+    direction: 'up' | 'down' | 'flat' | 'none' | string;
+    delta: number;
+  };
+  weakSkills: Array<{
+    courseId: string;
+    courseTitle: string;
+    domain: string;
+    scorePercent: number;
+    confidence: 'low' | 'medium' | 'high' | string;
+    evidenceCount: number;
+    recommendedAction:
+      | 'diagnose'
+      | 'remediate'
+      | 'practice'
+      | 'maintain'
+      | string;
+  }>;
+  modules: {
+    unlockedCount: number;
+    totalCount: number;
+    items: Array<{
+      id: string;
+      courseId: string;
+      courseTitle: string;
+      title: string;
+      description?: string | null;
+      completedLessons: number;
+      totalLessons: number;
+      percent: number;
+      status: 'complete' | 'current' | 'unlocked' | 'locked' | string;
+    }>;
+  };
+  certificates: {
+    earnedCount: number;
+    availableCount: number;
+    items: Array<{
+      courseId: string;
+      courseTitle: string;
+      enabled: boolean;
+      status:
+        | 'earned'
+        | 'inProgress'
+        | 'locked'
+        | 'unavailable'
+        | 'revoked'
+        | string;
+      percent: number;
+      completedLessons: number;
+      totalLessons: number;
+      certificate?: {
+        id: string;
+        issuedAt: string;
+        revokedAt?: string | null;
+        certificateNumber: string;
+        verificationCode: string;
+      } | null;
+    }>;
+  };
+  streaks: {
+    currentStreak: number;
+    longestStreak: number;
+    activeCourses: number;
+    courses: Array<{
+      courseId: string;
+      courseTitle: string;
+      currentStreak: number;
+      longestStreak: number;
+      lastActivityDate?: string | null;
+    }>;
+  };
+  milestones: StudentMasteryMapMilestone[];
+  courses: Array<{
+    course: StudentCourseSummary;
+    progress: StudentCourseOverviewResponse['progress'];
+    readiness: StudentReadiness;
+    nextLesson?: StudentLessonSummary | null;
+    weakAreas: string[];
+  }>;
+};
+
+export type StudentMasteryMapMilestone = {
+  key: 'baseline' | 'momentum' | 'ready' | 'examReady' | 'mastered' | string;
+  threshold: number;
+  achieved: boolean;
+};
+
 export type StudentPracticeResponse = {
   availableQuestions: number;
   sampleQuestions: Array<{

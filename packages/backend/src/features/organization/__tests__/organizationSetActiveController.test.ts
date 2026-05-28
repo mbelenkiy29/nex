@@ -6,6 +6,7 @@ import { organizationSetActiveController } from '../controllers/organizationSetA
 import { Error400 } from '../../../shared/errors/Error400';
 import { Error403 } from '../../../shared/errors/Error403';
 import { APIError } from 'better-auth';
+import { env } from '../../../env';
 
 vi.mock('../../auth/authBackend', () => ({
   authBackend: {
@@ -142,8 +143,8 @@ describe('OrganizationSetActiveController', () => {
         await createTestUserWithOrganization();
       const context = createAuthenticatedContext(user, organization, member);
 
-      const originalEnv = process.env.ORGANIZATION_DEFAULT_ROLE;
-      process.env.ORGANIZATION_DEFAULT_ROLE = 'member';
+      const originalDefaultRole = env.ORGANIZATION_DEFAULT_ROLE;
+      env.ORGANIZATION_DEFAULT_ROLE = 'member';
 
       try {
         const org2 = await prisma.organization.create({
@@ -184,12 +185,7 @@ describe('OrganizationSetActiveController', () => {
           headers: context.headers,
         });
       } finally {
-        // Restore original env
-        if (originalEnv !== undefined) {
-          process.env.ORGANIZATION_DEFAULT_ROLE = originalEnv;
-        } else {
-          delete process.env.ORGANIZATION_DEFAULT_ROLE;
-        }
+        env.ORGANIZATION_DEFAULT_ROLE = originalDefaultRole;
       }
     });
   });

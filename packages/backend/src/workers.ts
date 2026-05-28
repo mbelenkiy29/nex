@@ -30,6 +30,11 @@ import {
   COURSE_AI_QUEUE,
   type CourseAiGenerationJobData,
 } from './features/courseAi/courseAiJobSchemas';
+import { courseVideoTranscriptWorker } from './features/course/courseVideoTranscriptWorker';
+import {
+  COURSE_VIDEO_TRANSCRIPT_QUEUE,
+  type CourseVideoTranscriptJobData,
+} from './features/course/courseVideoTranscriptJobSchemas';
 import { studentStudyReminderWorker } from './features/studentExperience/studentReminderWorker';
 import {
   STUDENT_STUDY_REMINDER_CRON,
@@ -68,6 +73,10 @@ async function startWorkers() {
     fileVerificationWorker,
   );
   await workQueue<CourseAiGenerationJobData>(COURSE_AI_QUEUE, courseAiWorker);
+  await workQueue<CourseVideoTranscriptJobData>(
+    COURSE_VIDEO_TRANSCRIPT_QUEUE,
+    courseVideoTranscriptWorker,
+  );
   await workQueue<StudentStudyReminderJobData>(
     STUDENT_STUDY_REMINDER_QUEUE,
     studentStudyReminderWorker,

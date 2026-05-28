@@ -1,9 +1,13 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { env } from '../../env';
 import { Error400 } from '../../shared/errors/Error400';
 import { parseJsonResponse } from '../courseAi/courseAiService';
 import { errorToLogMetadata, logger } from '../../shared/lib/logger';
+import {
+  aiTextProviderConfigured,
+  aiTextProviderModel,
+  generateAiText,
+  streamAiText,
+} from '../../shared/ai/aiTextProvider';
 import {
   courseStudyAiQuestionSchema,
   type CourseStudyAiQuestion,
@@ -17,15 +21,10 @@ type CourseStudyAiErrorMessages = {
   streamGeneric: string;
 };
 
-// Reuses the same provider + model as the course-builder AI and the chatbot.
-export const STUDY_AI_MODEL = 'claude-haiku-4-5-20251001';
-
-const anthropic = env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
-  : null;
+export const STUDY_AI_MODEL = aiTextProviderModel();
 
 export function courseStudyAiConfigured() {
-  return Boolean(anthropic);
+  return aiTextProviderConfigured();
 }
 
 // ---------------------------------------------------------------------------
@@ -90,30 +89,25 @@ export async function runCourseStudyAiGeneration(
 ): Promise<{
   json: unknown;
   usage: { inputTokens: number; outputTokens: number };
+  model: string;
 }> {
-  if (!anthropic) {
+  if (!courseStudyAiConfigured()) {
     throw new Error400(messages.notConfigured);
   }
 
-  const response = await anthropic.messages.create({
-    model: STUDY_AI_MODEL,
-    max_tokens: maxTokens,
+  const response = await generateAiText({
     system,
-    messages: [{ role: 'user', content: prompt }],
+    prompt,
+    maxTokens,
+    json: true,
   });
 
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('');
-
-  const usage = {
-    inputTokens: response.usage?.input_tokens ?? 0,
-    outputTokens: response.usage?.output_tokens ?? 0,
-  };
-
   try {
-    return { json: parseJsonResponse(text), usage };
+    return {
+      json: parseJsonResponse(response.text),
+      usage: response.usage,
+      model: response.model,
+    };
   } catch {
     throw new Error400(messages.parseFailed);
   }
@@ -152,7 +146,7 @@ export async function* streamCourseStudyAiText(
   maxTokens = 2048,
   messages: Pick<CourseStudyAiErrorMessages, 'notConfigured' | 'streamGeneric'>,
 ): AsyncGenerator<CourseStudyAiStreamChunk> {
-  if (!anthropic) {
+  if (!courseStudyAiConfigured()) {
     yield {
       type: 'error',
       content: messages.notConfigured,
@@ -160,32 +154,10 @@ export async function* streamCourseStudyAiText(
     return;
   }
 
-  let inputTokens = 0;
-  let outputTokens = 0;
-
   try {
-    const stream = await anthropic.messages.create({
-      model: STUDY_AI_MODEL,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: prompt }],
-      stream: true,
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'message_start') {
-        inputTokens += event.message.usage?.input_tokens || 0;
-      } else if (
-        event.type === 'content_block_delta' &&
-        event.delta.type === 'text_delta'
-      ) {
-        yield { type: 'text', content: event.delta.text };
-      } else if (event.type === 'message_delta') {
-        outputTokens += event.usage?.output_tokens || 0;
-      }
+    for await (const chunk of streamAiText({ system, prompt, maxTokens })) {
+      yield chunk;
     }
-
-    yield { type: 'usage', usage: { inputTokens, outputTokens } };
     yield { type: 'done' };
   } catch (error: any) {
     logger.error('ai.course_study.stream_failed', {
@@ -193,13 +165,13 @@ export async function* streamCourseStudyAiText(
     });
     yield {
       type: 'error',
-      content: error?.message || messages.streamGeneric,
+      content: messages.streamGeneric,
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// Recommendation + study-plan prompts and parsers (Phase 3 analytics).
+// Recommendation + study-plan prompts and parsers.
 // ---------------------------------------------------------------------------
 
 export function nextStepSystemPrompt(language: string) {

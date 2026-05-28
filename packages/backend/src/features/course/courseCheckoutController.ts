@@ -7,7 +7,14 @@ import { Error401 } from '../../shared/errors/Error401';
 import { Error404 } from '../../shared/errors/Error404';
 import { getFrontendUrl } from '../../shared/lib/getFrontendUrl';
 import { STRIPE_API_VERSION } from '../subscription/stripeApiVersion';
+import { productAnalyticsTrackSystemEvent } from '../productAnalytics/productAnalyticsService';
 import { trustSafetyRequirePolicyAcceptance } from '../trustSafety/trustSafetyService';
+import {
+  checkoutTrustAnalyticsMetadata,
+  checkoutTrustSessionOptions,
+} from '../checkout/checkoutTrust';
+import type { PricingPackageType } from '../pricing/pricingSchemas';
+import { pricingMetadataFromCheckout } from '../pricing/pricingService';
 import { coursePaymentEnsureStripePrice } from './coursePaymentService';
 import { COURSE_PURCHASE_METADATA_KIND } from './coursePaymentWebhook';
 import { courseCheckoutInputSchema } from './courseSchemas';
@@ -15,6 +22,7 @@ import { courseCheckoutInputSchema } from './courseSchemas';
 async function courseCheckoutCouponDiscount({
   couponCode,
   course,
+  basePriceCents,
   userId,
   context,
 }: {
@@ -25,6 +33,7 @@ async function courseCheckoutCouponDiscount({
     currency: string;
     creatorUserId: string | null;
   };
+  basePriceCents: number;
   userId: string;
   context: AppContext;
 }) {
@@ -61,13 +70,12 @@ async function courseCheckoutCouponDiscount({
     throw new Error400(context.dictionary.course.errors.couponLimitReached);
   }
 
-  const priceCents = course.priceCents || 0;
   const discountCents =
     coupon.discountType === 'percent'
-      ? Math.round((priceCents * (coupon.percentOff || 0)) / 100)
-      : Math.min(priceCents, coupon.amountOffCents || 0);
+      ? Math.round((basePriceCents * (coupon.percentOff || 0)) / 100)
+      : Math.min(basePriceCents, coupon.amountOffCents || 0);
 
-  if (discountCents <= 0 || discountCents >= priceCents) {
+  if (discountCents <= 0 || discountCents >= basePriceCents) {
     throw new Error400(context.dictionary.course.errors.invalidCoupon);
   }
 
@@ -106,6 +114,9 @@ export async function courseCheckoutController(
       priceCents: true,
       currency: true,
       stripePriceId: true,
+      lifetimeAccessEnabled: true,
+      lifetimePriceCents: true,
+      lifetimeStripePriceId: true,
       creatorUserId: true,
     },
   });
@@ -137,19 +148,41 @@ export async function courseCheckoutController(
 
   await trustSafetyRequirePolicyAcceptance('studentTerms', context);
   const input = courseCheckoutInputSchema.parse(body);
+  const packageType: PricingPackageType =
+    input.packageType === 'selected_lifetime_course_access'
+      ? 'selected_lifetime_course_access'
+      : 'course_purchase';
+  const isLifetimePurchase = packageType === 'selected_lifetime_course_access';
+  if (
+    isLifetimePurchase &&
+    (!course.lifetimeAccessEnabled ||
+      !course.lifetimePriceCents ||
+      course.lifetimePriceCents <= 0)
+  ) {
+    throw new Error400(
+      context.dictionary.course.errors.coursePaymentNotConfigured,
+    );
+  }
+  const basePriceCents = isLifetimePurchase
+    ? course.lifetimePriceCents!
+    : course.priceCents || 0;
   const couponDiscount = await courseCheckoutCouponDiscount({
     couponCode: input.couponCode,
     course,
+    basePriceCents,
     userId: currentUser.id,
     context,
   });
   const checkoutPriceCents =
-    (course.priceCents || 0) - (couponDiscount?.discountCents || 0);
+    basePriceCents - (couponDiscount?.discountCents || 0);
 
   // Lazy provisioning fallback: if the course was approved before the Stripe
   // hook was wired (or the row was reset), make sure a Price exists now.
   let stripePriceId = course.stripePriceId;
-  if (!stripePriceId && !couponDiscount) {
+  if (isLifetimePurchase) {
+    stripePriceId = course.lifetimeStripePriceId;
+  }
+  if (!isLifetimePurchase && !stripePriceId && !couponDiscount) {
     const ensured = await coursePaymentEnsureStripePrice(course.id, context);
     stripePriceId = ensured.stripePriceId;
   }
@@ -167,11 +200,20 @@ export async function courseCheckoutController(
     organizationId: context.currentOrganization?.id ?? '',
     couponId: couponDiscount?.coupon.id ?? '',
     discountCents: String(couponDiscount?.discountCents ?? 0),
+    accessDuration: isLifetimePurchase ? 'lifetime' : 'standard',
+    ...pricingMetadataFromCheckout({
+      pricingPackageId: input.pricingPackageId,
+      pricingExperimentId: input.pricingExperimentId,
+      pricingVariantId: input.pricingVariantId,
+      packageType,
+    }),
   };
 
   const checkout = await stripe.checkout.sessions.create(
     {
+      ...checkoutTrustSessionOptions(context, 'course'),
       mode: 'payment',
+      submit_type: 'pay',
       line_items: [
         couponDiscount
           ? {
@@ -185,9 +227,21 @@ export async function courseCheckoutController(
               },
               quantity: 1,
             }
-          : { price: stripePriceId!, quantity: 1 },
+          : stripePriceId
+            ? { price: stripePriceId, quantity: 1 }
+            : {
+                price_data: {
+                  currency: course.currency.toLowerCase(),
+                  unit_amount: checkoutPriceCents,
+                  product_data: {
+                    name: course.title,
+                    metadata: { courseId: course.id },
+                  },
+                },
+                quantity: 1,
+              },
       ],
-      success_url: `${frontendUrl}/course/${course.slug}?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${frontendUrl}/course/${course.id}/activation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendUrl}/course/${course.slug}?purchase=cancelled`,
       customer_email: currentUser.email,
       client_reference_id: currentUser.id,
@@ -196,8 +250,44 @@ export async function courseCheckoutController(
       // webhook can discriminate without needing the Checkout Session.
       payment_intent_data: { metadata },
     },
-    { idempotencyKey: `course-checkout:${course.id}:${currentUser.id}` },
+    {
+      idempotencyKey: [
+        'course-checkout',
+        course.id,
+        currentUser.id,
+        packageType,
+        input.couponCode || '',
+      ].join(':'),
+    },
   );
+
+  await productAnalyticsTrackSystemEvent({
+    eventName: 'checkout_started',
+    source: 'backend',
+    dedupeKey: `checkout_started:course:${checkout.id}`,
+    userId: currentUser.id,
+    memberId: context.currentMember?.id ?? null,
+    organizationId: context.currentOrganization?.id ?? null,
+    courseId: course.id,
+    stripeCheckoutSessionId: checkout.id,
+    stripePriceId: stripePriceId ?? null,
+    accessType: course.accessType,
+    ctaLocation: 'course_detail_buy',
+    funnelId: `course:${course.id}`,
+    metadata: {
+      purchaseType: 'course',
+      packageType,
+      pricingPackageId: input.pricingPackageId,
+      pricingExperimentId: input.pricingExperimentId,
+      pricingVariantId: input.pricingVariantId,
+      courseSlug: course.slug,
+      priceCents: checkoutPriceCents,
+      currency: course.currency,
+      couponApplied: Boolean(couponDiscount),
+      accessDuration: isLifetimePurchase ? 'lifetime' : 'standard',
+      ...checkoutTrustAnalyticsMetadata('course'),
+    },
+  });
 
   return { url: checkout.url };
 }

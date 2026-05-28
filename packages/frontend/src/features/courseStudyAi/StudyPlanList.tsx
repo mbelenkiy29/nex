@@ -12,6 +12,9 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Spinner } from '@/shared/components/ui/spinner';
 import { dictionaryFormat } from '@/shared/lib/dictionaryFormat';
+import { AiPrivacyControlsSheet } from '@/features/aiTrust/AiPrivacyControlsSheet';
+import { AiTrustPanel } from '@/features/aiTrust/AiTrustPanel';
+import { ContextualPaywall } from '@/features/pricing/ContextualPaywall';
 import { ExamDateDialog } from './ExamDateDialog';
 import {
   resolveStudyAiError,
@@ -50,6 +53,9 @@ function examCountdownText(
  */
 export function StudyPlanList({ courseId }: { courseId: string }) {
   const dictionary = useAuthStore((state) => state.dictionary);
+  const currentSubscription = useAuthStore(
+    (state) => state.currentSubscription,
+  );
   const t = dictionary.course.studyAi;
   const planQuery = useStudyPlan(courseId);
   const examQuery = useExamDate(courseId);
@@ -58,8 +64,10 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
   const updateItem = useUpdateStudyPlanItem(courseId);
   const deleteItem = useDeleteStudyPlanItem(courseId);
   const [newTitle, setNewTitle] = useState('');
+  const [showFullPlanPaywall, setShowFullPlanPaywall] = useState(false);
 
   const items = planQuery.data?.items ?? [];
+  const trust = generate.data?.trust ?? planQuery.data?.trust ?? null;
   const doneCount = items.filter((item) => item.status === 'completed').length;
   const hasAiItems = items.some((item) => item.source === 'ai');
 
@@ -71,6 +79,7 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
   const generateErrorCode = generate.isError
     ? resolveStudyAiError(generate.error)
     : null;
+  const showAiPaywall = showFullPlanPaywall || generateErrorCode === 'limit';
 
   const addItem = () => {
     const title = newTitle.trim();
@@ -84,14 +93,23 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2 rounded-xl border bg-white/70 p-2.5 dark:bg-white/8">
         <span className="text-xs font-medium">{countdown}</span>
-        <ExamDateDialog courseId={courseId} current={examQuery.data} />
+        <div className="flex items-center gap-1">
+          <AiPrivacyControlsSheet />
+          <ExamDateDialog courseId={courseId} current={examQuery.data} />
+        </div>
       </div>
 
       <Button
         variant="outline"
         className="h-10 w-full rounded-xl bg-white/70 dark:bg-white/8"
         disabled={generate.isPending}
-        onClick={() => generate.mutate()}
+        onClick={() => {
+          if (!currentSubscription) {
+            setShowFullPlanPaywall(true);
+            return;
+          }
+          generate.mutate();
+        }}
       >
         {generate.isPending ? (
           <Spinner />
@@ -115,6 +133,28 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
               : t.errors.generic}
         </p>
       )}
+      {showAiPaywall && (
+        <ContextualPaywall
+          source="ai_full_plan"
+          courseId={courseId}
+          preferredPackageTypes={
+            currentSubscription && generateErrorCode === 'limit'
+              ? ['ai_credit_pack']
+              : [
+                  'annual_subscription',
+                  'monthly_subscription',
+                  'ai_credit_pack',
+                ]
+          }
+          compact
+          metadata={{
+            reason: generateErrorCode === 'limit' ? 'ai_limit' : 'full_plan',
+            hasAiItems,
+          }}
+        />
+      )}
+
+      <AiTrustPanel trust={trust} />
 
       {items.length > 0 && (
         <p className="text-muted-foreground text-xs">
@@ -140,7 +180,9 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
               >
                 <button
                   type="button"
-                  aria-label={done ? t.studyPlan.markTodo : t.studyPlan.markDone}
+                  aria-label={
+                    done ? t.studyPlan.markTodo : t.studyPlan.markDone
+                  }
                   onClick={() =>
                     updateItem.mutate({
                       itemId: item.id,
@@ -169,10 +211,7 @@ export function StudyPlanList({ courseId }: { courseId: string }) {
                     </p>
                   )}
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <Badge
-                      variant="outline"
-                      className="rounded-md text-[10px]"
-                    >
+                    <Badge variant="outline" className="rounded-md text-[10px]">
                       {item.plannedForDate || t.studyPlan.noDate}
                     </Badge>
                     {item.source === 'ai' && (

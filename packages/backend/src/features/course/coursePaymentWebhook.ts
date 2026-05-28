@@ -9,6 +9,7 @@ import { auditLogOperations } from '../auditLog/auditLogOperations';
 import { notifyUserDirect } from '../../shared/notification/notifyUserDirect';
 import { computeCreatorPayout } from '../oneOnOneCall/oneOnOnePayoutSplit';
 import { durationMs, logger } from '../../shared/lib/logger';
+import { productAnalyticsTrackSystemEvent } from '../productAnalytics/productAnalyticsService';
 
 // Distinguishes course-purchase checkout sessions from anything else Stripe
 // may send. Mirrors the 1:1 pattern but with a different kind value so the
@@ -22,6 +23,11 @@ interface CoursePurchaseMetadata {
   organizationId: string | null;
   couponId: string | null;
   discountCents: number;
+  packageType: string | null;
+  pricingPackageId: string | null;
+  pricingExperimentId: string | null;
+  pricingVariantId: string | null;
+  accessDuration: string;
 }
 
 function readCoursePurchaseMetadata(
@@ -37,6 +43,12 @@ function readCoursePurchaseMetadata(
     organizationId: metadata.organizationId || null,
     couponId: metadata.couponId || null,
     discountCents: Number(metadata.discountCents || 0),
+    packageType: metadata.packageType || null,
+    pricingPackageId: metadata.pricingPackageId || null,
+    pricingExperimentId: metadata.pricingExperimentId || null,
+    pricingVariantId: metadata.pricingVariantId || null,
+    accessDuration:
+      metadata.accessDuration === 'lifetime' ? 'lifetime' : 'standard',
   };
 }
 
@@ -125,7 +137,7 @@ export async function coursePaymentWebhookHandler(
     course.creatorRevenueShareBps,
   );
 
-  await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
+  const purchase = await prismaDangerouslyBypassRLS.$transaction(async (tx) => {
     // Pending payout row first so we can reference it from CoursePurchase.
     const payout = course.creatorUserId
       ? await tx.creatorPayout.create({
@@ -152,6 +164,11 @@ export async function coursePaymentWebhookHandler(
         priceCents: amountTotal,
         currency: sessionCurrency,
         paidAt: new Date(),
+        packageType: meta.packageType,
+        pricingPackageId: meta.pricingPackageId,
+        pricingExperimentId: meta.pricingExperimentId,
+        pricingVariantId: meta.pricingVariantId,
+        accessDuration: meta.accessDuration,
         payoutId: payout?.id ?? null,
       },
     });
@@ -202,13 +219,23 @@ export async function coursePaymentWebhookHandler(
     // are touched (no-op) so the audit log shows when the row was last paid.
     await tx.courseEnrollment.upsert({
       where: { courseId_userId: { courseId: course.id, userId: meta.userId } },
-      update: { status: 'active', enrolledAt: new Date(), completedAt: null },
+      update: {
+        status: 'active',
+        enrolledAt: new Date(),
+        completedAt: null,
+        accessDuration: meta.accessDuration,
+        accessSource: 'coursePurchase',
+        pricingPackageId: meta.pricingPackageId,
+      },
       create: {
         courseId: course.id,
         userId: meta.userId,
         memberId: meta.memberId,
         status: 'active',
         enrolledAt: new Date(),
+        accessDuration: meta.accessDuration,
+        accessSource: 'coursePurchase',
+        pricingPackageId: meta.pricingPackageId,
       },
     });
 
@@ -222,6 +249,33 @@ export async function coursePaymentWebhookHandler(
       tx,
       newData: purchase,
     });
+
+    return purchase;
+  });
+
+  await productAnalyticsTrackSystemEvent({
+    eventName: 'paid',
+    source: 'stripeWebhook',
+    dedupeKey: `paid:course:${stripeCheckoutSession.id}`,
+    userId: meta.userId,
+    memberId: meta.memberId,
+    organizationId: meta.organizationId,
+    courseId: course.id,
+    coursePurchaseId: purchase.id,
+    stripeCheckoutSessionId: stripeCheckoutSession.id,
+    accessType: 'paid',
+    funnelId: `course:${course.id}`,
+    metadata: {
+      purchaseType: 'course',
+      packageType: meta.packageType,
+      pricingPackageId: meta.pricingPackageId,
+      pricingExperimentId: meta.pricingExperimentId,
+      pricingVariantId: meta.pricingVariantId,
+      priceCents: amountTotal,
+      currency: sessionCurrency,
+      couponApplied: Boolean(meta.couponId),
+      accessDuration: meta.accessDuration,
+    },
   });
 
   // Best-effort notification. Cross-tenant safe via notifyUserDirect.

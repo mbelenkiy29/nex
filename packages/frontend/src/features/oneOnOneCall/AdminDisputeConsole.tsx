@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LuShield } from 'react-icons/lu';
+import { formatDate } from '@project/backend/shared/lib/formatDate';
+import { formatDateTime } from '@project/backend/shared/lib/formatDateTime';
 import { useAuthStore } from '@/features/auth/authStore';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -23,6 +25,7 @@ import {
   type AdminDisputeRow,
 } from './hooks/useAdminDisputes';
 import type { OneOnOneDisputeStatus } from './hooks/useOneOnOneCall';
+import { formatOneOnOnePrice } from './oneOnOneCallFormat';
 
 const STATUS_OPTIONS: Array<OneOnOneDisputeStatus | 'all'> = [
   'all',
@@ -32,15 +35,6 @@ const STATUS_OPTIONS: Array<OneOnOneDisputeStatus | 'all'> = [
   'resolvedNoRefund',
 ];
 
-function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 interface DisputeRowProps {
   row: AdminDisputeRow;
   active: boolean;
@@ -48,7 +42,10 @@ interface DisputeRowProps {
 }
 
 function DisputeRow({ row, active, onSelect }: DisputeRowProps) {
-  const studentName = row.session.studentUser.name || row.session.studentUser.email;
+  const dictionary = useAuthStore((s) => s.dictionary);
+  const admin = dictionary.oneOnOneCall.dispute.admin;
+  const studentName =
+    row.session.studentUser.name || row.session.studentUser.email;
   return (
     <button
       type="button"
@@ -62,10 +59,10 @@ function DisputeRow({ row, active, onSelect }: DisputeRowProps) {
         <span className="text-sm font-semibold">
           {row.session.course.title}
         </span>
-        <Badge variant="secondary">{row.status}</Badge>
+        <Badge variant="secondary">{admin.statuses[row.status]}</Badge>
       </div>
       <span className="text-muted-foreground text-xs">
-        {studentName} · {formatWhen(row.createdAt)}
+        {studentName} · {formatDateTime(row.createdAt, dictionary)}
       </span>
     </button>
   );
@@ -76,10 +73,13 @@ interface DisputeDetailProps {
 }
 
 function DisputeDetail({ dispute }: DisputeDetailProps) {
-  const t = useAuthStore((s) => s.dictionary.oneOnOneCall.dispute);
+  const dictionary = useAuthStore((s) => s.dictionary);
+  const locale = useAuthStore((s) => s.locale);
+  const t = dictionary.oneOnOneCall.dispute;
   const resolve = useResolveDispute();
   const isResolved =
-    dispute.status === 'resolvedRefund' || dispute.status === 'resolvedNoRefund';
+    dispute.status === 'resolvedRefund' ||
+    dispute.status === 'resolvedNoRefund';
 
   const session = dispute.session;
   const defaultRefund =
@@ -110,9 +110,31 @@ function DisputeDetail({ dispute }: DisputeDetailProps) {
           ? (await error.response.json().catch(() => null))?.errors?.[0]
               ?.message
           : null;
-      setErrorMessage(message || 'Could not resolve the dispute.');
+      setErrorMessage(message || t.admin.resolveError);
     }
   };
+
+  const sessionDuration =
+    dictionary.oneOnOneCall.sessionType.durationMinutesShort.replace(
+      '{0}',
+      String(session.sessionType.durationMinutes),
+    );
+  const priceLabel =
+    session.priceCents != null
+      ? formatOneOnOnePrice(session.priceCents, session.currency, locale)
+      : t.admin.emptyValue;
+  const refundedLabel = session.refundedAt
+    ? t.admin.refundedValue
+        .replace(
+          '{0}',
+          formatOneOnOnePrice(
+            session.refundCents ?? 0,
+            session.currency,
+            locale,
+          ),
+        )
+        .replace('{1}', formatDate(session.refundedAt, dictionary))
+    : t.admin.emptyValue;
 
   return (
     <div className="space-y-4">
@@ -120,45 +142,38 @@ function DisputeDetail({ dispute }: DisputeDetailProps) {
         <CardContent className="space-y-3 p-5 text-sm">
           <h3 className="font-extrabold">{t.admin.detail}</h3>
           <dl className="text-muted-foreground grid grid-cols-[140px_1fr] gap-y-1 text-xs">
-            <dt>Session</dt>
+            <dt>{t.admin.sessionLabel}</dt>
             <dd>
-              {session.sessionType.title} · {session.sessionType.durationMinutes}{' '}
-              min
+              {session.sessionType.title} · {sessionDuration}
             </dd>
-            <dt>Course</dt>
+            <dt>{t.admin.courseLabel}</dt>
             <dd>{session.course.title}</dd>
-            <dt>Student</dt>
-            <dd>
-              {session.studentUser.name || session.studentUser.email}
-            </dd>
-            <dt>Instructor</dt>
+            <dt>{t.admin.studentLabel}</dt>
+            <dd>{session.studentUser.name || session.studentUser.email}</dd>
+            <dt>{t.admin.instructorLabel}</dt>
             <dd>
               {session.instructorUser.name || session.instructorUser.email}
             </dd>
-            <dt>Scheduled</dt>
-            <dd>{new Date(session.scheduledStartAt).toLocaleString()}</dd>
-            <dt>Price</dt>
+            <dt>{t.admin.scheduledLabel}</dt>
+            <dd>{formatDateTime(session.scheduledStartAt, dictionary)}</dd>
+            <dt>{t.admin.priceLabel}</dt>
+            <dd>{priceLabel}</dd>
+            <dt>{t.admin.paidAtLabel}</dt>
             <dd>
-              {session.priceCents != null
-                ? `${session.priceCents / 100} ${session.currency}`
-                : '—'}
+              {session.paidAt
+                ? formatDateTime(session.paidAt, dictionary)
+                : t.admin.emptyValue}
             </dd>
-            <dt>Paid at</dt>
-            <dd>
-              {session.paidAt ? new Date(session.paidAt).toLocaleString() : '—'}
-            </dd>
-            <dt>Refunded</dt>
-            <dd>
-              {session.refundedAt
-                ? `${(session.refundCents ?? 0) / 100} ${session.currency} on ${new Date(session.refundedAt).toLocaleDateString()}`
-                : '—'}
-            </dd>
-            <dt>Status</dt>
-            <dd>{session.status}</dd>
+            <dt>{t.admin.refundedLabel}</dt>
+            <dd>{refundedLabel}</dd>
+            <dt>{t.admin.statusLabel}</dt>
+            <dd>{dictionary.oneOnOneCall.session.statuses[session.status]}</dd>
           </dl>
           <div>
-            <p className="text-foreground text-xs font-semibold">Reason</p>
-            <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-xs">
+            <p className="text-foreground text-xs font-semibold">
+              {t.admin.reasonLabel}
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs whitespace-pre-wrap">
               {dispute.reason}
             </p>
           </div>
@@ -167,7 +182,7 @@ function DisputeDetail({ dispute }: DisputeDetailProps) {
               <p className="text-foreground text-xs font-semibold">
                 {t.admin.notes}
               </p>
-              <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-xs">
+              <p className="text-muted-foreground mt-1 text-xs whitespace-pre-wrap">
                 {dispute.resolutionNotes}
               </p>
             </div>
@@ -250,11 +265,6 @@ function DisputeDetail({ dispute }: DisputeDetailProps) {
   );
 }
 
-/**
- * Platform-admin dispute review: filter + master/detail pane. Two cards in the
- * detail panel — one for the read-only session info, one for the resolve form
- * — keeping each card focused on a single job (DESIGN.md).
- */
 export function AdminDisputeConsole() {
   const t = useAuthStore((s) => s.dictionary.oneOnOneCall.dispute);
   const [filter, setFilter] = useState<OneOnOneDisputeStatus | 'all'>('open');
@@ -282,7 +292,9 @@ export function AdminDisputeConsole() {
           </h2>
 
           <div className="space-y-2">
-            <Label htmlFor="oneOnOneDisputeFilter">{t.admin.statusFilter}</Label>
+            <Label htmlFor="oneOnOneDisputeFilter">
+              {t.admin.statusFilter}
+            </Label>
             <Select
               value={filter}
               onValueChange={(value) =>
@@ -295,7 +307,7 @@ export function AdminDisputeConsole() {
               <SelectContent>
                 {STATUS_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {value}
+                    {t.admin.statuses[value]}
                   </SelectItem>
                 ))}
               </SelectContent>

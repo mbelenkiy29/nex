@@ -24,6 +24,9 @@ import {
   oneOnOnePaymentWebhookHandler,
 } from '../../oneOnOneCall/oneOnOnePaymentWebhook';
 import { coursePaymentWebhookHandler } from '../../course/coursePaymentWebhook';
+import { courseBundlePaymentWebhookHandler } from '../../course/courseBundlePaymentWebhook';
+import { aiCreditPaymentWebhookHandler } from '../../aiCredit/aiCreditService';
+import { productAnalyticsTrackSystemEvent } from '../../productAnalytics/productAnalyticsService';
 
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '../stripeApiVersion';
@@ -164,14 +167,16 @@ async function _processStripeCheckoutSessionCompleted(
     },
   );
 
-  // Both 1:1 paid bookings and course one-time purchases go through
-  // `mode: 'payment'`. Each handler is gated on its own `metadata.kind`,
-  // so the order of the chain is safe — a non-matching event is a no-op
-  // in each handler. If a future feature adds a third `mode:'payment'`
-  // discriminator (e.g. lifetime upgrades), insert it into this chain
-  // rather than forking the branch.
+  // One-time products share `mode:'payment'`; each handler is gated by its
+  // own metadata kind, so non-matching sessions are no-ops.
   if (stripeCheckoutSession.mode === 'payment') {
     await coursePaymentWebhookHandler(stripe, stripeCheckoutSession, context);
+    await courseBundlePaymentWebhookHandler(
+      stripe,
+      stripeCheckoutSession,
+      context,
+    );
+    await aiCreditPaymentWebhookHandler(stripe, stripeCheckoutSession, context);
     await oneOnOnePaymentWebhookHandler(stripe, stripeCheckoutSession, context);
     return;
   }
@@ -289,6 +294,32 @@ async function _processStripeCheckoutSessionCompleted(
       });
     }
   }
+
+  await productAnalyticsTrackSystemEvent({
+    eventName: 'paid',
+    source: 'stripeWebhook',
+    dedupeKey: `paid:subscription:${stripeSubscription.id}`,
+    userId: subscription.userId,
+    memberId: subscription.memberId,
+    organizationId: subscription.organizationId,
+    subscriptionId: subscription.id,
+    stripeCheckoutSessionId: stripeCheckoutSession.id,
+    stripePriceId,
+    ctaLocation: 'subscription_plan_card',
+    funnelId: `subscription:${stripePriceId}`,
+    metadata: {
+      purchaseType: 'subscription',
+      packageType: stripeCheckoutSession.metadata?.packageType || null,
+      pricingPackageId:
+        stripeCheckoutSession.metadata?.pricingPackageId || null,
+      pricingExperimentId:
+        stripeCheckoutSession.metadata?.pricingExperimentId || null,
+      pricingVariantId:
+        stripeCheckoutSession.metadata?.pricingVariantId || null,
+      mode,
+      status: subscription.status,
+    },
+  });
 
   // Invalidate subscription cache
   const subscriptionCacheKey = buildSubscriptionCacheKey(

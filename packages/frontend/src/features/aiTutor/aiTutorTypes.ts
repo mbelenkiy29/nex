@@ -4,8 +4,16 @@
 // We import the backend `CourseStudyAiQuestion` shape directly to avoid
 // duplicating the option/difficulty types.
 import type { CourseStudyAiQuestion } from '@project/backend/features/courseStudyAi/courseStudyAiSchemas';
+import type { FileUploaded } from '@project/backend/features/file/fileSchemas';
+import type { AiTrustSignal } from '@project/backend/features/aiTrust/aiTrustSchemas';
 
 export type ChatbotMessageRole = 'user' | 'assistant';
+
+export type AiTutorAttachment = FileUploaded & {
+  extractionStatus?: 'ready' | 'failed';
+  extractedText?: string;
+  extractionError?: string;
+};
 
 export interface AiTutorWidgetBase {
   kind: string;
@@ -20,6 +28,7 @@ export interface LessonExplainCardWidget extends AiTutorWidgetBase {
     courseTitle: string;
     summary: string;
     keyPoints: string[];
+    trust?: AiTrustSignal;
   };
 }
 
@@ -31,6 +40,7 @@ export interface LessonSummaryCardWidget extends AiTutorWidgetBase {
     courseTitle: string;
     summary: string;
     keyPoints: string[];
+    trust?: AiTrustSignal;
   };
 }
 
@@ -42,6 +52,7 @@ export interface QuizCarouselWidget extends AiTutorWidgetBase {
     courseId: string;
     courseTitle: string;
     questions: CourseStudyAiQuestion[];
+    trust?: AiTrustSignal;
   };
 }
 
@@ -53,6 +64,7 @@ export interface PracticeCarouselWidget extends AiTutorWidgetBase {
     courseId: string;
     courseTitle: string;
     questions: CourseStudyAiQuestion[];
+    trust?: AiTrustSignal;
   };
 }
 
@@ -64,6 +76,7 @@ export interface StudyPlanListWidget extends AiTutorWidgetBase {
     examName: string | null;
     daysUntil: number | null;
     items: Array<{ title: string; description: string }>;
+    trust?: AiTrustSignal;
   };
 }
 
@@ -79,7 +92,9 @@ export interface AiTutorMessage {
   createdAt: string;
   role: ChatbotMessageRole;
   content: string;
+  attachments: AiTutorAttachment[] | null;
   widgets: AiTutorWidget[] | null;
+  trustSignals: AiTrustSignal | null;
 }
 
 export interface AiTutorConversationSummary {
@@ -99,6 +114,11 @@ export interface AiTutorConversationDetail extends AiTutorConversationSummary {
 
 export interface AiTutorAlertRow {
   id: string; // ephemeral id (client only — alerts are not persisted)
-  kind: 'limitDaily' | 'limitOrg' | 'limitGlobal' | 'concurrentRequest' | 'networkError';
+  kind:
+    | 'limitDaily'
+    | 'limitOrg'
+    | 'limitGlobal'
+    | 'concurrentRequest'
+    | 'networkError';
   message?: string;
 }

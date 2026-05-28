@@ -10,7 +10,7 @@ type DictionaryRecord = Record<string, unknown>;
 type FallbackCandidate = {
   locale: Locale;
   path: string;
-  reason: 'exact' | 'english-signal';
+  reason: 'exact' | 'english-signal' | 'empty-hint';
   value: string;
 };
 
@@ -132,6 +132,12 @@ function isLikelyEnglish(value: string): boolean {
   return signalCount >= 2 && signalCount / tokens.length >= 0.25;
 }
 
+function isEmptyHint(path: string, value: unknown): boolean {
+  return (
+    typeof value === 'string' && value === '' && /\.hints\.[^.]+$/.test(path)
+  );
+}
+
 function auditFallbacks(): FallbackCandidate[] {
   const englishEntries = new Map(flattenDictionary(enDictionary));
   const candidates: FallbackCandidate[] = [];
@@ -139,11 +145,16 @@ function auditFallbacks(): FallbackCandidate[] {
   for (const [locale, dictionary] of Object.entries(dictionaries) as Array<
     [Locale, DictionaryRecord]
   >) {
-    if (locale === 'en') {
-      continue;
-    }
-
     for (const [path, value] of flattenDictionary(dictionary)) {
+      if (isEmptyHint(path, value)) {
+        candidates.push({ locale, path, reason: 'empty-hint', value });
+        continue;
+      }
+
+      if (locale === 'en') {
+        continue;
+      }
+
       if (typeof value !== 'string' || value.trim().length < 4) {
         continue;
       }
@@ -185,13 +196,15 @@ const maxPerLocale = numberArg('--max', 40);
 const candidates = auditFallbacks();
 
 if (candidates.length === 0) {
-  console.log('Translation fallback audit: no likely English fallbacks found.');
+  console.log(
+    'Translation fallback audit: no likely English fallbacks or empty hints found.',
+  );
 } else {
   console.log(
-    `Translation fallback audit: ${candidates.length} likely English fallback(s) found.`,
+    `Translation fallback audit: ${candidates.length} issue(s) found.`,
   );
 
-  for (const locale of ['es', 'pt-BR', 'de', 'fr'] as Locale[]) {
+  for (const locale of ['en', 'es', 'pt-BR', 'de', 'fr'] as Locale[]) {
     const localeCandidates = candidates.filter(
       (candidate) => candidate.locale === locale,
     );
@@ -203,9 +216,11 @@ if (candidates.length === 0) {
     console.log(`\n${locale}: ${localeCandidates.length}`);
     for (const candidate of localeCandidates.slice(0, maxPerLocale)) {
       const preview =
-        candidate.value.length > 110
-          ? `${candidate.value.slice(0, 107)}...`
-          : candidate.value;
+        candidate.reason === 'empty-hint'
+          ? '(empty)'
+          : candidate.value.length > 110
+            ? `${candidate.value.slice(0, 107)}...`
+            : candidate.value;
       console.log(`- ${candidate.path} [${candidate.reason}] ${preview}`);
     }
 

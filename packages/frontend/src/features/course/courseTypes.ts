@@ -28,6 +28,130 @@ export type CourseRatingSummary = {
   count: number;
 };
 
+export type CoursePurchaseProof = {
+  creator: {
+    id?: string | null;
+    name?: string | null;
+    image?: string | null;
+    professionalTitle?: string | null;
+    bio?: string | null;
+    credentials?: string | null;
+    expertise?: string | null;
+    links?: string[];
+    nexVerified: boolean;
+  };
+  sampleOutcome?: string | null;
+  completionStats: {
+    enrollmentCount: number;
+    completedCount: number;
+    completionRate?: number | null;
+    showCompletionRate: boolean;
+    certificateCount: number;
+    ratingAverage: number;
+    ratingCount: number;
+  };
+  verifiedReviews: Array<{
+    id: string;
+    rating: number;
+    comment?: string | null;
+    createdAt: string;
+    verifiedLearner: boolean;
+    reviewer: {
+      id: string;
+      name?: string | null;
+      image?: string | null;
+    };
+  }>;
+  previewCurriculum: {
+    previewLessonCount: number;
+    lockedLessonCount: number;
+    totalLessonCount: number;
+    modules: Array<{
+      id: string;
+      title: string;
+      description?: string | null;
+      orderIndex: number;
+      lessons: Array<{
+        id: string;
+        title: string;
+        description?: string | null;
+        orderIndex: number;
+        videoDurationSeconds?: number | null;
+        isPreview: boolean;
+        isLocked: boolean;
+      }>;
+    }>;
+    standaloneLessons: Array<{
+      id: string;
+      title: string;
+      description?: string | null;
+      orderIndex: number;
+      videoDurationSeconds?: number | null;
+      isPreview: boolean;
+      isLocked: boolean;
+    }>;
+  };
+  refundPolicy: {
+    supported: boolean;
+    reviewRequired: boolean;
+  };
+};
+
+export type CourseActivationResponse = {
+  activationReady: boolean;
+  course: {
+    id: string;
+    slug: string;
+    title: string;
+    subtitle?: string | null;
+    category?: string | null;
+    examType?: string | null;
+    accessType: CourseAccessType;
+    certificateEnabled: boolean;
+    nexVerified: boolean;
+    moduleCount: number;
+    lessonCount: number;
+    assignmentCount: number;
+  };
+  enrollment?: CourseEnrollment | null;
+  unlockedPlan: {
+    accessType: CourseAccessType;
+    moduleCount: number;
+    lessonCount: number;
+    assignmentCount: number;
+    practiceIncluded: boolean;
+    aiTutorIncluded: boolean;
+    certificateEnabled: boolean;
+  };
+  recommendedLesson?: {
+    id: string;
+    title: string;
+    description?: string | null;
+    moduleId?: string | null;
+    orderIndex: number;
+    videoDurationSeconds?: number | null;
+  } | null;
+  practiceSet: {
+    availableQuestionCount?: number | null;
+  };
+  certificatePath: {
+    enabled: boolean;
+    completedLessons: number;
+    totalLessons: number;
+    percent: number;
+    certificate?: {
+      id: string;
+      verificationCode: string;
+      issuedAt: string;
+    } | null;
+  };
+  aiTutorStarter: {
+    courseId: string;
+    lessonId?: string | null;
+    lessonTitle?: string | null;
+  };
+};
+
 export type CourseAssignmentRubricCriterion = {
   id: string;
   title: string;
@@ -55,10 +179,14 @@ export type CourseLesson = {
   id: string;
   title: string;
   description?: string | null;
-  content?: string | null;
   videoFiles?: CourseFile[] | null;
   videoUrl?: string | null;
   resourceFiles?: CourseFile[] | null;
+  videoTranscriptText?: string | null;
+  videoTranscriptStatus?: CourseVideoTranscriptStatus | null;
+  videoTranscriptSourceKey?: string | null;
+  videoTranscriptError?: string | null;
+  videoTranscriptGeneratedAt?: string | null;
   videoDurationSeconds?: number | null;
   orderIndex: number;
   isPreview: boolean;
@@ -67,6 +195,13 @@ export type CourseLesson = {
   assignments?: CourseAssignment[];
   blocks?: CourseLessonBlock[];
 };
+
+export type CourseVideoTranscriptStatus =
+  | 'notRequested'
+  | 'queued'
+  | 'processing'
+  | 'ready'
+  | 'failed';
 
 export type CourseLessonBlockType =
   | 'heading'
@@ -85,6 +220,7 @@ export type CourseLessonBlockType =
 
 export type CourseLessonBlock = {
   id: string;
+  lessonId: string;
   blockType: CourseLessonBlockType;
   content: Record<string, unknown>;
   orderIndex: number;
@@ -262,6 +398,9 @@ export type CourseEnrollment = {
   userId: string;
   status: string;
   enrolledAt: string;
+  accessDuration?: string;
+  accessSource?: string | null;
+  pricingPackageId?: string | null;
 };
 
 export type CourseLessonProgress = {
@@ -380,8 +519,8 @@ export type Course = {
   subtitle?: string | null;
   description?: string | null;
   category?: string | null;
-  // FK to CourseCategory (the curated taxonomy). The legacy freeform
-  // `category` string still ships as a read-only mirror in v1.
+  // FK to CourseCategory (the curated taxonomy). API payloads derive the
+  // read-only category label from categoryRef.name.
   categoryId?: string | null;
   categoryRef?: CourseCategoryRef | null;
   examType?: string | null;
@@ -392,6 +531,9 @@ export type Course = {
   priceCents?: number | null;
   currency: string;
   stripePriceId?: string | null;
+  lifetimeAccessEnabled?: boolean;
+  lifetimePriceCents?: number | null;
+  lifetimeStripePriceId?: string | null;
   subscriptionPlanKey?: string | null;
   creatorRevenueShareBps: number;
   nexVerified: boolean;
@@ -443,6 +585,7 @@ export type Course = {
     ratingAverage: number;
     ratingCount: number;
   };
+  purchaseProof?: CoursePurchaseProof | null;
   ratingSummary?: CourseRatingSummary;
   myRating?: CourseRating | null;
   creatorUser?: {
@@ -577,7 +720,6 @@ export type CourseManageForm = {
   slug?: string | null;
   subtitle?: string | null;
   description?: string | null;
-  category?: string | null;
   categoryId?: string | null;
   examType?: string | null;
   thumbnail?: CourseFile[] | null;
@@ -587,6 +729,9 @@ export type CourseManageForm = {
   priceCents?: number | null;
   currency: string;
   stripePriceId?: string | null;
+  lifetimeAccessEnabled?: boolean;
+  lifetimePriceCents?: number | null;
+  lifetimeStripePriceId?: string | null;
   subscriptionPlanKey?: string | null;
   creatorRevenueShareBps: number;
   nexVerified: boolean;
@@ -609,4 +754,5 @@ export type CourseManageForm = {
       clientId: string;
     }
   >;
+  blocks: CourseLessonBlock[];
 };

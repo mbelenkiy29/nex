@@ -441,6 +441,20 @@ export const storage = validateStorageKeys({
     maxSizeInBytes: 1_000_000_000,
     roles: [rolesIds.admin],
   },
+  aiTutorAttachments: {
+    id: 'aiTutorAttachments',
+    folder: 'organization/:organizationId/ai-tutor/attachments',
+    maxSizeInBytes: 10_000_000,
+    fileTypes: [
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+      'application/json',
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    roles: [rolesIds.admin, rolesIds.member],
+  },
   courseThumbnails: {
     id: 'courseThumbnails',
     folder: 'course/thumbnails',
@@ -493,7 +507,8 @@ export const storage = validateStorageKeys({
   },
   creatorIdentityDocuments: {
     id: 'creatorIdentityDocuments',
-    folder: 'organization/:organizationId/creator-application/identity-documents',
+    folder:
+      'organization/:organizationId/creator-application/identity-documents',
     maxSizeInBytes: 25_000_000,
     fileTypes: ['image/*', 'application/pdf'],
     roles: [rolesIds.admin, rolesIds.member],

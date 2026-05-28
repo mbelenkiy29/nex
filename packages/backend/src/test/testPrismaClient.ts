@@ -1,5 +1,5 @@
 import { PrismaClient } from '../prisma/generated/client';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 // bypass-RLS: test fixtures need to seed cross-org data before any
@@ -49,15 +49,31 @@ export async function resetTestDatabase(): Promise<void> {
   }
 
   const schemaPath = join(__dirname, '../prisma/schema.prisma');
+  const prismaCliPath = join(
+    __dirname,
+    '../../node_modules/prisma/build/index.js',
+  );
 
   try {
-    execSync(
-      `npx prisma db push --force-reset --accept-data-loss --schema=${schemaPath}`,
+    execFileSync(
+      process.execPath,
+      [
+        prismaCliPath,
+        'db',
+        'push',
+        '--force-reset',
+        '--accept-data-loss',
+        `--schema=${schemaPath}`,
+      ],
       {
         env: {
-          ...process.env,
-          DATABASE_URL: dbUrl,
+          DATABASE_BYPASS_RLS_URL: env.DATABASE_BYPASS_RLS_URL,
           DATABASE_MIGRATION_URL: dbUrl,
+          DATABASE_RLS_URL: env.DATABASE_RLS_URL,
+          DATABASE_SCHEMA: env.DATABASE_SCHEMA,
+          DATABASE_SCHEMA_JOBS: env.DATABASE_SCHEMA_JOBS,
+          DATABASE_URL: dbUrl,
+          NODE_ENV: env.NODE_ENV,
           // Prisma AI safety check: Explicit consent for test database operations
           // This is safe because we verify the database name contains "-test" or "_test" above
           PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION:

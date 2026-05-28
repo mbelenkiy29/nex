@@ -81,8 +81,8 @@ export async function oneOnOnePutAvailabilityController(
   return c.json({ windows });
 }
 
-// Creates a bookable session type for the current user. Phase 1 only allows
-// free types; paid types are gated until Phase 2 ships one-time Stripe.
+// Creates a bookable session type for the current user. Paid types are
+// available when Stripe Checkout is configured.
 export async function oneOnOneCreateSessionTypeController(
   body: unknown,
   context: AppContext,
@@ -92,7 +92,8 @@ export async function oneOnOneCreateSessionTypeController(
   const { userId } = requireOneOnOneUser(context);
   const t = context.dictionary.oneOnOneCall.errors;
 
-  // Paid sessions need Stripe wired up; gate cleanly when it isn't.
+  // Without Stripe there is no payment-confirmation path, so paid types stay
+  // blocked while free 1:1s remain available.
   if (!data.isFree && !env.STRIPE_SECRET_KEY) {
     throw new Error400(t.paidNotAvailable);
   }
@@ -169,8 +170,7 @@ export async function oneOnOneUpdateSessionTypeController(
         data.description === undefined ? undefined : data.description,
       durationMinutes: data.durationMinutes ?? undefined,
       isFree: data.isFree ?? undefined,
-      priceCents:
-        data.priceCents === undefined ? undefined : data.priceCents,
+      priceCents: data.priceCents === undefined ? undefined : data.priceCents,
       currency: data.currency ?? undefined,
       bufferMinutes: data.bufferMinutes ?? undefined,
       minNoticeHours: data.minNoticeHours ?? undefined,

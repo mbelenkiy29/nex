@@ -1,20 +1,25 @@
 import { z } from 'zod';
+import { fileUploadedSchema } from '../file/fileSchemas';
 
 export const chatbotMessageRoleSchema = z.enum(['user', 'assistant']);
+export const chatbotAttachmentExtractionStatusSchema = z.enum([
+  'ready',
+  'failed',
+]);
+
+export const chatbotAttachmentInputSchema = fileUploadedSchema.extend({
+  size: z.number().int().min(0).max(10_000_000).optional(),
+});
+
+export const chatbotAttachmentSchema = chatbotAttachmentInputSchema.extend({
+  extractionStatus: chatbotAttachmentExtractionStatusSchema,
+  extractedText: z.string().optional(),
+  extractionError: z.string().optional(),
+});
 
 export const chatbotMessageSchema = z.object({
   role: chatbotMessageRoleSchema,
   content: z.string(),
-});
-
-// Legacy input shape (no conversationId) — still accepted by the old
-// `POST /api/chatbot/message` route. The frontend `ChatbotSheet` modal
-// writes to this; the full-page tutor uses the per-conversation route.
-export const chatbotSendMessageInputSchema = z.object({
-  message: z.string().trim().min(1).max(10000),
-  conversationHistory: z.array(chatbotMessageSchema).optional(),
-  courseId: z.string().uuid().optional(),
-  lessonId: z.string().uuid().optional(),
 });
 
 export const chatbotLimitExceededErrorSchema = z.object({
@@ -32,9 +37,10 @@ export const chatbotConcurrentRequestErrorSchema = z.object({
 
 export type ChatbotMessageRole = z.infer<typeof chatbotMessageRoleSchema>;
 export type ChatbotMessage = z.infer<typeof chatbotMessageSchema>;
-export type ChatbotSendMessageInput = z.infer<
-  typeof chatbotSendMessageInputSchema
+export type ChatbotAttachmentInput = z.infer<
+  typeof chatbotAttachmentInputSchema
 >;
+export type ChatbotAttachment = z.infer<typeof chatbotAttachmentSchema>;
 export type ChatbotLimitExceededError = z.infer<
   typeof chatbotLimitExceededErrorSchema
 >;

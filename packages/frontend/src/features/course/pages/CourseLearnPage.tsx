@@ -71,7 +71,10 @@ export const courseLearnLazyRoute = createLazyRoute('/course/$id/learn')({
 export function CourseLearnPage() {
   const dictionary = useAuthStore((state) => state.dictionary);
   const { id } = useParams({ from: '/course/$id/learn' });
-  const search = useSearch({ strict: false }) as { lessonId?: string };
+  const search = useSearch({ strict: false }) as {
+    lessonId?: string;
+    activation?: string;
+  };
   const queryClient = useQueryClient();
   const [selectedLessonId, setSelectedLessonId] = useState<string>('');
   const [cachedLearnData, setCachedLearnData] =
@@ -83,10 +86,18 @@ export function CourseLearnPage() {
   const offlineStatus = useOfflineLearningStatus(id);
 
   const learnQuery = useQuery({
-    queryKey: ['course', 'learn', id],
+    queryKey: [
+      'course',
+      'learn',
+      id,
+      search.activation === '1' ? 'activation' : 'standard',
+    ],
     queryFn: async ({ signal }) =>
       apiClient
-        .get(`api/course/${id}/learn`, { signal })
+        .get(
+          `api/course/${id}/learn${search.activation === '1' ? '?activation=1' : ''}`,
+          { signal },
+        )
         .json<CourseLearnResponse>(),
   });
 
@@ -163,6 +174,15 @@ export function CourseLearnPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ['course', 'learn', id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['studentExperience', 'course', id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['studentExperience', 'dashboard'],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['studentExperience', 'masteryMap'],
       });
       toast.success(dictionary.course.success.lessonCompleted);
     },

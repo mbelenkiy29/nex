@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { AppContext } from '../../shared/controller/appContext';
 import { McpTool } from '../mcp/mcpTypes';
 import { getAllMcpTools } from '../mcp/mcp';
-import { ChatbotMessage } from './chatbotSchemas';
+import { ChatbotAttachment, ChatbotMessage } from './chatbotSchemas';
 import { roles, rolesIds } from '../permissions';
 import type { Role } from 'better-auth/plugins/access';
 import { dictionaryFormat } from '../../translation/dictionaryFormat';
@@ -16,6 +16,8 @@ import {
   StudyToolWidget,
 } from './chatbotTools';
 import { errorToLogMetadata, logger } from '../../shared/lib/logger';
+import { chatbotMessageContentForModel } from './chatbotAttachmentService';
+import type { AiTrustPreferences } from '../aiTrust/aiTrustSchemas';
 
 const anthropicApiKey = env.ANTHROPIC_API_KEY;
 export const CHATBOT_MODEL = 'claude-haiku-4-5-20251001';
@@ -148,19 +150,25 @@ export interface ChatbotStreamChunk {
 
 export async function* streamChatbotResponse(
   message: string,
-  conversationHistory: ChatbotMessage[] = [],
+  history: ChatbotMessage[] = [],
   context: AppContext,
-  options: { courseId?: string; lessonId?: string } = {},
+  options: {
+    courseId?: string;
+    lessonId?: string;
+    attachments?: ChatbotAttachment[];
+    preferences?: AiTrustPreferences;
+  } = {},
 ): AsyncGenerator<ChatbotStreamChunk> {
   const courseContext = options.courseId
-    ? await courseBuildAiContext(options.courseId, options.lessonId, context)
+    ? await courseBuildAiContext(options.courseId, options.lessonId, context, {
+        preferences: options.preferences,
+      })
     : undefined;
 
   if (!anthropic) {
     yield {
       type: 'error',
-      content:
-        'Anthropic API is not configured. Please set ANTHROPIC_API_KEY environment variable.',
+      content: context.dictionary.chatbot.errorNoApiKey,
     };
     return;
   }
@@ -179,8 +187,16 @@ export async function* streamChatbotResponse(
   const combinedTools: Anthropic.Tool[] = [...anthropicTools, ...studyTools];
 
   const messages: Anthropic.MessageParam[] = [
-    ...convertHistoryToAnthropicMessages(conversationHistory),
-    { role: 'user', content: message },
+    ...convertHistoryToAnthropicMessages(history),
+    {
+      role: 'user',
+      content: chatbotMessageContentForModel(
+        message,
+        options.preferences?.useAttachments === false
+          ? []
+          : options.attachments,
+      ),
+    },
   ];
 
   try {
@@ -295,7 +311,11 @@ export async function* streamChatbotResponse(
               const result = await runStudyTool(
                 block.name,
                 (block.input as Record<string, unknown>) || {},
-                { context, courseId: options.courseId ?? null },
+                {
+                  context,
+                  courseId: options.courseId ?? null,
+                  preferences: options.preferences,
+                },
               );
 
               totalInputTokens += result.usage.inputTokens;

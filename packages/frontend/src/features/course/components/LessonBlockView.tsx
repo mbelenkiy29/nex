@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { LuLayers, LuListChecks } from 'react-icons/lu';
+import { useAuthStore } from '@/features/auth/authStore';
 import { parseVideoEmbedUrl } from '@/features/course/courseBuilderUtils';
 import type {
   CourseFile,
@@ -34,6 +35,7 @@ export function LessonBlockView({ blocks }: { blocks: CourseLessonBlock[] }) {
 }
 
 function BlockRender({ block }: { block: CourseLessonBlock }) {
+  const text = useAuthStore((s) => s.dictionary.course.builder.blocks);
   const content = block.content || {};
 
   switch (block.blockType) {
@@ -100,9 +102,7 @@ function BlockRender({ block }: { block: CourseLessonBlock }) {
     case 'image': {
       const file = asFiles(content.files)[0];
       const url = file?.signedUrl || file?.publicUrl || asText(content.url);
-      return url ? (
-        <img src={url} alt="" className="rounded-xl" />
-      ) : null;
+      return url ? <img src={url} alt="" className="rounded-xl" /> : null;
     }
 
     case 'video': {
@@ -112,7 +112,7 @@ function BlockRender({ block }: { block: CourseLessonBlock }) {
           <div className="aspect-video overflow-hidden rounded-xl">
             <iframe
               src={embed}
-              title="lesson video"
+              title={text.lessonVideoTitle}
               allowFullScreen
               className="h-full w-full"
             />
@@ -120,8 +120,7 @@ function BlockRender({ block }: { block: CourseLessonBlock }) {
         );
       }
       const file = asFiles(content.files)[0];
-      const fileUrl =
-        file?.signedUrl || file?.publicUrl || asText(content.url);
+      const fileUrl = file?.signedUrl || file?.publicUrl || asText(content.url);
       return fileUrl ? (
         <video controls src={fileUrl} className="w-full rounded-xl" />
       ) : null;
@@ -136,7 +135,7 @@ function BlockRender({ block }: { block: CourseLessonBlock }) {
       return (
         <div className="flex items-center gap-2 rounded-xl border bg-white/60 p-3 text-sm dark:bg-white/8">
           <LuListChecks className="text-primary size-4" />
-          <span className="text-muted-foreground">Embedded quiz</span>
+          <span className="text-muted-foreground">{text.embeddedQuiz}</span>
         </div>
       );
 
@@ -144,7 +143,9 @@ function BlockRender({ block }: { block: CourseLessonBlock }) {
       return (
         <div className="flex items-center gap-2 rounded-xl border bg-white/60 p-3 text-sm dark:bg-white/8">
           <LuLayers className="text-primary size-4" />
-          <span className="text-muted-foreground">Embedded flashcards</span>
+          <span className="text-muted-foreground">
+            {text.embeddedFlashcards}
+          </span>
         </div>
       );
 

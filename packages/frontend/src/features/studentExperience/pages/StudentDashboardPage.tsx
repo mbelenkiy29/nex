@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { createLazyRoute, Link, useNavigate } from '@tanstack/react-router';
+import {
+  createLazyRoute,
+  Link,
+  useLocation,
+  useNavigate,
+} from '@tanstack/react-router';
 import {
   LuArrowRight,
   LuBadgeCheck,
@@ -7,7 +12,7 @@ import {
   LuBrain,
   LuCircleCheck,
   LuClipboardList,
-  LuFileText,
+  LuMap,
   LuNotebookPen,
   LuPlay,
   LuSparkles,
@@ -28,6 +33,7 @@ import type {
   StudentCourseCard,
   StudentDashboardResponse,
   StudentHomeworkItem,
+  StudentMasteryMapResponse,
   StudentReadiness,
   StudentStudyPlanItem,
 } from '../studentExperienceTypes';
@@ -36,11 +42,15 @@ export const studentDashboardLazyRoute = createLazyRoute('/student')({
   component: StudentDashboardPage,
 });
 
-export const studentMyCoursesLazyRoute = createLazyRoute('/student/my-courses')({
-  component: StudentDashboardPage,
-});
+export const studentMyCoursesLazyRoute = createLazyRoute('/student/my-courses')(
+  {
+    component: StudentDashboardPage,
+  },
+);
 
-export const studentPracticeHomeLazyRoute = createLazyRoute('/student/practice')({
+export const studentPracticeHomeLazyRoute = createLazyRoute(
+  '/student/practice',
+)({
   component: StudentDashboardPage,
 });
 
@@ -52,6 +62,7 @@ export function StudentDashboardPage() {
   const dictionary = useAuthStore((state) => state.dictionary);
   const currentMember = useAuthStore((state) => state.currentMember);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const createAiTutorConversation = useAiTutorCreateConversation();
   const dashboardQuery = useQuery({
     queryKey: ['studentExperience', 'dashboard'],
@@ -60,7 +71,15 @@ export function StudentDashboardPage() {
         .get('api/student/dashboard', { signal })
         .json<StudentDashboardResponse>(),
   });
+  const masteryMapQuery = useQuery({
+    queryKey: ['studentExperience', 'masteryMap'],
+    queryFn: async ({ signal }) =>
+      apiClient
+        .get('api/student/mastery-map', { signal })
+        .json<StudentMasteryMapResponse>(),
+  });
   const dashboard = dashboardQuery.data;
+  const masteryMap = masteryMapQuery.data;
   const firstName =
     currentMember?.firstName ||
     currentMember?.fullName?.split(' ')[0] ||
@@ -68,6 +87,7 @@ export function StudentDashboardPage() {
   const nextCourse = dashboard?.courses.find(
     (course) => course.course.id === dashboard.nextAction?.courseId,
   );
+  const activeView = studentDashboardView(pathname);
 
   const openTutor = async (initialMessage?: string) => {
     const course = nextCourse || dashboard?.courses[0];
@@ -97,50 +117,365 @@ export function StudentDashboardPage() {
 
   return (
     <div className="nex-dashboard-shell flex flex-1 flex-col gap-6 px-4 py-6 lg:px-7">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="nex-glass-card nex-gradient-hero relative overflow-hidden rounded-3xl p-7 lg:p-9">
-          <div className="relative z-10 max-w-3xl">
-            <p className="text-muted-foreground text-base">
-              {dictionary.dashboard.welcome.replace('{0}', firstName)}
-            </p>
-            <h1 className="text-nexexam-ink mt-5 text-4xl leading-tight font-extrabold tracking-normal md:text-[44px] dark:text-white">
-              {dictionary.studentExperience.heroTitle}
-            </h1>
-            <p className="text-muted-foreground mt-5 max-w-2xl text-lg">
-              {dictionary.studentExperience.heroSubtitle}
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button
-                nativeButton={false}
-                render={<Link {...nextActionLink(dashboard)} />}
-                size="lg"
-                className="h-12 rounded-xl px-6 shadow-[var(--nexexam-glow)]"
-              >
-                <LuPlay className="size-4" />
-                {nextActionLabel(dashboard, dictionary)}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="outline"
-                onClick={() => void openTutor()}
-                disabled={createAiTutorConversation.isPending}
-                className="border-primary/25 text-primary hover:bg-primary/5 h-12 rounded-xl bg-white/70 px-6 dark:bg-white/8"
-              >
-                <LuSparkles className="size-4" />
-                {dictionary.studentExperience.askCourseTutor}
-              </Button>
+      {activeView === 'overview' ? (
+        <>
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="nex-glass-card nex-gradient-hero relative overflow-hidden rounded-3xl p-7 lg:p-9">
+              <div className="relative z-10 max-w-3xl">
+                <p className="text-muted-foreground text-base">
+                  {dictionary.dashboard.welcome.replace('{0}', firstName)}
+                </p>
+                <h1 className="text-nexexam-ink mt-5 text-4xl leading-tight font-extrabold tracking-normal md:text-[44px] dark:text-white">
+                  {dictionary.studentExperience.heroTitle}
+                </h1>
+                <p className="text-muted-foreground mt-5 max-w-2xl text-lg">
+                  {dictionary.studentExperience.heroSubtitle}
+                </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    nativeButton={false}
+                    render={<Link {...nextActionLink(dashboard)} />}
+                    size="lg"
+                    className="h-12 rounded-xl px-6 shadow-[var(--nexexam-glow)]"
+                  >
+                    <LuPlay className="size-4" />
+                    {nextActionLabel(dashboard, dictionary)}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    onClick={() => void openTutor()}
+                    disabled={createAiTutorConversation.isPending}
+                    className="border-primary/25 text-primary hover:bg-primary/5 h-12 rounded-xl bg-white/70 px-6 dark:bg-white/8"
+                  >
+                    <LuSparkles className="size-4" />
+                    {dictionary.studentExperience.askCourseTutor}
+                  </Button>
+                </div>
+              </div>
+              <div className="pointer-events-none absolute right-8 bottom-8 hidden h-44 w-44 rounded-full border border-white/70 bg-white/30 shadow-[inset_0_0_60px_var(--nexexam-accent)] backdrop-blur-xl lg:block" />
             </div>
+
+            <ReadinessCard
+              readiness={dashboard?.readiness}
+              dictionary={dictionary}
+            />
+          </section>
+
+          {!dashboard?.courses.length ? (
+            <EmptyCourses dictionary={dictionary} />
+          ) : (
+            <StudentOverview
+              dashboard={dashboard}
+              masteryMap={masteryMap}
+              dictionary={dictionary}
+              onOpenTutor={openTutor}
+              isOpeningTutor={createAiTutorConversation.isPending}
+            />
+          )}
+        </>
+      ) : (
+        <FocusedStudentView
+          view={activeView}
+          dashboard={dashboard}
+          masteryMap={masteryMap}
+          dictionary={dictionary}
+          onOpenTutor={openTutor}
+          isOpeningTutor={createAiTutorConversation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+type StudentDashboardView = 'overview' | 'courses' | 'practice' | 'notes';
+
+function studentDashboardView(pathname: string): StudentDashboardView {
+  if (pathname.endsWith('/student/my-courses')) {
+    return 'courses';
+  }
+  if (pathname.endsWith('/student/practice')) {
+    return 'practice';
+  }
+  if (pathname.endsWith('/student/notes')) {
+    return 'notes';
+  }
+
+  return 'overview';
+}
+
+function StudentOverview({
+  dashboard,
+  masteryMap,
+  dictionary,
+  onOpenTutor,
+  isOpeningTutor,
+}: {
+  dashboard: StudentDashboardResponse;
+  masteryMap?: StudentMasteryMapResponse;
+  dictionary: Dictionary;
+  onOpenTutor: (initialMessage?: string) => void;
+  isOpeningTutor: boolean;
+}) {
+  return (
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="space-y-5">
+        <SectionHeader
+          title={dictionary.studentExperience.myCourses}
+          action={dictionary.course.list.menu}
+          to="/course"
+        />
+        <CourseGrid courses={dashboard.courses} dictionary={dictionary} />
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <HomeworkPanel
+            homework={dashboard.upcomingHomework}
+            dictionary={dictionary}
+          />
+          <PracticePanel dashboard={dashboard} dictionary={dictionary} />
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        <MasteryMapPreviewPanel
+          masteryMap={masteryMap}
+          dictionary={dictionary}
+        />
+        <NextUnlockPanel dashboard={dashboard} dictionary={dictionary} />
+        <NotesPanel dashboard={dashboard} dictionary={dictionary} />
+        <StudyPlanPanel items={dashboard.studyPlan} dictionary={dictionary} />
+        <AiTutorPanel
+          dashboard={dashboard}
+          dictionary={dictionary}
+          onOpen={onOpenTutor}
+          isOpening={isOpeningTutor}
+        />
+      </div>
+    </section>
+  );
+}
+
+function MasteryMapPreviewPanel({
+  masteryMap,
+  dictionary,
+}: {
+  masteryMap?: StudentMasteryMapResponse;
+  dictionary: Dictionary;
+}) {
+  const t = dictionary.studentExperience.masteryMap.preview;
+  const score = masteryMap?.summary.readinessScore ?? 0;
+  const weakest = masteryMap?.weakSkills[0];
+  const milestone = masteryMap?.summary.nextMilestone;
+  const milestoneLabels = dictionary.studentExperience.masteryMap
+    .milestoneLabels as Record<string, string>;
+
+  return (
+    <Card className="nex-glass-card rounded-2xl border-white/70 p-0 dark:border-white/10">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10 rounded-xl">
+              <LuMap className="size-3.5" />
+              {t.badge}
+            </Badge>
+            <h2 className="mt-3 font-extrabold">{t.title}</h2>
+            <p className="text-muted-foreground mt-1 text-sm">{t.body}</p>
           </div>
-          <div className="pointer-events-none absolute right-8 bottom-8 hidden h-44 w-44 rounded-full border border-white/70 bg-white/30 shadow-[inset_0_0_60px_var(--nexexam-accent)] backdrop-blur-xl lg:block" />
+          <div className="bg-primary/10 text-primary grid size-11 shrink-0 place-items-center rounded-xl">
+            <LuTarget className="size-5" />
+          </div>
         </div>
 
-        <ReadinessCard readiness={dashboard?.readiness} dictionary={dictionary} />
-      </section>
+        <div className="grid grid-cols-2 gap-2">
+          <PreviewStat
+            label={t.readiness}
+            value={dictionaryFormat(dictionary.studentExperience.score, score)}
+          />
+          <PreviewStat
+            label={t.streak}
+            value={dictionaryFormat(
+              dictionary.studentExperience.masteryMap.streakValue,
+              masteryMap?.summary.currentStreak ?? 0,
+            )}
+          />
+        </div>
 
-      {!dashboard?.courses.length ? (
+        <div className="rounded-xl border bg-white/72 p-3 dark:bg-white/8">
+          <div className="text-muted-foreground text-xs">{t.weakestSkill}</div>
+          <div className="mt-1 text-sm font-bold">
+            {weakest?.domain || t.noWeakSkill}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-white/72 p-3 dark:bg-white/8">
+          <div className="text-muted-foreground text-xs">{t.nextMilestone}</div>
+          <div className="mt-1 text-sm font-bold">
+            {milestone
+              ? milestoneLabels[milestone.key] || milestoneLabels.mastered
+              : t.noMilestone}
+          </div>
+        </div>
+
+        <Button
+          nativeButton={false}
+          render={<Link to="/student/mastery-map" />}
+          className="h-10 w-full rounded-xl"
+        >
+          {t.cta}
+          <LuArrowRight className="size-4" />
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PreviewStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border bg-white/72 p-3 dark:bg-white/8">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <div className="mt-1 text-lg font-extrabold">{value}</div>
+    </div>
+  );
+}
+
+function NextUnlockPanel({
+  dashboard,
+  dictionary,
+}: {
+  dashboard: StudentDashboardResponse;
+  dictionary: Dictionary;
+}) {
+  const currentSubscription = useAuthStore(
+    (state) => state.currentSubscription,
+  );
+  const config = useAuthStore((state) => state.config);
+  const hasSubscription = Boolean(currentSubscription);
+  const canSubscribe = config?.subscriptionMode !== 'disabled';
+  const t = dictionary.studentExperience.nextUnlock;
+  const firstCourse = dashboard.courses[0];
+
+  return (
+    <Card className="nex-glass-card rounded-2xl border-white/70 p-0 dark:border-white/10">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10 rounded-xl">
+              <LuSparkles className="size-3.5" />
+              {hasSubscription ? t.activeBadge : t.badge}
+            </Badge>
+            <h2 className="mt-3 font-extrabold">
+              {hasSubscription ? t.activeTitle : t.title}
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {hasSubscription ? t.activeBody : t.body}
+            </p>
+          </div>
+          <div className="bg-primary/10 text-primary grid size-11 shrink-0 place-items-center rounded-xl">
+            <LuSparkles className="size-5" />
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <UnlockRow title={t.aiPlanTitle} body={t.aiPlanBody} />
+          <UnlockRow title={t.practiceTitle} body={t.practiceBody} />
+          <UnlockRow title={t.certificateTitle} body={t.certificateBody} />
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {hasSubscription ? (
+            <Button
+              nativeButton={false}
+              render={<Link to="/student/ai-tutor" />}
+              className="h-10 rounded-xl"
+            >
+              {t.aiTutorCta}
+            </Button>
+          ) : canSubscribe ? (
+            <Button
+              nativeButton={false}
+              render={<Link to="/subscription" />}
+              className="h-10 rounded-xl"
+            >
+              {t.subscriptionCta}
+            </Button>
+          ) : null}
+          <Button
+            nativeButton={false}
+            variant="outline"
+            render={
+              firstCourse ? (
+                <Link
+                  to="/student/course/$courseId"
+                  params={{ courseId: firstCourse.course.id }}
+                />
+              ) : (
+                <Link to="/course" />
+              )
+            }
+            className="h-10 rounded-xl bg-white/70 dark:bg-white/8"
+          >
+            {t.coursesCta}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UnlockRow({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-xl border bg-white/72 p-3 dark:bg-white/8">
+      <div className="flex items-center gap-2 text-sm font-bold">
+        <LuCircleCheck className="text-primary size-4" />
+        {title}
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">{body}</p>
+    </div>
+  );
+}
+
+function FocusedStudentView({
+  view,
+  dashboard,
+  masteryMap,
+  dictionary,
+  onOpenTutor,
+  isOpeningTutor,
+}: {
+  view: Exclude<StudentDashboardView, 'overview'>;
+  dashboard: StudentDashboardResponse | undefined;
+  masteryMap?: StudentMasteryMapResponse;
+  dictionary: Dictionary;
+  onOpenTutor: (initialMessage?: string) => void;
+  isOpeningTutor: boolean;
+}) {
+  const title =
+    view === 'courses'
+      ? dictionary.studentExperience.menu.myCourses
+      : view === 'practice'
+        ? dictionary.studentExperience.menu.practice
+        : dictionary.studentExperience.menu.notesStudyPlan;
+
+  if (!dashboard?.courses.length) {
+    return (
+      <>
+        <FocusedHeader
+          title={title}
+          description={dictionary.studentExperience.subtitle}
+        />
         <EmptyCourses dictionary={dictionary} />
-      ) : (
+      </>
+    );
+  }
+
+  if (view === 'courses') {
+    return (
+      <>
+        <FocusedHeader
+          title={title}
+          description={dictionary.studentExperience.subtitle}
+        />
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-5">
             <SectionHeader
@@ -148,40 +483,122 @@ export function StudentDashboardPage() {
               action={dictionary.course.list.menu}
               to="/course"
             />
-            <div
-              data-testid="student-dashboard-my-courses"
-              className="grid gap-4 lg:grid-cols-2"
-            >
-              {dashboard.courses.map((course) => (
-                <CourseCard
-                  key={course.course.id}
-                  course={course}
-                  dictionary={dictionary}
-                />
-              ))}
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-2">
-              <HomeworkPanel
-                homework={dashboard.upcomingHomework}
-                dictionary={dictionary}
-              />
-              <PracticePanel dashboard={dashboard} dictionary={dictionary} />
-            </div>
+            <CourseGrid courses={dashboard.courses} dictionary={dictionary} />
           </div>
-
           <div className="space-y-5">
-            <NotesPanel dashboard={dashboard} dictionary={dictionary} />
-            <StudyPlanPanel items={dashboard.studyPlan} dictionary={dictionary} />
-            <AiTutorPanel
-              dashboard={dashboard}
+            <MasteryMapPreviewPanel
+              masteryMap={masteryMap}
               dictionary={dictionary}
-              onOpen={openTutor}
-              isOpening={createAiTutorConversation.isPending}
+            />
+            <ReadinessCard
+              readiness={dashboard.readiness}
+              dictionary={dictionary}
+            />
+            <HomeworkPanel
+              homework={dashboard.upcomingHomework}
+              dictionary={dictionary}
             />
           </div>
         </section>
-      )}
+      </>
+    );
+  }
+
+  if (view === 'practice') {
+    return (
+      <>
+        <FocusedHeader
+          title={title}
+          description={dictionary.studentExperience.heroSubtitle}
+        />
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-5">
+            <PracticePanel dashboard={dashboard} dictionary={dictionary} />
+            <CourseGrid courses={dashboard.courses} dictionary={dictionary} />
+          </div>
+          <div className="space-y-5">
+            <AiTutorPanel
+              dashboard={dashboard}
+              dictionary={dictionary}
+              onOpen={onOpenTutor}
+              isOpening={isOpeningTutor}
+            />
+            <StudyPlanPanel
+              items={dashboard.studyPlan}
+              dictionary={dictionary}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <FocusedHeader
+        title={title}
+        description={dictionary.studentExperience.subtitle}
+      />
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-5">
+          <NotesPanel dashboard={dashboard} dictionary={dictionary} />
+          <StudyPlanPanel items={dashboard.studyPlan} dictionary={dictionary} />
+        </div>
+        <div className="space-y-5">
+          <ReadinessCard
+            readiness={dashboard.readiness}
+            dictionary={dictionary}
+          />
+          <AiTutorPanel
+            dashboard={dashboard}
+            dictionary={dictionary}
+            onOpen={onOpenTutor}
+            isOpening={isOpeningTutor}
+          />
+        </div>
+      </section>
+    </>
+  );
+}
+
+function FocusedHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <section className="nex-glass-card rounded-3xl border-white/70 p-6 dark:border-white/10">
+      <h1 className="text-nexexam-ink text-3xl font-extrabold tracking-normal dark:text-white">
+        {title}
+      </h1>
+      <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+        {description}
+      </p>
+    </section>
+  );
+}
+
+function CourseGrid({
+  courses,
+  dictionary,
+}: {
+  courses: StudentCourseCard[];
+  dictionary: Dictionary;
+}) {
+  return (
+    <div
+      data-testid="student-dashboard-my-courses"
+      className="grid gap-4 lg:grid-cols-2"
+    >
+      {courses.map((course) => (
+        <CourseCard
+          key={course.course.id}
+          course={course}
+          dictionary={dictionary}
+        />
+      ))}
     </div>
   );
 }
@@ -243,7 +660,7 @@ function ReadinessCard({
               background: `conic-gradient(var(--nexexam-primary) ${score}%, var(--nexexam-soft) 0)`,
             }}
           >
-            <div className="grid size-24 place-items-center rounded-full bg-white text-3xl font-extrabold dark:bg-nexexam-surface">
+            <div className="dark:bg-nexexam-surface grid size-24 place-items-center rounded-full bg-white text-3xl font-extrabold">
               {score}
             </div>
           </div>
@@ -380,7 +797,7 @@ function HomeworkPanel({
                 key={item.id}
                 to="/course/$id/learn"
                 params={{ id: item.courseId }}
-                className="block rounded-xl border bg-white/72 p-3 transition hover:border-primary/30 dark:bg-white/8"
+                className="hover:border-primary/30 block rounded-xl border bg-white/72 p-3 transition dark:bg-white/8"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -391,7 +808,10 @@ function HomeworkPanel({
                       {item.courseTitle}
                     </div>
                   </div>
-                  <HomeworkStatusBadge status={item.status} dictionary={dictionary} />
+                  <HomeworkStatusBadge
+                    status={item.status}
+                    dictionary={dictionary}
+                  />
                 </div>
                 {item.dueDate && (
                   <div className="text-muted-foreground mt-2 text-xs">
@@ -490,7 +910,7 @@ function NotesPanel({
                 key={note.id}
                 to="/student/course/$courseId"
                 params={{ courseId: note.courseId }}
-                className="block rounded-xl border bg-white/72 p-3 transition hover:border-primary/30 dark:bg-white/8"
+                className="hover:border-primary/30 block rounded-xl border bg-white/72 p-3 transition dark:bg-white/8"
               >
                 <div className="line-clamp-1 text-sm font-bold">
                   {note.title}

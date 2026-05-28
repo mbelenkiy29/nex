@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createLazyRoute, Link, useNavigate } from '@tanstack/react-router';
+import {
+  createLazyRoute,
+  Link,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router';
 import {
   LuBookOpenCheck,
   LuClock,
@@ -8,13 +13,16 @@ import {
   LuGraduationCap,
   LuHeart,
   LuLanguages,
+  LuLayoutGrid,
+  LuList,
+  LuLock,
   LuSearch,
   LuShieldCheck,
   LuSparkles,
   LuStar,
   LuUsers,
 } from 'react-icons/lu';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Course, CourseBundle } from '@/features/course/courseTypes';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -25,6 +33,7 @@ import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { apiClient } from '@/shared/lib/apiClient';
 import { objectToQuery } from '@/shared/lib/objectToQuery';
+import { productAnalyticsTrack } from '@/shared/lib/productAnalytics';
 import { dictionaryEnumerator } from '@project/backend/translation/dictionaryEnumerator';
 
 export const courseCatalogLazyRoute = createLazyRoute('/course')({
@@ -54,6 +63,7 @@ type SortKey =
 type PriceBucket = 'any' | 'free' | 'paid';
 type MinRating = 0 | 4 | 4.5;
 type DurationBucket = 'any' | 'short' | 'medium' | 'long';
+type ViewMode = 'cards' | 'list';
 
 interface CatalogFacets {
   examTypes: string[];
@@ -69,9 +79,13 @@ export function CourseCatalogPage() {
   const dictionary = useAuthStore((state) => state.dictionary);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  // `null` is the "All" chip. The backend keys filter results off the FK,
-  // so the legacy freeform string is no longer passed from this page.
+  const searchParams = useSearch({ strict: false }) as {
+    q?: string;
+    bundle_purchase?: 'success' | 'cancelled';
+  };
+  const searchQuery = typeof searchParams.q === 'string' ? searchParams.q : '';
+  const [search, setSearch] = useState(searchQuery);
+  // `null` is the "All" chip. The backend keys filter results off categoryId.
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>('trending');
   const [priceBucket, setPriceBucket] = useState<PriceBucket>('any');
@@ -81,8 +95,29 @@ export function CourseCatalogPage() {
   const [language, setLanguage] = useState('');
   const [durationBucket, setDurationBucket] = useState<DurationBucket>('any');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [page, setPage] = useState(1);
   const [comparisonIds, setComparisonIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSearch(searchQuery);
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (searchParams.bundle_purchase === 'success') {
+      toast.success(dictionary.pricing.bundlePurchaseSuccess);
+      navigate({ to: '/course', search: {}, replace: true });
+    } else if (searchParams.bundle_purchase === 'cancelled') {
+      toast.info(dictionary.checkoutTrust.checkoutCancelled);
+      navigate({ to: '/course', search: {}, replace: true });
+    }
+  }, [
+    dictionary.checkoutTrust.checkoutCancelled,
+    dictionary.pricing.bundlePurchaseSuccess,
+    navigate,
+    searchParams.bundle_purchase,
+  ]);
 
   const catalogQuery = useQuery({
     queryKey: [
@@ -175,6 +210,29 @@ export function CourseCatalogPage() {
     () => courses.find((course) => course.nexVerified) || courses[0],
     [courses],
   );
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    categoryId ||
+    priceBucket !== 'any' ||
+    minRating > 0 ||
+    examType ||
+    difficulty ||
+    language ||
+    durationBucket !== 'any' ||
+    verifiedOnly,
+  );
+  const showFeatured = featured.length > 0 && page === 1 && !hasActiveFilters;
+  const featuredIds = useMemo(
+    () => new Set(featured.map((course) => course.id)),
+    [featured],
+  );
+  const visibleCourses = useMemo(
+    () =>
+      showFeatured
+        ? courses.filter((course) => !featuredIds.has(course.id))
+        : courses,
+    [courses, featuredIds, showFeatured],
+  );
   const toggleComparison = (courseId: string) => {
     setComparisonIds((current) => {
       if (current.includes(courseId)) {
@@ -211,7 +269,10 @@ export function CourseCatalogPage() {
                 <LuSearch className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setPage(1);
+                  }}
                   placeholder={dictionary.shared.searchPlaceholder}
                   className="h-11 rounded-xl bg-white/80 pl-10 dark:bg-white/8"
                 />
@@ -428,7 +489,7 @@ export function CourseCatalogPage() {
         </div>
       </section>
 
-      {featured.length > 0 && page === 1 && (
+      {showFeatured && (
         <section className="space-y-3">
           <h2 className="flex items-center gap-2 text-sm font-extrabold tracking-wide uppercase">
             <LuShieldCheck className="text-primary size-4" />
@@ -470,25 +531,90 @@ export function CourseCatalogPage() {
         </section>
       )}
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {courses.map((course) => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            enrolling={enrollMutation.isPending}
-            onEnroll={() => enrollMutation.mutate(course.id)}
-            saving={saveMutation.isPending}
-            onToggleSave={() =>
-              saveMutation.mutate({
-                courseId: course.id,
-                saved: Boolean(course.isSaved),
-              })
-            }
-            selectedForComparison={comparisonIds.includes(course.id)}
-            onToggleCompare={() => toggleComparison(course.id)}
-          />
-        ))}
-      </section>
+      {visibleCourses.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-extrabold tracking-wide uppercase">
+              <LuBookOpenCheck className="text-primary size-4" />
+              {dictionary.course.list.allCourses}
+            </h2>
+            <div
+              role="group"
+              aria-label={dictionary.course.list.viewModeLabel}
+              className="inline-flex w-fit rounded-xl border bg-white/80 p-1 shadow-sm dark:bg-white/8"
+            >
+              <Button
+                type="button"
+                variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-8 rounded-lg"
+                onClick={() => setViewMode('cards')}
+                aria-pressed={viewMode === 'cards'}
+              >
+                <LuLayoutGrid className="size-4" />
+                <span className="hidden sm:inline">
+                  {dictionary.course.list.cardView}
+                </span>
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-8 rounded-lg"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+              >
+                <LuList className="size-4" />
+                <span className="hidden sm:inline">
+                  {dictionary.course.list.listView}
+                </span>
+              </Button>
+            </div>
+          </div>
+
+          {viewMode === 'cards' ? (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {visibleCourses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  enrolling={enrollMutation.isPending}
+                  onEnroll={() => enrollMutation.mutate(course.id)}
+                  saving={saveMutation.isPending}
+                  onToggleSave={() =>
+                    saveMutation.mutate({
+                      courseId: course.id,
+                      saved: Boolean(course.isSaved),
+                    })
+                  }
+                  selectedForComparison={comparisonIds.includes(course.id)}
+                  onToggleCompare={() => toggleComparison(course.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {visibleCourses.map((course) => (
+                <CourseListItem
+                  key={course.id}
+                  course={course}
+                  enrolling={enrollMutation.isPending}
+                  onEnroll={() => enrollMutation.mutate(course.id)}
+                  saving={saveMutation.isPending}
+                  onToggleSave={() =>
+                    saveMutation.mutate({
+                      courseId: course.id,
+                      saved: Boolean(course.isSaved),
+                    })
+                  }
+                  selectedForComparison={comparisonIds.includes(course.id)}
+                  onToggleCompare={() => toggleComparison(course.id)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {comparisonIds.length > 0 && (
         <div className="sticky bottom-4 z-20 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-2xl border bg-white/95 p-3 shadow-[0_18px_48px_rgb(15_23_42/0.18)] backdrop-blur dark:bg-slate-950/95">
@@ -535,7 +661,7 @@ export function CourseCatalogPage() {
 
       {totalPages > 1 && (
         <nav
-          aria-label="pagination"
+          aria-label={dictionary.shared.dataTable.pagination}
           className="flex items-center justify-center gap-3 pt-2"
         >
           <Button
@@ -612,6 +738,12 @@ function CourseCard({
             {dictionary.course.fields.nexVerified}
           </Badge>
         )}
+        {!course.isEnrolled && course.accessType !== 'free' && (
+          <Badge className="text-primary absolute top-3 right-3 rounded-xl bg-white/90 shadow-sm hover:bg-white">
+            <LuLock className="size-3.5" />
+            {dictionary.course.marketplace.unlock.badge}
+          </Badge>
+        )}
       </div>
       <CardContent className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
@@ -629,9 +761,9 @@ function CourseCard({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          {course.category && (
+          {course.categoryRef?.name && (
             <Badge variant="secondary" className="rounded-lg">
-              {course.category}
+              {course.categoryRef.name}
             </Badge>
           )}
           {course.examType && (
@@ -706,6 +838,12 @@ function CourseCard({
             {dictionary.course.marketplace.learners}
           </span>
         </div>
+        {!course.isEnrolled && (
+          <div className="border-primary/20 bg-primary/5 text-primary mt-4 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs font-semibold">
+            <LuSparkles className="mt-0.5 size-3.5 shrink-0" />
+            <span>{courseCardUnlockLabel(course, dictionary)}</span>
+          </div>
+        )}
         <div className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2">
           {course.isEnrolled ? (
             <Button
@@ -773,9 +911,236 @@ function CourseCard({
   );
 }
 
+function CourseListItem({
+  course,
+  enrolling,
+  saving,
+  onEnroll,
+  onToggleSave,
+  selectedForComparison,
+  onToggleCompare,
+}: {
+  course: Course;
+  enrolling: boolean;
+  saving: boolean;
+  onEnroll: () => void;
+  onToggleSave: () => void;
+  selectedForComparison: boolean;
+  onToggleCompare: () => void;
+}) {
+  const dictionary = useAuthStore((state) => state.dictionary);
+  const locale = useAuthStore((state) => state.locale);
+  const thumbnail = course.thumbnail?.[0];
+  const imageUrl =
+    thumbnail?.downloadUrl || thumbnail?.publicUrl || thumbnail?.signedUrl;
+  const priceLabel = coursePriceLabel(course, dictionary, locale);
+  const durationLabel = courseDurationLabel(course.durationSeconds, dictionary);
+  const enrollmentCount = course.socialProof?.enrollmentCount ?? 0;
+
+  return (
+    <Card
+      data-testid="course-catalog-list-item"
+      className="nex-glass-card overflow-hidden rounded-2xl border-white/70 p-0 transition hover:shadow-[0_18px_42px_rgb(91_92_246/0.12)] dark:border-white/10"
+    >
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_176px] lg:items-center">
+        <Link
+          to="/course/$slug"
+          params={{ slug: course.slug }}
+          className="relative block h-36 overflow-hidden rounded-xl bg-[linear-gradient(135deg,var(--nexexam-soft-blue),var(--nexexam-accent))] sm:h-full sm:min-h-36"
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={course.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-nexexam-primary grid h-full place-items-center">
+              <LuBookOpenCheck className="size-14" />
+            </span>
+          )}
+          {course.nexVerified && (
+            <span className="text-primary absolute top-3 left-3 grid size-8 place-items-center rounded-lg bg-white/92 shadow-sm">
+              <LuShieldCheck className="size-4" />
+            </span>
+          )}
+        </Link>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {course.categoryRef?.name && (
+              <Badge variant="secondary" className="rounded-lg">
+                {course.categoryRef.name}
+              </Badge>
+            )}
+            {course.examType && (
+              <Badge variant="secondary" className="rounded-lg">
+                {course.examType}
+              </Badge>
+            )}
+            <Badge variant="outline" className="rounded-lg">
+              {priceLabel}
+            </Badge>
+            {course.nexVerified && (
+              <Badge variant="outline" className="rounded-lg">
+                <LuShieldCheck className="size-3.5" />
+                {dictionary.course.fields.nexVerified}
+              </Badge>
+            )}
+          </div>
+
+          <Link
+            to="/course/$slug"
+            params={{ slug: course.slug }}
+            className="hover:text-nexexam-primary mt-3 line-clamp-2 text-xl font-extrabold"
+          >
+            {course.title}
+          </Link>
+          <p className="text-muted-foreground mt-2 line-clamp-2 text-sm leading-6">
+            {course.subtitle || course.description}
+          </p>
+
+          {course.creatorUser && (
+            <Link
+              to="/creator/$creatorId"
+              params={{ creatorId: course.creatorUser.id }}
+              className="text-muted-foreground hover:text-primary mt-3 flex w-fit max-w-full items-center gap-2 text-xs font-semibold"
+            >
+              {course.creatorUser.image ? (
+                <img
+                  src={course.creatorUser.image}
+                  alt={
+                    course.creatorUser.name ||
+                    dictionary.course.marketplace.creator
+                  }
+                  className="size-6 rounded-full object-cover"
+                />
+              ) : (
+                <span className="bg-primary/10 text-primary grid size-6 place-items-center rounded-full">
+                  <LuUsers className="size-3.5" />
+                </span>
+              )}
+              <span className="truncate">
+                {course.creatorUser.name ||
+                  dictionary.course.marketplace.creator}
+              </span>
+            </Link>
+          )}
+
+          <div className="text-muted-foreground mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold">
+            <span>
+              {course.counts?.modules || 0} {dictionary.course.fields.modules}
+            </span>
+            <span>
+              {course.counts?.lessons || 0} {dictionary.course.fields.lessons}
+            </span>
+            <span>
+              <LuStar className="mr-1 inline size-3.5 align-[-2px]" />
+              {courseRatingLabel(course, dictionary, locale)}
+            </span>
+            {durationLabel && (
+              <span>
+                <LuClock className="mr-1 inline size-3.5 align-[-2px]" />
+                {durationLabel}
+              </span>
+            )}
+            <span>
+              {new Intl.NumberFormat(locale).format(enrollmentCount)}{' '}
+              {dictionary.course.marketplace.learners}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-2 lg:self-stretch">
+          {!course.isEnrolled && (
+            <div className="border-primary/20 bg-primary/5 text-primary rounded-xl border px-3 py-2 text-xs font-semibold lg:self-start">
+              {courseCardUnlockLabel(course, dictionary)}
+            </div>
+          )}
+          <div className="mt-auto grid grid-cols-[1fr_auto_auto] gap-2 lg:grid-cols-1">
+            {course.isEnrolled ? (
+              <Button
+                nativeButton={false}
+                data-testid="course-catalog-list-continue-button"
+                className="h-10 rounded-xl"
+                render={
+                  <Link to="/course/$id/learn" params={{ id: course.id }} />
+                }
+              >
+                {dictionary.course.actions.continue}
+              </Button>
+            ) : course.accessType === 'free' ? (
+              <Button
+                data-testid="course-catalog-list-enroll-button"
+                className="h-10 rounded-xl"
+                onClick={onEnroll}
+                disabled={enrolling}
+              >
+                {dictionary.course.actions.enroll}
+              </Button>
+            ) : (
+              <Button
+                nativeButton={false}
+                data-testid="course-catalog-list-view-button"
+                className="h-10 rounded-xl"
+                render={
+                  <Link to="/course/$slug" params={{ slug: course.slug }} />
+                }
+              >
+                {dictionary.course.actions.viewCourse}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl bg-white/70 px-3"
+              onClick={onToggleSave}
+              disabled={saving}
+              aria-label={
+                course.isSaved
+                  ? dictionary.course.marketplace.unsave
+                  : dictionary.course.actions.saveCourse
+              }
+            >
+              <LuHeart
+                className={
+                  course.isSaved ? 'text-primary fill-current' : undefined
+                }
+              />
+            </Button>
+            <Button
+              variant={selectedForComparison ? 'default' : 'outline'}
+              className="h-10 rounded-xl px-3"
+              onClick={onToggleCompare}
+              aria-label={dictionary.course.marketplace.compare}
+            >
+              <LuGitCompare className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function BundleCard({ bundle }: { bundle: CourseBundle }) {
   const dictionary = useAuthStore((state) => state.dictionary);
   const locale = useAuthStore((state) => state.locale);
+  const checkoutMutation = useMutation({
+    mutationFn: () =>
+      apiClient
+        .post(`api/course/bundles/${bundle.id}/checkout`, {
+          json: {
+            pricingPackageId: `bundle:${bundle.id}`,
+            packageType: 'course_bundle',
+          },
+        })
+        .json<{ url: string }>(),
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || dictionary.shared.errors.unknown),
+  });
   const thumbnail = bundle.thumbnail?.[0];
   const imageUrl =
     thumbnail?.downloadUrl || thumbnail?.publicUrl || thumbnail?.signedUrl;
@@ -823,6 +1188,30 @@ function BundleCard({ bundle }: { bundle: CourseBundle }) {
           </span>
           <span className="text-foreground font-bold">{priceLabel}</span>
         </div>
+        {bundle.priceCents != null && bundle.priceCents > 0 && (
+          <Button
+            type="button"
+            className="mt-4 h-10 w-full rounded-xl"
+            disabled={checkoutMutation.isPending}
+            onClick={() => {
+              productAnalyticsTrack({
+                eventName: 'cta_click',
+                ctaLocation: 'course_bundle_card',
+                funnelId: `bundle:${bundle.id}`,
+                metadata: {
+                  purchaseType: 'course_bundle',
+                  packageType: 'course_bundle',
+                  pricingPackageId: `bundle:${bundle.id}`,
+                  priceCents: bundle.priceCents,
+                  currency: bundle.currency,
+                },
+              });
+              checkoutMutation.mutate();
+            }}
+          >
+            {dictionary.pricing.buyBundle}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -921,4 +1310,16 @@ function coursePriceLabel(course: Course, dictionary: any, locale: string) {
   }
 
   return dictionary.course.enumerators.accessType.manual;
+}
+
+function courseCardUnlockLabel(course: Course, dictionary: any) {
+  if (course.accessType === 'paid') {
+    return dictionary.course.marketplace.unlock.courseCardPaid;
+  }
+
+  if (course.accessType === 'subscription') {
+    return dictionary.course.marketplace.unlock.courseCardSubscription;
+  }
+
+  return dictionary.course.marketplace.unlock.courseCardFree;
 }

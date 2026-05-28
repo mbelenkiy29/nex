@@ -9,6 +9,11 @@ import { memberFindManyController } from './controllers/memberFindManyController
 import { memberUpdateController } from './controllers/memberUpdateController';
 import { memberUpdateMeController } from './controllers/memberUpdateMeController';
 import { memberCompleteOnboardingController } from './controllers/memberCompleteOnboardingController';
+import {
+  memberPersonalizedOnboardingController,
+  memberPersonalizedOnboardingGenerateController,
+  memberPersonalizedOnboardingUpdateController,
+} from './controllers/memberPersonalizedOnboardingController';
 import { invitationCreateController } from '../invitation/controllers/invitationCreateController';
 import { memberRemoveController } from './controllers/memberRemoveController';
 import { memberDisableController } from './controllers/memberDisableController';
@@ -49,6 +54,45 @@ memberRoutes.put('/me', async (c) => {
     const body = await c.req.json();
     const data = memberUpdateMeInputSchema.parse(body);
     const payload = await memberUpdateMeController(data, context);
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+memberRoutes.get('/me/personalized-onboarding', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await memberPersonalizedOnboardingController(context);
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+memberRoutes.put('/me/personalized-onboarding', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await memberPersonalizedOnboardingUpdateController(
+      await c.req.json(),
+      context,
+    );
+    return ApiResponseSuccess(c, context, payload);
+  } catch (error: any) {
+    return ApiResponseError(c, context, error);
+  }
+});
+
+memberRoutes.post('/me/personalized-onboarding/generate-plan', async (c) => {
+  let context;
+  try {
+    context = await appContext(c);
+    const payload = await memberPersonalizedOnboardingGenerateController(
+      await c.req.json(),
+      context,
+    );
     return ApiResponseSuccess(c, context, payload);
   } catch (error: any) {
     return ApiResponseError(c, context, error);

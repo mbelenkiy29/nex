@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { LuCircleCheck, LuCrown } from 'react-icons/lu';
+import { LuCircleCheck, LuCrown, LuSparkles } from 'react-icons/lu';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -20,7 +20,10 @@ import {
 import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useShallow } from 'zustand/react/shallow';
+import { CheckoutTrustPanel } from '@/features/checkout/CheckoutTrustPanel';
 import { apiClient } from '@/shared/lib/apiClient';
+import { dictionaryFormat } from '@/shared/lib/dictionaryFormat';
+import { productAnalyticsTrack } from '@/shared/lib/productAnalytics';
 import { formatDate } from '@project/backend/shared/lib/formatDate';
 
 type SubscriptionPlan = {
@@ -34,6 +37,16 @@ type SubscriptionPlan = {
   marketingFeatures: Array<{ name: string }>;
   unitLabel: string | null;
   active: boolean;
+  packageType:
+    | 'monthly_subscription'
+    | 'annual_subscription'
+    | 'course_purchase'
+    | 'course_bundle'
+    | 'ai_credit_pack'
+    | 'selected_lifetime_course_access';
+  savingsPercent: number | null;
+  recommended: boolean;
+  comparisonGroup: string | null;
 };
 
 export function SubscriptionCard({
@@ -41,15 +54,21 @@ export function SubscriptionCard({
 }: {
   subscriptionPlan: SubscriptionPlan;
 }) {
-  const { currentSubscription, currentMember, dictionary, hasPermission } =
-    useAuthStore(
-      useShallow((state) => ({
-        currentSubscription: state.currentSubscription,
-        currentMember: state.currentMember,
-        dictionary: state.dictionary,
-        hasPermission: state.hasPermission,
-      })),
-    );
+  const {
+    currentSubscription,
+    currentMember,
+    dictionary,
+    hasPermission,
+    locale,
+  } = useAuthStore(
+    useShallow((state) => ({
+      currentSubscription: state.currentSubscription,
+      currentMember: state.currentMember,
+      dictionary: state.dictionary,
+      hasPermission: state.hasPermission,
+      locale: state.locale,
+    })),
+  );
 
   const hasPermissionToEdit = hasPermission({
     subscription: ['update'],
@@ -65,7 +84,11 @@ export function SubscriptionCard({
     mutationFn: async () => {
       return await apiClient
         .post('api/subscription/checkout', {
-          json: { stripePriceId: subscriptionPlan.stripePriceId! },
+          json: {
+            stripePriceId: subscriptionPlan.stripePriceId!,
+            pricingPackageId: `subscription:${subscriptionPlan.stripePriceId}`,
+            packageType: subscriptionPlan.packageType,
+          },
         })
         .json<{ url: string }>();
     },
@@ -91,17 +114,29 @@ export function SubscriptionCard({
     },
   });
 
-  const formattedPrice = new Intl.NumberFormat('en-US', {
+  const formattedPrice = new Intl.NumberFormat(locale || undefined, {
     style: 'currency',
     currency: subscriptionPlan.currency.toUpperCase(),
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(subscriptionPlan.unitAmount / 100);
 
-  const intervalText =
+  const intervalUnit =
     subscriptionPlan.intervalCount === 1
-      ? `/${subscriptionPlan.interval}`
-      : `/${subscriptionPlan.intervalCount} ${subscriptionPlan.interval}s`;
+      ? dictionary.subscription.intervalUnits[subscriptionPlan.interval]
+      : dictionary.subscription.intervalUnitsPlural[subscriptionPlan.interval];
+  const intervalLabel =
+    subscriptionPlan.intervalCount === 1
+      ? intervalUnit
+      : dictionaryFormat(
+          dictionary.subscription.intervalCountLabel,
+          subscriptionPlan.intervalCount,
+          intervalUnit,
+        );
+  const intervalText = dictionaryFormat(
+    dictionary.subscription.priceInterval,
+    intervalLabel,
+  );
 
   const buttonState = isCurrentPlan
     ? 'manage'
@@ -111,8 +146,8 @@ export function SubscriptionCard({
 
   return (
     <Card
-      className={`flex h-full min-w-80 flex-col ${
-        isCurrentPlan ? 'border-primary shadow-md' : ''
+      className={`nex-glass-card flex h-full min-w-80 flex-col rounded-3xl border-white/70 p-0 dark:border-white/10 ${
+        isCurrentPlan ? 'border-primary/60 shadow-[var(--nexexam-glow)]' : ''
       }`}
     >
       <CardHeader className="text-center">
@@ -122,6 +157,12 @@ export function SubscriptionCard({
             <Badge variant="default" className="gap-1">
               <LuCrown className="h-3 w-3" />
               {dictionary.subscription.current}
+            </Badge>
+          )}
+          {!isCurrentPlan && subscriptionPlan.recommended && (
+            <Badge className="bg-nexexam-accent text-nexexam-primary hover:bg-nexexam-accent gap-1">
+              <LuSparkles className="h-3 w-3" />
+              {dictionary.pricing.recommended}
             </Badge>
           )}
         </div>
@@ -142,6 +183,14 @@ export function SubscriptionCard({
               {intervalText}
             </span>
           </div>
+          {subscriptionPlan.savingsPercent ? (
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10 mt-3 rounded-xl">
+              {dictionary.pricing.savingsBadge.replace(
+                '{0}',
+                String(subscriptionPlan.savingsPercent),
+              )}
+            </Badge>
+          ) : null}
         </div>
 
         {buttonState === 'manage' && currentSubscription?.cancelAt ? (
@@ -158,6 +207,15 @@ export function SubscriptionCard({
         )}
 
         {subscriptionPlan.marketingFeatures.length > 0 && (
+          <div className="px-6">
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10 rounded-xl">
+              <LuSparkles className="size-3.5" />
+              {dictionary.subscription.value.cardUnlockLabel}
+            </Badge>
+          </div>
+        )}
+
+        {subscriptionPlan.marketingFeatures.length > 0 && (
           <ul className="space-y-3 px-6">
             {subscriptionPlan.marketingFeatures.map((feature, index) => (
               <li key={index} className="flex items-start gap-3">
@@ -166,6 +224,17 @@ export function SubscriptionCard({
               </li>
             ))}
           </ul>
+        )}
+
+        {buttonState === 'payment' && (
+          <div className="px-6">
+            <CheckoutTrustPanel
+              variant="subscription"
+              priceLabel={formattedPrice}
+              intervalLabel={intervalLabel}
+              compact
+            />
+          </div>
         )}
       </CardContent>
 
@@ -208,7 +277,27 @@ export function SubscriptionCard({
               checkoutMutation.isPending ||
               !isSubscriptionUser
             }
-            onClick={() => checkoutMutation.mutateAsync()}
+            onClick={() => {
+              productAnalyticsTrack({
+                eventName: 'cta_click',
+                stripePriceId: subscriptionPlan.stripePriceId,
+                ctaLocation: 'subscription_plan_card',
+                funnelId: `subscription:${subscriptionPlan.stripePriceId}`,
+                metadata: {
+                  purchaseType: 'subscription',
+                  packageType: subscriptionPlan.packageType,
+                  pricingPackageId: `subscription:${subscriptionPlan.stripePriceId}`,
+                  planInterval: subscriptionPlan.interval,
+                  intervalCount: subscriptionPlan.intervalCount,
+                  priceCents: subscriptionPlan.unitAmount,
+                  currency: subscriptionPlan.currency,
+                  checkoutTrustShown: true,
+                  renewalTermsShown: true,
+                  localPaymentMethodsShown: true,
+                },
+              });
+              void checkoutMutation.mutateAsync();
+            }}
           >
             {dictionary.subscription.subscribe}
           </Button>

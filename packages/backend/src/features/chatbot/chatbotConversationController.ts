@@ -165,7 +165,11 @@ export async function chatbotConversationCreateController(
     entityId: conversation.id,
     entityName: 'ChatbotConversation',
     operation: auditLogOperations.create,
-    newData: { title, courseId: conversation.courseId, lessonId: conversation.lessonId },
+    newData: {
+      title,
+      courseId: conversation.courseId,
+      lessonId: conversation.lessonId,
+    },
   });
 
   return c.json({ conversation }, 201);
@@ -187,7 +191,9 @@ export async function chatbotConversationGetController(
       createdAt: true,
       role: true,
       content: true,
+      attachments: true,
       widgets: true,
+      trustSignals: true,
     },
   });
 

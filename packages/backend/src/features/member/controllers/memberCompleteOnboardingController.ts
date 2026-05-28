@@ -29,6 +29,36 @@ export async function memberCompleteOnboardingController(context: AppContext) {
     const oldMember = await tx.member.findUniqueOrThrow({
       where: { id: context.currentMember!.id },
     });
+    const oldProfile = await tx.studentOnboardingProfile.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: context.currentUser!.id,
+          organizationId: context.currentOrganization!.id,
+        },
+      },
+    });
+    const completedAt = oldMember.onboardingCompletedAt || new Date();
+
+    if (oldProfile && !oldProfile.completedAt) {
+      const updatedProfile = await tx.studentOnboardingProfile.update({
+        where: { id: oldProfile.id },
+        data: {
+          completedAt,
+          updatedByUserId: context.currentUser?.id,
+          updatedByMemberId: context.currentMember?.id,
+        },
+      });
+
+      await auditLogCreate({
+        entityId: oldProfile.id,
+        entityName: 'StudentOnboardingProfile',
+        operation: auditLogOperations.update,
+        context,
+        tx,
+        oldData: { completedAt: oldProfile.completedAt },
+        newData: { completedAt: updatedProfile.completedAt },
+      });
+    }
 
     // Idempotent — second call returns the same row without writing.
     if (oldMember.onboardingCompletedAt) {
@@ -39,7 +69,7 @@ export async function memberCompleteOnboardingController(context: AppContext) {
     const updatedMember = await tx.member.update({
       where: { id: context.currentMember!.id },
       data: {
-        onboardingCompletedAt: new Date(),
+        onboardingCompletedAt: completedAt,
         updatedByUserId: context.currentUser?.id,
         updatedByMemberId: context.currentMember?.id,
       },

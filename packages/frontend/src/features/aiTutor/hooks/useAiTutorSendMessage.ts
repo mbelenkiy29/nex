@@ -6,6 +6,7 @@ import { aiTutorConversationKey } from './useAiTutorConversation';
 import { aiTutorListKey } from './useAiTutorConversationList';
 import type {
   AiTutorAlertRow,
+  AiTutorAttachment,
   AiTutorConversationDetail,
   AiTutorMessage,
   AiTutorWidget,
@@ -59,7 +60,7 @@ export function useAiTutorSendMessage(conversationId: string | undefined) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
-    async (rawMessage: string) => {
+    async (rawMessage: string, attachments: AiTutorAttachment[] = []) => {
       if (!conversationId) return;
       const message = rawMessage.trim();
       if (!message || isLoading) return;
@@ -89,14 +90,18 @@ export function useAiTutorSendMessage(conversationId: string | undefined) {
               createdAt: now,
               role: 'user',
               content: message,
+              attachments,
               widgets: null,
+              trustSignals: null,
             },
             {
               id: assistantTempId,
               createdAt: now,
               role: 'assistant',
               content: '',
+              attachments: null,
               widgets: null,
+              trustSignals: null,
             },
           ],
         };
@@ -114,7 +119,7 @@ export function useAiTutorSendMessage(conversationId: string | undefined) {
             'Accept-Language': locale,
           },
           credentials: 'include',
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, attachments }),
           signal: abortController.signal,
         });
 

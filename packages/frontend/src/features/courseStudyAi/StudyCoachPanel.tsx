@@ -1,6 +1,7 @@
 import { LuCompass } from 'react-icons/lu';
 import { useAuthStore } from '@/features/auth/authStore';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { AiPrivacyControlsSheet } from '@/features/aiTrust/AiPrivacyControlsSheet';
 import {
   Tabs,
   TabsContent,
@@ -22,10 +23,13 @@ export function StudyCoachPanel({ courseId }: { courseId: string }) {
   return (
     <Card className="nex-glass-card rounded-3xl border-white/70 p-0 dark:border-white/10">
       <CardContent className="space-y-4 p-5">
-        <h2 className="flex items-center gap-2 font-extrabold">
-          <LuCompass className="text-primary size-5" />
-          {t.title}
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-extrabold">
+            <LuCompass className="text-primary size-5" />
+            {t.title}
+          </h2>
+          <AiPrivacyControlsSheet />
+        </div>
         <Tabs defaultValue="weak">
           <TabsList className="w-full">
             <TabsTrigger value="weak">{t.weakAreasTab}</TabsTrigger>
