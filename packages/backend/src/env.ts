@@ -64,6 +64,16 @@ const envSchema = z
     //   Allows: https://org1.project.localhost, https://org2.project.localhost, etc.
     FRONTEND_URL: z.string().optional(),
     MARKETING_URL: z.string().optional(),
+    ADDITIONAL_CORS_ORIGINS: z
+      .string()
+      .optional()
+      .transform((val) => {
+        if (!val || val.trim() === '') return [];
+        return val
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean);
+      }),
 
     // Recaptcha
     RECAPTCHA_SECRET_KEY: z.string().optional(),

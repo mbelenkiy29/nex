@@ -34,6 +34,7 @@ async function corsOrigin(origin: string | undefined): Promise<string> {
   const allowedOrigins = [
     getFrontendUrl(),
     env.MARKETING_URL,
+    ...env.ADDITIONAL_CORS_ORIGINS,
     ...(env.NODE_ENV === 'development'
       ? ['http://localhost:8099', 'http://127.0.0.1:8099']
       : []),

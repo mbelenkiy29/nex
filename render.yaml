@@ -43,12 +43,10 @@ services:
     runtime: node
     plan: free
     region: ohio
-    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
-    preDeployCommand: pnpm --filter @project/backend db:migrate
+    buildCommand: npx --yes pnpm@11.1.2 install --frozen-lockfile && npx --yes pnpm@11.1.2 --filter @project/backend prisma:generate && npx --yes pnpm@11.1.2 --filter @project/backend build
+    preDeployCommand: npx --yes pnpm@11.1.2 --filter @project/backend db:migrate
     startCommand: node packages/backend/dist/server.js
     healthCheckPath: /api/health
-    domains:
-      - api.nexexam.com
     envVars:
       - key: NODE_ENV
         value: production
@@ -58,6 +56,8 @@ services:
         value: https://app.nexexam.com
       - key: MARKETING_URL
         value: https://nexexam.com
+      - key: ADDITIONAL_CORS_ORIGINS
+        value: https://nexexam-app.onrender.com,https://nexexam-marketing.onrender.com
       - key: DATABASE_RLS_URL
         sync: false
       - key: DATABASE_BYPASS_RLS_URL
@@ -102,7 +102,7 @@ services:
     runtime: node
     plan: starter
     region: ohio
-    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
+    buildCommand: npx --yes pnpm@11.1.2 install --frozen-lockfile && npx --yes pnpm@11.1.2 --filter @project/backend prisma:generate && npx --yes pnpm@11.1.2 --filter @project/backend build
     startCommand: node packages/backend/dist/workers.js
     envVars:
       - key: NODE_ENV
@@ -113,6 +113,8 @@ services:
         value: https://app.nexexam.com
       - key: MARKETING_URL
         value: https://nexexam.com
+      - key: ADDITIONAL_CORS_ORIGINS
+        value: https://nexexam-app.onrender.com,https://nexexam-marketing.onrender.com
       - key: DATABASE_RLS_URL
         sync: false
       - key: DATABASE_BYPASS_RLS_URL
