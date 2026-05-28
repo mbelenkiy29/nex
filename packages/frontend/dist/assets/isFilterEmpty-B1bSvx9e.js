@@ -1,0 +1,1 @@
+function e(e){return Object.values(e).every(e=>!!(e==null||e===``||Array.isArray(e)&&e.length===0))}export{e as t};

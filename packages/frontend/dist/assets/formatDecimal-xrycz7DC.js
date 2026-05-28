@@ -1,0 +1,1 @@
+function e(e,t,n){return e==null?``:new Intl.NumberFormat(t,{maximumFractionDigits:n}).format(parseFloat(e))}export{e as t};

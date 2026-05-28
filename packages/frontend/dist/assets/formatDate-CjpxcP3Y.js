@@ -1,0 +1,1 @@
+import{Mo as e,Qo as t,xt as n}from"./index-DEn-cAid.js";var r=t(e(),1);function i(e,t){if(!e)return``;let i=n(t);return(0,r.default)(e).format(i?t:t.shared.dateFormat)}export{i as t};

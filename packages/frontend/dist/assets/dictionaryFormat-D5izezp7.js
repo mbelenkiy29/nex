@@ -1,0 +1,1 @@
+function e(e,...t){if(!e)return``;try{return e.replace(/{(\d+)}/g,function(e,n){return t[n]===void 0?e:t[n]})}catch(t){throw console.error(e,t),t}}export{e as t};

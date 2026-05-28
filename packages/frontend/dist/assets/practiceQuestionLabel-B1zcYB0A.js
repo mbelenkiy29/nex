@@ -1,0 +1,1 @@
+function e(e,t,n){if(!e?.questionText)return``;let r=e.questionText,i=String(r);return e?.archivedAt?`${i} (${t.shared.archived})`:i}export{e as t};

@@ -1,0 +1,1 @@
+function e(e,t,n){if(!e?.originalFilename)return``;let r=e.originalFilename,i=String(r);return e?.archivedAt?`${i} (${t.shared.archived})`:i}export{e as t};

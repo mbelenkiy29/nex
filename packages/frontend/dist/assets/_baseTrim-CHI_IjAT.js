@@ -1,0 +1,1 @@
+var e=/\s/;function t(t){for(var n=t.length;n--&&e.test(t.charAt(n)););return n}var n=/^\s+/;function r(e){return e&&e.slice(0,t(e)+1).replace(n,``)}export{r as t};

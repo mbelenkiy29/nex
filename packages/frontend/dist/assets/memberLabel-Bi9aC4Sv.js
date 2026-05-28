@@ -1,0 +1,1 @@
+function e(e){return[e?.firstName,e?.lastName].filter(Boolean).join(` `)||null}function t(t){let n=t?.fullName||e(t),r=t?.user?.email;return n&&!r?n:!n&&r?r:[n,r].filter(Boolean).join(` - `)||``}export{e as n,t};

@@ -26,7 +26,7 @@ services:
   - type: web
     name: nexexam-app
     runtime: static
-    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @project/frontend build
+    buildCommand: echo "Using committed frontend dist; no Render build step required"
     staticPublishPath: ./packages/frontend/dist
     domains:
       - app.nexexam.com
