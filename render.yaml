@@ -26,7 +26,7 @@ services:
   - type: web
     name: nexexam-app
     runtime: static
-    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/frontend build
+    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @project/frontend build
     staticPublishPath: ./packages/frontend/dist
     domains:
       - app.nexexam.com
