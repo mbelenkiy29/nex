@@ -1,5 +1,5 @@
 (function () {
-  const PRODUCTION_API_BASE_URL = 'https://api.nexexam.com';
+  const PRODUCTION_API_BASE_URL = 'https://nexexam-api.onrender.com';
   const PRODUCTION_APP_BASE_URL = 'https://app.nexexam.com';
   const LOCAL_API_BASE_URL = 'http://localhost:3012';
   const LOCAL_APP_BASE_URL = 'http://localhost:5173';

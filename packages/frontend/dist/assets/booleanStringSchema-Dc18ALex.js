@@ -1,0 +1,1 @@
+import{vo as e}from"./index-D5KwcuLS.js";e([`true`,`false`]).optional();var t=e([`true`,`false`,``]).optional();export{t};

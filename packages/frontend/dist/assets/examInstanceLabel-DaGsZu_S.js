@@ -1,1 +1,0 @@
-import{kn as e}from"./index-DEn-cAid.js";function t(t,n,r){if(!t?.status)return``;let i=t.status,a=e(n.examInstance.enumerators.status,i);return t?.archivedAt?`${a} (${n.shared.archived})`:a}export{t};

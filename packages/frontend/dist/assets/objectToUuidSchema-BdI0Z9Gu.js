@@ -1,0 +1,1 @@
+import{Ao as e,Eo as t,Oo as n,ko as r,xt as i}from"./index-D5KwcuLS.js";var a=r([n().nullable().optional(),t({id:n().nullable().optional()})]).transform(e=>i(e)?e:e?.id).pipe(e()),o=r([e(),t({id:e()})]).optional().nullable().transform(e=>e===void 0?void 0:i(e)?e:e?.id||null);export{o as n,a as t};

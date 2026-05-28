@@ -32,7 +32,7 @@ services:
       - app.nexexam.com
     envVars:
       - key: VITE_BACKEND_URL
-        value: https://api.nexexam.com
+        value: https://nexexam-api.onrender.com
     routes:
       - type: rewrite
         source: /*
@@ -41,7 +41,7 @@ services:
   - type: web
     name: nexexam-api
     runtime: node
-    plan: starter
+    plan: free
     region: ohio
     buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
     preDeployCommand: pnpm --filter @project/backend db:migrate
@@ -53,7 +53,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: BACKEND_URL
-        value: https://api.nexexam.com
+        value: https://nexexam-api.onrender.com
       - key: FRONTEND_URL
         value: https://app.nexexam.com
       - key: MARKETING_URL
@@ -108,7 +108,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: BACKEND_URL
-        value: https://api.nexexam.com
+        value: https://nexexam-api.onrender.com
       - key: FRONTEND_URL
         value: https://app.nexexam.com
       - key: MARKETING_URL
