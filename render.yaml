@@ -26,7 +26,7 @@ services:
   - type: web
     name: nexexam-app
     runtime: static
-    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @project/frontend build
+    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @project/frontend build
     staticPublishPath: ./packages/frontend/dist
     domains:
       - app.nexexam.com
@@ -43,7 +43,7 @@ services:
     runtime: node
     plan: starter
     region: ohio
-    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
+    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
     preDeployCommand: pnpm --filter @project/backend db:migrate
     startCommand: node packages/backend/dist/server.js
     healthCheckPath: /api/health
@@ -102,7 +102,7 @@ services:
     runtime: node
     plan: starter
     region: ohio
-    buildCommand: corepack enable && corepack prepare pnpm@11.1.2 --activate && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
+    buildCommand: npm install -g pnpm@11.1.2 && pnpm install --frozen-lockfile && pnpm --filter @project/backend prisma:generate && pnpm --filter @project/backend build
     startCommand: node packages/backend/dist/workers.js
     envVars:
       - key: NODE_ENV
